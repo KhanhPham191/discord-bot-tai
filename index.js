@@ -8,7 +8,6 @@ const TOKEN = process.env.DISCORD_TOKEN;
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY;
 const AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
 const LIVESCORE_CHANNEL = '694577581298810946';
-const LIVESCORE_TEAM = 'Chelsea';
 const LIVESCORE_UPDATE_INTERVAL = 10 * 60 * 1000; // 10 minutes
 const PREFIX = '!';
 
@@ -37,27 +36,19 @@ function checkPidFile() {
 // Football API functions
 const FOOTBALL_API_URL = 'https://v3.football.api-sports.io';
 
-async function getLiveScore(teamName) {
+async function getLiveScore(teamId) {
   try {
-    const response = await axios.get(`${FOOTBALL_API_URL}/teams`, {
+    // Get latest match
+    const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
       headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { search: teamName }
+      params: { team: teamId, last: 1 }
     });
     
     if (response.data.response.length === 0) {
       return null;
     }
     
-    const team = response.data.response[0];
-    const teamId = team.team.id;
-    
-    // Get latest fixtures
-    const fixturesResponse = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
-      headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { team: teamId, last: 1 }
-    });
-    
-    return fixturesResponse.data.response[0] || null;
+    return response.data.response[0];
   } catch (e) {
     console.error('Lỗi lấy livescore:', e.message);
     return null;
@@ -78,18 +69,8 @@ async function getStandings(leagueId = 39) { // 39 = Premier League
   }
 }
 
-async function getFixtures(teamName, next = 5) {
+async function getFixtures(teamId, next = 5) {
   try {
-    const teamResponse = await axios.get(`${FOOTBALL_API_URL}/teams`, {
-      headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { search: teamName }
-    });
-    
-    if (teamResponse.data.response.length === 0) {
-      return null;
-    }
-    
-    const teamId = teamResponse.data.response[0].team.id;
     const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
       headers: { 'x-apisports-key': FOOTBALL_API_KEY },
       params: { team: teamId, next }
@@ -154,21 +135,41 @@ async function startLivescoreUpdate(client) {
         return;
       }
       
-      // Get live score
-      const score = await getLiveScore(LIVESCORE_TEAM);
-      if (score) {
-        const fixture = score;
-        const homeTeam = fixture.teams.home.name;
-        const awayTeam = fixture.teams.away.name;
-        const homeGoals = fixture.goals.home;
-        const awayGoals = fixture.goals.away;
-        const status = fixture.fixture.status.short;
-        
-        const scoreMsg = `⚽ **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\nStatus: ${status}`;
-        await channel.send(scoreMsg);
+      // Get enabled teams from config
+      const enabledTeams = config.livescoreTeams ? config.livescoreTeams.filter(t => t.enabled) : [];
+      
+      for (const team of enabledTeams) {
+        try {
+          // Get live score
+          const score = await getLiveScore(team.id);
+          if (score) {
+            const fixture = score;
+            const homeTeam = fixture.teams.home.name;
+            const awayTeam = fixture.teams.away.name;
+            const homeGoals = fixture.goals.home;
+            const awayGoals = fixture.goals.away;
+            const status = fixture.fixture.status.short;
+            
+            const scoreMsg = `⚽ **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\nStatus: ${status}`;
+            await channel.send(scoreMsg);
+          }
+          
+          // Get fixtures
+          const fixtures = await getFixtures(team.id, 3);
+          if (fixtures.length > 0) {
+            let fixturesText = `📅 **${team.name} - Lịch thi đấu sắp tới:**\n`;
+            fixtures.forEach((f, idx) => {
+              const date = new Date(f.fixture.date).toLocaleString('vi-VN');
+              fixturesText += `${idx + 1}. ${f.teams.home.name} vs ${f.teams.away.name}\n   ${date}\n`;
+            });
+            await channel.send(fixturesText);
+          }
+        } catch (e) {
+          console.error(`Lỗi update team ${team.name}:`, e.message);
+        }
       }
       
-      // Get standings (Premier League)
+      // Get standings (Premier League) - once for all
       const standings = await getStandings(39);
       if (standings) {
         const table = standings.standings[0];
@@ -177,17 +178,6 @@ async function startLivescoreUpdate(client) {
           standingsText += `${idx + 1}. ${team.team.name} - ${team.points}pts\n`;
         });
         await channel.send(standingsText);
-      }
-      
-      // Get fixtures
-      const fixtures = await getFixtures(LIVESCORE_TEAM, 3);
-      if (fixtures.length > 0) {
-        let fixturesText = `📅 **${LIVESCORE_TEAM} - Lịch thi đấu sắp tới:**\n`;
-        fixtures.forEach((f, idx) => {
-          const date = new Date(f.fixture.date).toLocaleString('vi-VN');
-          fixturesText += `${idx + 1}. ${f.teams.home.name} vs ${f.teams.away.name}\n   ${date}\n`;
-        });
-        await channel.send(fixturesText);
       }
       
       console.log(`✅ Đã update livescore vào lúc ${new Date().toLocaleTimeString()}`);

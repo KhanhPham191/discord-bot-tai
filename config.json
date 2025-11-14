@@ -28,5 +28,13 @@
     "Sũa dữ vậy, có ai đạp đuôi mày hả",
     "Sũa dữ vậy, chắc thèm cặc lắm đúng không",
     "Sũa dữ vậy, chắc đói xương lắm đúng không"
-  ]
+  ],
+  "livescoreTeams": [
+    {
+      "name": "Chelsea",
+      "id": 49,
+      "enabled": true
+    }
+  ],
+  "allowedUsers": []
 }
