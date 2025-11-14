@@ -45,26 +45,33 @@ async function getLiveScore(teamId) {
     });
     
     if (response.data.response.length === 0) {
+      console.log(`⚠️ Không có trận đấu nào cho team ID ${teamId}`);
       return null;
     }
     
     return response.data.response[0];
   } catch (e) {
-    console.error('Lỗi lấy livescore:', e.message);
+    console.error(`❌ Lỗi lấy livescore (team ${teamId}):`, e.response?.data?.errors || e.message);
     return null;
   }
 }
 
 async function getStandings(leagueId = 39) { // 39 = Premier League
   try {
+    console.log(`📊 Fetching standings for league ${leagueId}...`);
     const response = await axios.get(`${FOOTBALL_API_URL}/standings`, {
       headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { league: leagueId, season: 2024 }
+      params: { league: leagueId }
     });
     
-    return response.data.response[0] || null;
+    if (!response.data.response || response.data.response.length === 0) {
+      console.log(`⚠️ Không có dữ liệu standings cho league ID ${leagueId}. Có thể plan Free không hỗ trợ.`);
+      return null;
+    }
+    
+    return response.data.response[0];
   } catch (e) {
-    console.error('Lỗi lấy bảng xếp hạng:', e.message);
+    console.error(`❌ Lỗi lấy bảng xếp hạng (league ${leagueId}):`, e.response?.data?.errors || e.message);
     return null;
   }
 }
@@ -85,14 +92,16 @@ async function getFixtures(teamId, next = 5) {
 
 async function getLiveMatches(leagueId = 39) {
   try {
+    console.log(`🔴 Fetching live matches for league ${leagueId}...`);
     const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
       headers: { 'x-apisports-key': FOOTBALL_API_KEY },
       params: { league: leagueId, live: 'all' }
     });
     
+    console.log(`✅ Found ${response.data.response.length} live matches`);
     return response.data.response || [];
   } catch (e) {
-    console.error('Lỗi lấy trận đấu live:', e.message);
+    console.error(`❌ Lỗi lấy trận đấu live (league ${leagueId}):`, e.response?.data?.errors || e.message);
     return [];
   }
 }
