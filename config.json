@@ -34,6 +34,101 @@
       "name": "Chelsea",
       "id": 49,
       "enabled": true
+    },
+    {
+      "name": "Manchester United",
+      "id": 33,
+      "enabled": true
+    },
+    {
+      "name": "Manchester City",
+      "id": 50,
+      "enabled": true
+    },
+    {
+      "name": "Liverpool",
+      "id": 40,
+      "enabled": true
+    },
+    {
+      "name": "Arsenal",
+      "id": 42,
+      "enabled": true
+    },
+    {
+      "name": "Tottenham Hotspur",
+      "id": 47,
+      "enabled": true
+    },
+    {
+      "name": "Newcastle United",
+      "id": 34,
+      "enabled": true
+    },
+    {
+      "name": "Aston Villa",
+      "id": 66,
+      "enabled": true
+    },
+    {
+      "name": "West Ham United",
+      "id": 123,
+      "enabled": true
+    },
+    {
+      "name": "Leicester City",
+      "id": 46,
+      "enabled": true
+    },
+    {
+      "name": "Everton",
+      "id": 45,
+      "enabled": true
+    },
+    {
+      "name": "Brighton Hove Albion",
+      "id": 51,
+      "enabled": false
+    },
+    {
+      "name": "Fulham",
+      "id": 36,
+      "enabled": false
+    },
+    {
+      "name": "Nottingham Forest",
+      "id": 60,
+      "enabled": false
+    },
+    {
+      "name": "Wolverhampton Wanderers",
+      "id": 39,
+      "enabled": false
+    },
+    {
+      "name": "Brentford",
+      "id": 55,
+      "enabled": false
+    },
+    {
+      "name": "Paris Saint Germain",
+      "id": 85,
+      "enabled": false
+    },
+    {
+      "name": "Real Madrid",
+      "id": 541,
+      "enabled": false
+    },
+    {
+      "name": "Barcelona",
+      "id": 529,
+      "enabled": false
+    },
+    {
+      "name": "Bayern Munich",
+      "id": 40,
+      "enabled": false
     }
   ],
   "allowedUsers": []
