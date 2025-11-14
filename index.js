@@ -183,15 +183,23 @@ async function startLivescoreUpdate(client) {
         }
       }
       
-      // Get standings (Premier League) - once for all
-      const standings = await getStandings(39);
-      if (standings) {
-        const table = standings.standings[0];
-        let standingsText = `📊 **${standings.league.name} - Top 5**\n`;
-        table.slice(0, 5).forEach((team, idx) => {
-          standingsText += `${idx + 1}. ${team.team.name} - ${team.points}pts\n`;
-        });
-        await channel.send(standingsText);
+      // Get standings for enabled leagues
+      const enabledLeagues = config.leagues ? config.leagues.filter(l => l.enabled) : [];
+      
+      for (const league of enabledLeagues) {
+        try {
+          const standings = await getStandings(league.id);
+          if (standings) {
+            const table = standings.standings[0];
+            let standingsText = `📊 **${standings.league.name} - Top 5**\n`;
+            table.slice(0, 5).forEach((team, idx) => {
+              standingsText += `${idx + 1}. ${team.team.name} - ${team.points}pts\n`;
+            });
+            await channel.send(standingsText);
+          }
+        } catch (e) {
+          console.error(`Lỗi update league ${league.name}:`, e.message);
+        }
       }
       
       console.log(`✅ Đã update livescore vào lúc ${new Date().toLocaleTimeString()}`);
@@ -274,7 +282,7 @@ client.on('messageCreate', async (message) => {
           '⚽ Livescore:',
           `\`${PREFIX}live [league_id]\` - xem trận đang diễn ra (default: 39=Premier)`,
           `\`${PREFIX}livescore <team>\` - xem kết quả live`,
-          `\`${PREFIX}standings [league_id]\` - bảng xếp hạng (default: 39=Premier)`,
+          `\`${PREFIX}standings [league_name/id]\` - bảng xếp hạng (không argument = danh sách giải)`,
           `\`${PREFIX}fixtures <team>\` - lịch thi đấu sắp tới`,
           `\`${PREFIX}findteam <name>\` - tìm Team ID để thêm vào config`
         ].join('\n')
@@ -452,10 +460,50 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'standings') {
-      const leagueId = args[0] || '39'; // 39 = Premier League
+      // Nếu không có argument, hiển thị danh sách leagues
+      if (args.length === 0) {
+        const availableLeagues = config.leagues || [];
+        let leagueList = `📊 **DANH SÁCH GIẢI ĐẤU**\n`;
+        leagueList += `═══════════════════════════════════\n\n`;
+        
+        availableLeagues.forEach((league, idx) => {
+          const status = league.enabled ? '✅' : '❌';
+          leagueList += `${idx + 1}. ${status} **${league.name}** (ID: \`${league.id}\`)\n`;
+          leagueList += `   Quốc gia: ${league.country}\n`;
+        });
+        
+        leagueList += `\n═══════════════════════════════════\n`;
+        leagueList += `💡 Dùng: \`${PREFIX}standings <league_id>\` để xem bảng xếp`;
+        
+        message.reply(leagueList);
+        replied = true;
+        return;
+      }
+      
+      // Tìm league theo ID hoặc tên
+      const searchValue = args.join(' ').toLowerCase();
+      let leagueId = null;
+      
+      // Nếu là số, coi như ID
+      if (!isNaN(searchValue)) {
+        leagueId = parseInt(searchValue);
+      } else {
+        // Tìm theo tên
+        const foundLeague = config.leagues?.find(l => l.name.toLowerCase().includes(searchValue));
+        if (foundLeague) {
+          leagueId = foundLeague.id;
+        }
+      }
+      
+      if (!leagueId) {
+        message.reply(`❌ Không tìm thấy giải đấu! Dùng \`${PREFIX}standings\` để xem danh sách.`);
+        replied = true;
+        return;
+      }
+      
       message.reply('⏳ Đang lấy bảng xếp hạng...');
       
-      const standings = await getStandings(parseInt(leagueId));
+      const standings = await getStandings(leagueId);
       
       if (!standings) {
         message.reply('❌ Không tìm thấy giải đấu!');

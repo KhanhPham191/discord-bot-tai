@@ -131,5 +131,73 @@
       "enabled": false
     }
   ],
+  "leagues": [
+    {
+      "name": "Premier League",
+      "id": 39,
+      "country": "England",
+      "enabled": true
+    },
+    {
+      "name": "La Liga",
+      "id": 140,
+      "country": "Spain",
+      "enabled": true
+    },
+    {
+      "name": "Serie A",
+      "id": 135,
+      "country": "Italy",
+      "enabled": true
+    },
+    {
+      "name": "Bundesliga",
+      "id": 78,
+      "country": "Germany",
+      "enabled": true
+    },
+    {
+      "name": "Ligue 1",
+      "id": 61,
+      "country": "France",
+      "enabled": true
+    },
+    {
+      "name": "Champions League",
+      "id": 2,
+      "country": "Europe",
+      "enabled": false
+    },
+    {
+      "name": "Europa League",
+      "id": 3,
+      "country": "Europe",
+      "enabled": false
+    },
+    {
+      "name": "English Championship",
+      "id": 41,
+      "country": "England",
+      "enabled": false
+    },
+    {
+      "name": "Scottish Premiership",
+      "id": 179,
+      "country": "Scotland",
+      "enabled": false
+    },
+    {
+      "name": "Portuguese Primeira Liga",
+      "id": 94,
+      "country": "Portugal",
+      "enabled": false
+    },
+    {
+      "name": "Brazilian Serie A",
+      "id": 71,
+      "country": "Brazil",
+      "enabled": false
+    }
+  ],
   "allowedUsers": []
 }
