@@ -34,94 +34,102 @@ function checkPidFile() {
 }
 
 // Football API functions
-const FOOTBALL_API_URL = 'https://v3.football.api-sports.io';
+const FOOTBALL_API_URL = process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4';
 
-async function getLiveScore(teamId) {
+async function getTeamById(teamId) {
   try {
-    // Get latest match
-    const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
-      headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { team: teamId, last: 1 }
+    const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}`, {
+      headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
     });
-    
-    if (response.data.response.length === 0) {
-      console.log(`⚠️ Không có trận đấu nào cho team ID ${teamId}`);
-      return null;
-    }
-    
-    return response.data.response[0];
+    return response.data;
   } catch (e) {
-    console.error(`❌ Lỗi lấy livescore (team ${teamId}):`, e.response?.data?.errors || e.message);
+    console.error(`❌ Lỗi lấy thông tin team ${teamId}:`, e.response?.data?.message || e.message);
     return null;
   }
 }
 
-async function getStandings(leagueId = 39) { // 39 = Premier League
+async function getCompetitionMatches(competitionId) {
   try {
-    console.log(`📊 Fetching standings for league ${leagueId}...`);
-    const response = await axios.get(`${FOOTBALL_API_URL}/standings`, {
-      headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { league: leagueId }
+    const response = await axios.get(`${FOOTBALL_API_URL}/competitions/${competitionId}/matches`, {
+      headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+      params: { status: 'LIVE' }
     });
-    
-    if (!response.data.response || response.data.response.length === 0) {
-      console.log(`⚠️ Không có dữ liệu standings cho league ID ${leagueId}. Có thể plan Free không hỗ trợ.`);
-      return null;
-    }
-    
-    return response.data.response[0];
+    return response.data.matches || [];
   } catch (e) {
-    console.error(`❌ Lỗi lấy bảng xếp hạng (league ${leagueId}):`, e.response?.data?.errors || e.message);
-    return null;
-  }
-}
-
-async function getFixtures(teamId, next = 5) {
-  try {
-    // Free plan doesn't support 'next' parameter, so we get by date
-    const today = new Date().toISOString().split('T')[0];
-    const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
-      headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { team: teamId, date: today }
-    });
-    
-    if (response.data.response.length === 0) {
-      console.log(`ℹ️ Không có trận nào hôm nay cho team ${teamId}, thử ngày khác...`);
-      // Try yesterday
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-      const r2 = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
-        headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-        params: { team: teamId, date: yesterday }
-      });
-      return r2.data.response || [];
-    }
-    
-    return response.data.response || [];
-  } catch (e) {
-    console.error(`❌ Lỗi lấy lịch thi đấu (team ${teamId}):`, e.response?.data?.errors || e.message);
+    console.error(`❌ Lỗi lấy trận đấu live (comp ${competitionId}):`, e.response?.data?.message || e.message);
     return [];
   }
 }
 
-async function getLiveMatches(leagueId = 39) {
+async function getLiveScore(teamId) {
   try {
-    console.log(`🔴 Fetching live matches for league ${leagueId}...`);
-    // Free plan doesn't support live parameter well, so use today's date
-    const today = new Date().toISOString().split('T')[0];
-    const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
-      headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { league: leagueId, date: today }
+    const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
+      headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+      params: { status: 'LIVE' }
     });
     
-    // Filter only live matches
-    const liveMatches = response.data.response.filter(m => 
-      ['1H', '2H', 'ET', 'P', 'HT'].includes(m.fixture.status.short)
-    );
+    if (!response.data.matches || response.data.matches.length === 0) {
+      console.log(`⚠️ Không có trận đấu nào cho team ID ${teamId}`);
+      return null;
+    }
     
-    console.log(`✅ Found ${liveMatches.length} live matches`);
-    return liveMatches;
+    return response.data.matches[0];
   } catch (e) {
-    console.error(`❌ Lỗi lấy trận đấu live (league ${leagueId}):`, e.response?.data?.errors || e.message);
+    console.error(`❌ Lỗi lấy livescore (team ${teamId}):`, e.response?.data?.message || e.message);
+    return null;
+  }
+}
+
+async function getStandings(competitionId) {
+  try {
+    console.log(`📊 Fetching standings for competition ${competitionId}...`);
+    const response = await axios.get(`${FOOTBALL_API_URL}/competitions/${competitionId}/standings`, {
+      headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
+    });
+    
+    if (!response.data.standings || response.data.standings.length === 0) {
+      console.log(`⚠️ Không có dữ liệu standings cho competition ID ${competitionId}.`);
+      return null;
+    }
+    
+    return response.data;
+  } catch (e) {
+    console.error(`❌ Lỗi lấy bảng xếp hạng (comp ${competitionId}):`, e.response?.data?.message || e.message);
+    return null;
+  }
+}
+
+async function getFixtures(teamId, next = 10) {
+  try {
+    const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
+      headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+      params: { status: 'SCHEDULED,LIVE' }
+    });
+    
+    if (!response.data.matches || response.data.matches.length === 0) {
+      console.log(`ℹ️ Không có trận sắp tới cho team ${teamId}`);
+      return [];
+    }
+    
+    return response.data.matches.slice(0, next);
+  } catch (e) {
+    console.error(`❌ Lỗi lấy lịch thi đấu (team ${teamId}):`, e.response?.data?.message || e.message);
+    return [];
+  }
+}
+
+async function getLiveMatches(competitionId) {
+  try {
+    console.log(`🔴 Fetching live matches for competition ${competitionId}...`);
+    const response = await axios.get(`${FOOTBALL_API_URL}/competitions/${competitionId}/matches`, {
+      headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+      params: { status: 'LIVE' }
+    });
+    
+    console.log(`✅ Found ${response.data.matches?.length || 0} live matches`);
+    return response.data.matches || [];
+  } catch (e) {
+    console.error(`❌ Lỗi lấy trận đấu live (comp ${competitionId}):`, e.response?.data?.message || e.message);
     return [];
   }
 }
@@ -187,11 +195,11 @@ async function startLivescoreUpdate(client) {
           const score = await getLiveScore(team.id);
           if (score) {
             const fixture = score;
-            const homeTeam = fixture.teams.home.name;
-            const awayTeam = fixture.teams.away.name;
-            const homeGoals = fixture.goals.home;
-            const awayGoals = fixture.goals.away;
-            const status = fixture.fixture.status.short;
+            const homeTeam = fixture.homeTeam.name;
+            const awayTeam = fixture.awayTeam.name;
+            const homeGoals = fixture.score?.fullTime?.home || 0;
+            const awayGoals = fixture.score?.fullTime?.away || 0;
+            const status = fixture.status;
             
             const scoreMsg = `⚽ **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\nStatus: ${status}`;
             await channel.send(scoreMsg);
@@ -202,8 +210,8 @@ async function startLivescoreUpdate(client) {
           if (fixtures.length > 0) {
             let fixturesText = `📅 **${team.name} - Lịch thi đấu sắp tới:**\n`;
             fixtures.forEach((f, idx) => {
-              const date = new Date(f.fixture.date).toLocaleString('vi-VN');
-              fixturesText += `${idx + 1}. ${f.teams.home.name} vs ${f.teams.away.name}\n   ${date}\n`;
+              const date = new Date(f.utcDate).toLocaleString('vi-VN');
+              fixturesText += `${idx + 1}. ${f.homeTeam.name} vs ${f.awayTeam.name}\n   ${date}\n`;
             });
             await channel.send(fixturesText);
           }
@@ -416,10 +424,10 @@ client.on('messageCreate', async (message) => {
 
     // Livescore commands
     if (command === 'live') {
-      const leagueId = args[0] || '39'; // 39 = Premier League
+      const competitionId = args[0] || 'PL'; // PL = Premier League
       message.reply('⏳ Đang lấy trận đấu đang diễn ra...');
       
-      const liveMatches = await getLiveMatches(parseInt(leagueId));
+      const liveMatches = await getLiveMatches(competitionId);
       
       if (liveMatches.length === 0) {
         message.reply('❌ Không có trận đấu nào đang diễn ra!');
@@ -431,16 +439,15 @@ client.on('messageCreate', async (message) => {
       liveText += `═══════════════════════════════════\n\n`;
       
       liveMatches.slice(0, 10).forEach((match, idx) => {
-        const homeTeam = match.teams.home.name;
-        const awayTeam = match.teams.away.name;
-        const homeGoals = match.goals.home;
-        const awayGoals = match.goals.away;
-        const status = match.fixture.status.short;
-        const elapsed = match.fixture.status.elapsed || '?';
-        const leagueName = match.league.name;
+        const homeTeam = match.homeTeam.name;
+        const awayTeam = match.awayTeam.name;
+        const homeGoals = match.score?.fullTime?.home || 0;
+        const awayGoals = match.score?.fullTime?.away || 0;
+        const status = match.status;
+        const minute = match.minute || '?';
         
         liveText += `${idx + 1}. **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\n`;
-        liveText += `   ⏱️ ${elapsed}' | Status: ${status} | ${leagueName}\n`;
+        liveText += `   ⏱️ ${minute}' | Status: ${status}\n`;
         liveText += `\n`;
       });
       
@@ -452,28 +459,29 @@ client.on('messageCreate', async (message) => {
 
     if (command === 'livescore') {
       if (args.length === 0) {
-        message.reply(`Cách dùng: \`${PREFIX}livescore <team_name>\``);
+        message.reply(`Cách dùng: \`${PREFIX}livescore <team_id>\``);
         replied = true;
         return;
       }
       
       message.reply('⏳ Đang lấy dữ liệu...');
-      const score = await getLiveScore(args.join(' '));
+      const teamId = args[0];
+      const score = await getLiveScore(teamId);
       
       if (!score) {
-        message.reply('❌ Không tìm thấy đội bóng!');
+        message.reply('❌ Không tìm thấy đội bóng hoặc trận đấu live!');
         replied = true;
         return;
       }
       
       const fixture = score;
-      const homeTeam = fixture.teams.home.name;
-      const awayTeam = fixture.teams.away.name;
-      const homeGoals = fixture.goals.home;
-      const awayGoals = fixture.goals.away;
-      const status = fixture.fixture.status.short;
-      const date = new Date(fixture.fixture.date).toLocaleString('vi-VN');
-      const league = fixture.league.name;
+      const homeTeam = fixture.homeTeam.name;
+      const awayTeam = fixture.awayTeam.name;
+      const homeGoals = fixture.score?.fullTime?.home || 0;
+      const awayGoals = fixture.score?.fullTime?.away || 0;
+      const status = fixture.status;
+      const date = new Date(fixture.utcDate).toLocaleString('vi-VN');
+      const competition = fixture.competition?.name || 'Unknown';
       
       let scoreText = `⚽ **KẾT QUẢ TRẬN ĐẤU**\n`;
       scoreText += `═══════════════════════════════════\n`;
@@ -481,7 +489,7 @@ client.on('messageCreate', async (message) => {
       scoreText += `═══════════════════════════════════\n`;
       scoreText += `📊 Status: ${status}\n`;
       scoreText += `📅 Thời gian: ${date}\n`;
-      scoreText += `🏆 Giải đấu: ${league}`;
+      scoreText += `🏆 Giải đấu: ${competition}`;
       
       message.reply(scoreText);
       replied = true;
@@ -489,42 +497,35 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'standings') {
-      // Nếu không có argument, hiển thị danh sách leagues
+      // Danh sách competitions hỗ trợ
+      const supportedComps = {
+        'PL': 'Premier League',
+        'EL1': 'La Liga',
+        'SA': 'Serie A',
+        'BL1': 'Bundesliga',
+        'FL1': 'Ligue 1',
+        'PD': 'Primeira Liga',
+        'EC': 'Champions League'
+      };
+      
       if (args.length === 0) {
-        const availableLeagues = config.leagues || [];
-        let leagueList = `📊 **DANH SÁCH GIẢI ĐẤU**\n`;
-        leagueList += `═══════════════════════════════════\n\n`;
+        let compList = `📊 **DANH SÁCH GIẢI ĐẤU**\n`;
+        compList += `═══════════════════════════════════\n\n`;
         
-        availableLeagues.forEach((league, idx) => {
-          const status = league.enabled ? '✅' : '❌';
-          leagueList += `${idx + 1}. ${status} **${league.name}** (ID: \`${league.id}\`)\n`;
-          leagueList += `   Quốc gia: ${league.country}\n`;
+        Object.entries(supportedComps).forEach(([code, name]) => {
+          compList += `• **${code}** - ${name}\n`;
         });
         
-        leagueList += `\n═══════════════════════════════════\n`;
-        leagueList += `💡 Dùng: \`${PREFIX}standings <league_id>\` để xem bảng xếp`;
+        compList += `\n═══════════════════════════════════\n`;
+        compList += `💡 Dùng: \`${PREFIX}standings <competition_code>\` để xem bảng xếp`;
         
-        message.reply(leagueList);
+        message.reply(compList);
         replied = true;
         return;
       }
       
-      // Tìm league theo ID hoặc tên
-      const searchValue = args.join(' ').toLowerCase();
-      let leagueId = null;
-      
-      // Nếu là số, coi như ID
-      if (!isNaN(searchValue)) {
-        leagueId = parseInt(searchValue);
-      } else {
-        // Tìm theo tên
-        const foundLeague = config.leagues?.find(l => l.name.toLowerCase().includes(searchValue));
-        if (foundLeague) {
-          leagueId = foundLeague.id;
-        }
-      }
-      
-      if (!leagueId) {
+      const compCode = args[0].toUpperCase();
+      if (!supportedComps[compCode]) {
         message.reply(`❌ Không tìm thấy giải đấu! Dùng \`${PREFIX}standings\` để xem danh sách.`);
         replied = true;
         return;
@@ -532,28 +533,28 @@ client.on('messageCreate', async (message) => {
       
       message.reply('⏳ Đang lấy bảng xếp hạng...');
       
-      const standings = await getStandings(leagueId);
+      const standings = await getStandings(compCode);
       
       if (!standings) {
-        message.reply('❌ Không tìm thấy giải đấu!');
+        message.reply('❌ Không tìm thấy bảng xếp hạng!');
         replied = true;
         return;
       }
       
-      const table = standings.standings[0];
-      let standingsText = `📊 **${standings.league.name} - Season ${standings.season}**\n`;
+      const table = standings.standings[0].table;
+      let standingsText = `📊 **${standings.competition.name} - Season ${standings.season.currentSeason}**\n`;
       standingsText += `═══════════════════════════════════\n\n`;
       
       table.slice(0, 10).forEach((team, idx) => {
-        const rank = idx + 1;
+        const rank = team.position;
         const name = team.team.name;
         const points = team.points;
-        const played = team.all.played;
-        const wins = team.all.wins;
-        const draws = team.all.draws;
-        const losses = team.all.losses;
-        const gf = team.all.goals.for;
-        const ga = team.all.goals.against;
+        const played = team.playedGames;
+        const wins = team.won;
+        const draws = team.draw;
+        const losses = team.lost;
+        const gf = team.goalsFor;
+        const ga = team.goalsAgainst;
         const gd = gf - ga;
         
         standingsText += `${rank.toString().padStart(2, '0')}. ${name.padEnd(20, ' ')} | ${points.toString().padStart(2, ' ')}pts\n`;
@@ -569,16 +570,17 @@ client.on('messageCreate', async (message) => {
 
     if (command === 'fixtures') {
       if (args.length === 0) {
-        message.reply(`Cách dùng: \`${PREFIX}fixtures <team_name>\``);
+        message.reply(`Cách dùng: \`${PREFIX}fixtures <team_id>\``);
         replied = true;
         return;
       }
       
       message.reply('⏳ Đang lấy lịch thi đấu...');
-      const fixtures = await getFixtures(args.join(' '), 5);
+      const teamId = args[0];
+      const fixtures = await getFixtures(teamId, 10);
       
       if (fixtures.length === 0) {
-        message.reply('❌ Không tìm thấy đội bóng!');
+        message.reply('❌ Không tìm thấy đội bóng hoặc lịch thi đấu!');
         replied = true;
         return;
       }
@@ -587,21 +589,21 @@ client.on('messageCreate', async (message) => {
       fixturesText += `═══════════════════════════════════\n\n`;
       
       fixtures.forEach((f, idx) => {
-        const date = new Date(f.fixture.date).toLocaleString('vi-VN', {
+        const date = new Date(f.utcDate).toLocaleString('vi-VN', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',
           hour: '2-digit',
           minute: '2-digit'
         });
-        const home = f.teams.home.name;
-        const away = f.teams.away.name;
-        const league = f.league.name;
-        const status = f.fixture.status.short;
+        const home = f.homeTeam.name;
+        const away = f.awayTeam.name;
+        const competition = f.competition?.name || 'Unknown';
+        const status = f.status;
         
         fixturesText += `${idx + 1}. **${home}** vs **${away}**\n`;
         fixturesText += `   📅 ${date}\n`;
-        fixturesText += `   🏆 ${league} | Status: ${status}\n`;
+        fixturesText += `   🏆 ${competition} | Status: ${status}\n`;
         fixturesText += `\n`;
       });
       
@@ -621,12 +623,19 @@ client.on('messageCreate', async (message) => {
       message.reply('⏳ Đang tìm đội bóng...');
       
       try {
+        // Search for team by name
         const response = await axios.get(`${FOOTBALL_API_URL}/teams`, {
-          headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-          params: { name: args.join(' ') }
+          headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
         });
         
-        if (response.data.response.length === 0) {
+        const searchTerm = args.join(' ').toLowerCase();
+        const matches = response.data.teams.filter(t => 
+          t.name.toLowerCase().includes(searchTerm) ||
+          t.shortName.toLowerCase().includes(searchTerm) ||
+          (t.tla && t.tla.toLowerCase().includes(searchTerm))
+        ).slice(0, 5);
+        
+        if (matches.length === 0) {
           message.reply('❌ Không tìm thấy đội bóng!');
           replied = true;
           return;
@@ -635,20 +644,19 @@ client.on('messageCreate', async (message) => {
         let teamList = `🔍 **TÌM KIẾM ĐỘI BÓNG**\n`;
         teamList += `═══════════════════════════════════\n\n`;
         
-        response.data.response.slice(0, 5).forEach((t, idx) => {
-          const logo = t.team.logo ? t.team.logo : '🏟️';
-          teamList += `${idx + 1}. **${t.team.name}**\n`;
-          teamList += `   ID: \`${t.team.id}\`\n`;
-          teamList += `   Quốc gia: ${t.team.country || 'N/A'}\n`;
+        matches.forEach((t, idx) => {
+          teamList += `${idx + 1}. **${t.name}**\n`;
+          teamList += `   ID: \`${t.id}\`\n`;
+          teamList += `   Quốc gia: ${t.area?.name || 'N/A'}\n`;
           teamList += `\n`;
         });
         
         teamList += `═══════════════════════════════════\n`;
-        teamList += `💡 Copy ID để thêm vào \`livescoreTeams\` trong config.json`;
+        teamList += `💡 Copy ID để thêm vào config.json`;
         
         message.reply(teamList);
       } catch (e) {
-        message.reply(`❌ Lỗi: ${e.message}`);
+        message.reply(`❌ Lỗi: ${e.response?.data?.message || e.message}`);
       }
       
       replied = true;
