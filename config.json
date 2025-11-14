@@ -58,32 +58,32 @@
     {
       "name": "Tottenham Hotspur",
       "id": 47,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "Newcastle United",
       "id": 34,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "Aston Villa",
       "id": 66,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "West Ham United",
       "id": 123,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "Leicester City",
       "id": 46,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "Everton",
       "id": 45,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "Brighton Hove Albion",
