@@ -78,14 +78,27 @@ async function getStandings(leagueId = 39) { // 39 = Premier League
 
 async function getFixtures(teamId, next = 5) {
   try {
+    // Free plan doesn't support 'next' parameter, so we get by date
+    const today = new Date().toISOString().split('T')[0];
     const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
       headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { team: teamId, next }
+      params: { team: teamId, date: today }
     });
+    
+    if (response.data.response.length === 0) {
+      console.log(`ℹ️ Không có trận nào hôm nay cho team ${teamId}, thử ngày khác...`);
+      // Try yesterday
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const r2 = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
+        headers: { 'x-apisports-key': FOOTBALL_API_KEY },
+        params: { team: teamId, date: yesterday }
+      });
+      return r2.data.response || [];
+    }
     
     return response.data.response || [];
   } catch (e) {
-    console.error('Lỗi lấy lịch thi đấu:', e.message);
+    console.error(`❌ Lỗi lấy lịch thi đấu (team ${teamId}):`, e.response?.data?.errors || e.message);
     return [];
   }
 }
@@ -93,13 +106,20 @@ async function getFixtures(teamId, next = 5) {
 async function getLiveMatches(leagueId = 39) {
   try {
     console.log(`🔴 Fetching live matches for league ${leagueId}...`);
+    // Free plan doesn't support live parameter well, so use today's date
+    const today = new Date().toISOString().split('T')[0];
     const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
       headers: { 'x-apisports-key': FOOTBALL_API_KEY },
-      params: { league: leagueId, live: 'all' }
+      params: { league: leagueId, date: today }
     });
     
-    console.log(`✅ Found ${response.data.response.length} live matches`);
-    return response.data.response || [];
+    // Filter only live matches
+    const liveMatches = response.data.response.filter(m => 
+      ['1H', '2H', 'ET', 'P', 'HT'].includes(m.fixture.status.short)
+    );
+    
+    console.log(`✅ Found ${liveMatches.length} live matches`);
+    return liveMatches;
   } catch (e) {
     console.error(`❌ Lỗi lấy trận đấu live (league ${leagueId}):`, e.response?.data?.errors || e.message);
     return [];
