@@ -83,6 +83,20 @@ async function getFixtures(teamId, next = 5) {
   }
 }
 
+async function getLiveMatches(leagueId = 39) {
+  try {
+    const response = await axios.get(`${FOOTBALL_API_URL}/fixtures`, {
+      headers: { 'x-apisports-key': FOOTBALL_API_KEY },
+      params: { league: leagueId, live: 'all' }
+    });
+    
+    return response.data.response || [];
+  } catch (e) {
+    console.error('Lỗi lấy trận đấu live:', e.message);
+    return [];
+  }
+}
+
 let config = {
   allowedUsers: [],
   aiEnabled: false
@@ -258,6 +272,7 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}listusers\` - xem danh sách user`,
           '',
           '⚽ Livescore:',
+          `\`${PREFIX}live [league_id]\` - xem trận đang diễn ra (default: 39=Premier)`,
           `\`${PREFIX}livescore <team>\` - xem kết quả live`,
           `\`${PREFIX}standings [league_id]\` - bảng xếp hạng (default: 39=Premier)`,
           `\`${PREFIX}fixtures <team>\` - lịch thi đấu sắp tới`,
@@ -363,6 +378,41 @@ client.on('messageCreate', async (message) => {
     }
 
     // Livescore commands
+    if (command === 'live') {
+      const leagueId = args[0] || '39'; // 39 = Premier League
+      message.reply('⏳ Đang lấy trận đấu đang diễn ra...');
+      
+      const liveMatches = await getLiveMatches(parseInt(leagueId));
+      
+      if (liveMatches.length === 0) {
+        message.reply('❌ Không có trận đấu nào đang diễn ra!');
+        replied = true;
+        return;
+      }
+      
+      let liveText = `🔴 **LIVE - Trận đấu đang diễn ra**\n`;
+      liveText += `═══════════════════════════════════\n\n`;
+      
+      liveMatches.slice(0, 10).forEach((match, idx) => {
+        const homeTeam = match.teams.home.name;
+        const awayTeam = match.teams.away.name;
+        const homeGoals = match.goals.home;
+        const awayGoals = match.goals.away;
+        const status = match.fixture.status.short;
+        const elapsed = match.fixture.status.elapsed || '?';
+        const leagueName = match.league.name;
+        
+        liveText += `${idx + 1}. **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\n`;
+        liveText += `   ⏱️ ${elapsed}' | Status: ${status} | ${leagueName}\n`;
+        liveText += `\n`;
+      });
+      
+      liveText += `═══════════════════════════════════`;
+      message.reply(liveText);
+      replied = true;
+      return;
+    }
+
     if (command === 'livescore') {
       if (args.length === 0) {
         message.reply(`Cách dùng: \`${PREFIX}livescore <team_name>\``);
@@ -385,8 +435,17 @@ client.on('messageCreate', async (message) => {
       const homeGoals = fixture.goals.home;
       const awayGoals = fixture.goals.away;
       const status = fixture.fixture.status.short;
+      const date = new Date(fixture.fixture.date).toLocaleString('vi-VN');
+      const league = fixture.league.name;
       
-      const scoreText = `⚽ **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\nStatus: ${status}`;
+      let scoreText = `⚽ **KẾT QUẢ TRẬN ĐẤU**\n`;
+      scoreText += `═══════════════════════════════════\n`;
+      scoreText += `${homeTeam} **${homeGoals}** - **${awayGoals}** ${awayTeam}\n`;
+      scoreText += `═══════════════════════════════════\n`;
+      scoreText += `📊 Status: ${status}\n`;
+      scoreText += `📅 Thời gian: ${date}\n`;
+      scoreText += `🏆 Giải đấu: ${league}`;
+      
       message.reply(scoreText);
       replied = true;
       return;
@@ -405,12 +464,27 @@ client.on('messageCreate', async (message) => {
       }
       
       const table = standings.standings[0];
-      let standingsText = `📊 **${standings.league.name} - ${standings.season}**\n\n`;
+      let standingsText = `📊 **${standings.league.name} - Season ${standings.season}**\n`;
+      standingsText += `═══════════════════════════════════\n\n`;
       
-      table.slice(0, 5).forEach((team, idx) => {
-        standingsText += `${idx + 1}. ${team.team.name} - ${team.points}pts (${team.all.wins}W ${team.all.draws}D ${team.all.losses}L)\n`;
+      table.slice(0, 10).forEach((team, idx) => {
+        const rank = idx + 1;
+        const name = team.team.name;
+        const points = team.points;
+        const played = team.all.played;
+        const wins = team.all.wins;
+        const draws = team.all.draws;
+        const losses = team.all.losses;
+        const gf = team.all.goals.for;
+        const ga = team.all.goals.against;
+        const gd = gf - ga;
+        
+        standingsText += `${rank.toString().padStart(2, '0')}. ${name.padEnd(20, ' ')} | ${points.toString().padStart(2, ' ')}pts\n`;
+        standingsText += `    📈 ${played}P ${wins}W ${draws}D ${losses}L | ${gf}:${ga} (${gd > 0 ? '+' : ''}${gd})\n`;
+        standingsText += `\n`;
       });
       
+      standingsText += `═══════════════════════════════════`;
       message.reply(standingsText);
       replied = true;
       return;
@@ -424,7 +498,7 @@ client.on('messageCreate', async (message) => {
       }
       
       message.reply('⏳ Đang lấy lịch thi đấu...');
-      const fixtures = await getFixtures(args.join(' '), 3);
+      const fixtures = await getFixtures(args.join(' '), 5);
       
       if (fixtures.length === 0) {
         message.reply('❌ Không tìm thấy đội bóng!');
@@ -432,12 +506,29 @@ client.on('messageCreate', async (message) => {
         return;
       }
       
-      let fixturesText = '📅 **Lịch thi đấu sắp tới:**\n\n';
+      let fixturesText = `📅 **LỊCH THI ĐẤU SẮP TỚI**\n`;
+      fixturesText += `═══════════════════════════════════\n\n`;
+      
       fixtures.forEach((f, idx) => {
-        const date = new Date(f.fixture.date).toLocaleString('vi-VN');
-        fixturesText += `${idx + 1}. ${f.teams.home.name} vs ${f.teams.away.name}\n   ${date}\n`;
+        const date = new Date(f.fixture.date).toLocaleString('vi-VN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        const home = f.teams.home.name;
+        const away = f.teams.away.name;
+        const league = f.league.name;
+        const status = f.fixture.status.short;
+        
+        fixturesText += `${idx + 1}. **${home}** vs **${away}**\n`;
+        fixturesText += `   📅 ${date}\n`;
+        fixturesText += `   🏆 ${league} | Status: ${status}\n`;
+        fixturesText += `\n`;
       });
       
+      fixturesText += `═══════════════════════════════════`;
       message.reply(fixturesText);
       replied = true;
       return;
@@ -464,13 +555,20 @@ client.on('messageCreate', async (message) => {
           return;
         }
         
-        let teamList = '🔍 **Các đội bóng tìm thấy:**\n\n';
+        let teamList = `🔍 **TÌM KIẾM ĐỘI BÓNG**\n`;
+        teamList += `═══════════════════════════════════\n\n`;
+        
         response.data.response.slice(0, 5).forEach((t, idx) => {
-          teamList += `${idx + 1}. **${t.team.name}** (ID: \`${t.team.id}\`)\n`;
-          teamList += `   Country: ${t.team.country}\n`;
+          const logo = t.team.logo ? t.team.logo : '🏟️';
+          teamList += `${idx + 1}. **${t.team.name}**\n`;
+          teamList += `   ID: \`${t.team.id}\`\n`;
+          teamList += `   Quốc gia: ${t.team.country || 'N/A'}\n`;
+          teamList += `\n`;
         });
         
-        teamList += '\n💡 Copy ID để thêm vào `livescoreTeams` trong config.json';
+        teamList += `═══════════════════════════════════\n`;
+        teamList += `💡 Copy ID để thêm vào \`livescoreTeams\` trong config.json`;
+        
         message.reply(teamList);
       } catch (e) {
         message.reply(`❌ Lỗi: ${e.message}`);
