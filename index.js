@@ -7,6 +7,9 @@ require('dotenv').config();
 const TOKEN = process.env.DISCORD_TOKEN;
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY;
 const AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
+const LIVESCORE_CHANNEL = '694577581298810946';
+const LIVESCORE_TEAM = 'Chelsea';
+const LIVESCORE_UPDATE_INTERVAL = 10 * 60 * 1000; // 10 minutes
 const PREFIX = '!';
 
 const CONFIG_FILE = path.join(__dirname, 'config.json');
@@ -136,7 +139,70 @@ const client = new Client({
 client.once('ready', () => {
   console.log(`✅ Bot đã đăng nhập với tư cách: ${client.user.tag}`);
   loadConfig();
+  
+  // Start auto-update livescore
+  startLivescoreUpdate(client);
 });
+
+// Auto-update livescore function
+async function startLivescoreUpdate(client) {
+  const updateLivescore = async () => {
+    try {
+      const channel = await client.channels.fetch(LIVESCORE_CHANNEL);
+      if (!channel) {
+        console.error('❌ Không tìm thấy channel livescore');
+        return;
+      }
+      
+      // Get live score
+      const score = await getLiveScore(LIVESCORE_TEAM);
+      if (score) {
+        const fixture = score;
+        const homeTeam = fixture.teams.home.name;
+        const awayTeam = fixture.teams.away.name;
+        const homeGoals = fixture.goals.home;
+        const awayGoals = fixture.goals.away;
+        const status = fixture.fixture.status.short;
+        
+        const scoreMsg = `⚽ **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\nStatus: ${status}`;
+        await channel.send(scoreMsg);
+      }
+      
+      // Get standings (Premier League)
+      const standings = await getStandings(39);
+      if (standings) {
+        const table = standings.standings[0];
+        let standingsText = `📊 **${standings.league.name} - Top 5**\n`;
+        table.slice(0, 5).forEach((team, idx) => {
+          standingsText += `${idx + 1}. ${team.team.name} - ${team.points}pts\n`;
+        });
+        await channel.send(standingsText);
+      }
+      
+      // Get fixtures
+      const fixtures = await getFixtures(LIVESCORE_TEAM, 3);
+      if (fixtures.length > 0) {
+        let fixturesText = `📅 **${LIVESCORE_TEAM} - Lịch thi đấu sắp tới:**\n`;
+        fixtures.forEach((f, idx) => {
+          const date = new Date(f.fixture.date).toLocaleString('vi-VN');
+          fixturesText += `${idx + 1}. ${f.teams.home.name} vs ${f.teams.away.name}\n   ${date}\n`;
+        });
+        await channel.send(fixturesText);
+      }
+      
+      console.log(`✅ Đã update livescore vào lúc ${new Date().toLocaleTimeString()}`);
+    } catch (e) {
+      console.error('Lỗi auto-update livescore:', e.message);
+    }
+  };
+  
+  // Run immediately on startup
+  await updateLivescore();
+  
+  // Then run every LIVESCORE_UPDATE_INTERVAL
+  setInterval(updateLivescore, LIVESCORE_UPDATE_INTERVAL);
+  console.log(`⏰ Livescore sẽ tự động update mỗi ${LIVESCORE_UPDATE_INTERVAL / 60000} phút`);
+}
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
