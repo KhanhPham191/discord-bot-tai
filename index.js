@@ -260,7 +260,8 @@ client.on('messageCreate', async (message) => {
           '⚽ Livescore:',
           `\`${PREFIX}livescore <team>\` - xem kết quả live`,
           `\`${PREFIX}standings [league_id]\` - bảng xếp hạng (default: 39=Premier)`,
-          `\`${PREFIX}fixtures <team>\` - lịch thi đấu sắp tới`
+          `\`${PREFIX}fixtures <team>\` - lịch thi đấu sắp tới`,
+          `\`${PREFIX}findteam <name>\` - tìm Team ID để thêm vào config`
         ].join('\n')
       );
       replied = true;
@@ -438,6 +439,43 @@ client.on('messageCreate', async (message) => {
       });
       
       message.reply(fixturesText);
+      replied = true;
+      return;
+    }
+
+    if (command === 'findteam') {
+      if (args.length === 0) {
+        message.reply(`Cách dùng: \`${PREFIX}findteam <team_name>\``);
+        replied = true;
+        return;
+      }
+      
+      message.reply('⏳ Đang tìm đội bóng...');
+      
+      try {
+        const response = await axios.get(`${FOOTBALL_API_URL}/teams`, {
+          headers: { 'x-apisports-key': FOOTBALL_API_KEY },
+          params: { name: args.join(' ') }
+        });
+        
+        if (response.data.response.length === 0) {
+          message.reply('❌ Không tìm thấy đội bóng!');
+          replied = true;
+          return;
+        }
+        
+        let teamList = '🔍 **Các đội bóng tìm thấy:**\n\n';
+        response.data.response.slice(0, 5).forEach((t, idx) => {
+          teamList += `${idx + 1}. **${t.team.name}** (ID: \`${t.team.id}\`)\n`;
+          teamList += `   Country: ${t.team.country}\n`;
+        });
+        
+        teamList += '\n💡 Copy ID để thêm vào `livescoreTeams` trong config.json';
+        message.reply(teamList);
+      } catch (e) {
+        message.reply(`❌ Lỗi: ${e.message}`);
+      }
+      
       replied = true;
       return;
     }
