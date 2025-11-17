@@ -224,6 +224,9 @@ async function startLivescoreUpdate(client) {
       }
       
       // Get standings for enabled leagues
+      // DISABLED: Causes API quota issues on free tier
+      // Uncomment if you upgrade to paid plan
+      /*
       const enabledLeagues = config.leagues ? config.leagues.filter(l => l.enabled) : [];
       
       for (const league of enabledLeagues) {
@@ -241,6 +244,7 @@ async function startLivescoreUpdate(client) {
           console.error(`Lỗi update league ${league.name}:`, e.message);
         }
       }
+      */
       
       console.log(`✅ Đã update livescore vào lúc ${new Date().toLocaleTimeString()}`);
     } catch (e) {
