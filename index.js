@@ -229,11 +229,11 @@ async function startLivescoreUpdate(client) {
       for (const league of enabledLeagues) {
         try {
           const standings = await getStandings(league.id);
-          if (standings) {
-            const table = standings.standings[0];
-            let standingsText = `📊 **${standings.league.name} - Top 5**\n`;
+          if (standings && standings.standings && standings.standings.length > 0) {
+            const table = standings.standings[0].table;
+            let standingsText = `📊 **${standings.competition.name} - Top 5**\n`;
             table.slice(0, 5).forEach((team, idx) => {
-              standingsText += `${idx + 1}. ${team.team.name} - ${team.points}pts\n`;
+              standingsText += `${team.position}. ${team.team.name} - ${team.points}pts\n`;
             });
             await channel.send(standingsText);
           }
