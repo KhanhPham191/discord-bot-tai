@@ -32,32 +32,32 @@
   "livescoreTeams": [
     {
       "name": "Chelsea",
-      "id": 49,
+      "id": 61,
       "enabled": true
     },
     {
       "name": "Manchester United",
-      "id": 33,
+      "id": 66,
       "enabled": true
     },
     {
       "name": "Manchester City",
-      "id": 50,
+      "id": 65,
       "enabled": true
     },
     {
       "name": "Liverpool",
-      "id": 40,
+      "id": 64,
       "enabled": true
     },
     {
       "name": "Arsenal",
-      "id": 42,
+      "id": 57,
       "enabled": true
     },
     {
       "name": "Tottenham Hotspur",
-      "id": 47,
+      "id": 73,
       "enabled": false
     },
     {
@@ -134,67 +134,67 @@
   "leagues": [
     {
       "name": "Premier League",
-      "id": 39,
+      "id": "PL",
       "country": "England",
       "enabled": true
     },
     {
       "name": "La Liga",
-      "id": 140,
+      "id": "EL1",
       "country": "Spain",
       "enabled": true
     },
     {
       "name": "Serie A",
-      "id": 135,
+      "id": "SA",
       "country": "Italy",
       "enabled": true
     },
     {
       "name": "Bundesliga",
-      "id": 78,
+      "id": "BL1",
       "country": "Germany",
       "enabled": true
     },
     {
       "name": "Ligue 1",
-      "id": 61,
+      "id": "FL1",
       "country": "France",
       "enabled": true
     },
     {
       "name": "Champions League",
-      "id": 2,
+      "id": "CL",
       "country": "Europe",
       "enabled": false
     },
     {
       "name": "Europa League",
-      "id": 3,
+      "id": "EL",
       "country": "Europe",
       "enabled": false
     },
     {
       "name": "English Championship",
-      "id": 41,
+      "id": "ELC",
       "country": "England",
       "enabled": false
     },
     {
       "name": "Scottish Premiership",
-      "id": 179,
+      "id": "SPL",
       "country": "Scotland",
       "enabled": false
     },
     {
       "name": "Portuguese Primeira Liga",
-      "id": 94,
+      "id": "PPL",
       "country": "Portugal",
       "enabled": false
     },
     {
       "name": "Brazilian Serie A",
-      "id": 71,
+      "id": "BSA",
       "country": "Brazil",
       "enabled": false
     }
