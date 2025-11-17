@@ -103,7 +103,10 @@ async function getFixtures(teamId, next = 10) {
   try {
     const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
       headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
-      params: { status: 'SCHEDULED,LIVE' }
+      params: { 
+        status: 'SCHEDULED,LIVE',
+        limit: next
+      }
     });
     
     if (!response.data.matches || response.data.matches.length === 0) {
