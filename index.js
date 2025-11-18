@@ -918,13 +918,7 @@ client.on('messageCreate', async (message) => {
         addUserTrackedTeam(interaction.user.id, teamId);
         saveConfig(config);
         
-        // Send public notification (deleted after 5 seconds)
-        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đang theo dõi **${team.name}**`);
-        setTimeout(() => {
-          publicMsg.delete().catch(() => {});
-        }, 5000);
-        
-        // Send private confirmation
+        // Send private confirmation only (no public notification to avoid duplicates)
         await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi của bạn!`, flags: 64 });
       });
       
