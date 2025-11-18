@@ -806,7 +806,7 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}dashboard\` - xem dashboard với lịch thi đấu`,
           '',
           '🎬 Movie Search:',
-          `\`${PREFIX}search <tên phim>\` - tìm phim (hiển thị 10 kết quả)`
+          `\`${PREFIX}search "tên phim"\` - tìm phim (hiển thị 10 kết quả)`
         ].join('\n')
       );
       replied = true;
@@ -1555,12 +1555,12 @@ client.on('messageCreate', async (message) => {
     // Search phim command
     if (command === 'search') {
       if (!args.length) {
-        message.reply('❌ Vui lòng cung cấp tên phim! Ví dụ: `!search Avatar`');
+        message.reply('❌ Vui lòng cung cấp tên phim! Ví dụ: `!search Regeneration`');
         replied = true;
         return;
       }
 
-      const keyword = args.join(' ');
+      const keyword = args.join(' ').replace(/^"|"$/g, '');
       
       if (keyword.length < 2) {
         message.reply('❌ Tên phim phải có ít nhất 2 ký tự!');
@@ -1619,7 +1619,7 @@ client.on('messageCreate', async (message) => {
       replied = true;
       return;
     }
-
+    
     message.reply(`Lệnh \`${PREFIX}${command}\` không tồn tại!`);
     replied = true;
     return;
