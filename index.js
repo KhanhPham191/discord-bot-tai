@@ -227,7 +227,24 @@ async function createTrackedTeamsDashboard() {
       const team = config.livescoreTeams.find(t => t.id === teamId);
       if (!team) continue;
 
+      // Get fixtures from regular competitions
       const fixtures = await getFixtures(teamId, 5);
+      
+      // Get Champions League fixtures if available
+      let c1Fixtures = [];
+      try {
+        const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
+          headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+          params: { status: 'SCHEDULED,LIVE', limit: 30 }
+        });
+        
+        // Filter for Champions League matches (competition code = CL or name includes Champions)
+        c1Fixtures = (response.data.matches || []).filter(m => 
+          m.competition?.code === 'CL' || m.competition?.name?.includes('Champions League')
+        ).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate)).slice(0, 3);
+      } catch (err) {
+        console.error(`Lỗi lấy C1 fixtures cho team ${teamId}:`, err.message);
+      }
       
       let fixturesText = '';
       if (fixtures.length === 0) {
@@ -242,8 +259,27 @@ async function createTrackedTeamsDashboard() {
           });
           const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
           const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
+          const comp = f.competition?.name ? ` [${f.competition.name}]` : '';
           
-          fixturesText += `${idx + 1}. ${isHome} vs **${opponent}**\n   📅 ${date}\n`;
+          fixturesText += `${idx + 1}. ${isHome} vs **${opponent}**\n   📅 ${date}${comp}\n`;
+        });
+      }
+
+      // Add Champions League fixtures if any
+      let c1Text = '';
+      if (c1Fixtures.length > 0) {
+        c1Text = '\n🏆 **CHAMPIONS LEAGUE:**\n';
+        c1Fixtures.forEach((f, idx) => {
+          const date = new Date(f.utcDate).toLocaleString('vi-VN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
+          const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
+          
+          c1Text += `${idx + 1}. ${isHome} vs **${opponent}**\n   📅 ${date}\n`;
         });
       }
 
@@ -251,7 +287,7 @@ async function createTrackedTeamsDashboard() {
         .setColor('#10b981')
         .setTitle(`⚽ ${team.name}`)
         .addFields(
-          { name: '📋 Trận sắp tới', value: fixturesText || 'N/A', inline: false },
+          { name: '📋 Trận sắp tới', value: (fixturesText + c1Text) || 'N/A', inline: false },
           { name: '🔗 Team ID', value: teamId.toString(), inline: true }
         )
         .setTimestamp();
@@ -264,6 +300,7 @@ async function createTrackedTeamsDashboard() {
 
   return { embeds };
 }
+
 
 checkPidFile();
 
