@@ -23,9 +23,16 @@ function checkPidFile() {
       if (isProcessRunning) {
         console.error(`❌ Bot đang chạy với PID ${oldPid}. Không thể khởi động lại!`);
         process.exit(1);
+      } else {
+        // Process không còn chạy, xóa pidfile cũ
+        fs.unlinkSync(PID_FILE);
+        console.log('🗑️ Pidfile cũ đã được xóa');
       }
     } catch (e) {
-      // Process không còn chạy, tiếp tục
+      // Xóa pidfile nếu có error
+      try {
+        fs.unlinkSync(PID_FILE);
+      } catch (e2) {}
     }
   }
   // Ghi PID hiện tại
