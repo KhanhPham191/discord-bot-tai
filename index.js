@@ -956,16 +956,24 @@ client.on('messageCreate', async (message) => {
       saveConfig(config);
       
       // Send public notification (deleted after 5 seconds)
-      const publicMsg = await message.channel.send(`❌ **${message.author.username}** đã hủy theo dõi **${team?.name || 'Team'}**`);
-      setTimeout(() => {
-        publicMsg.delete().catch(() => {});
-      }, 5000);
+      try {
+        const publicMsg = await message.channel.send(`❌ **${message.author.username}** đã hủy theo dõi **${team?.name || 'Team'}**`);
+        setTimeout(() => {
+          publicMsg.delete().catch(() => {});
+        }, 5000);
+      } catch (e) {
+        console.error('Error sending public untrack message:', e.message);
+      }
       
-      // Send private confirmation
-      const confirmMsg = await message.reply(`✅ Đã xóa **${team?.name || 'Team'}** khỏi danh sách theo dõi của bạn.`);
-      setTimeout(() => {
-        confirmMsg.delete().catch(() => {});
-      }, 5000);
+      // Send private confirmation (deleted after 5 seconds)
+      try {
+        const confirmMsg = await message.reply(`✅ Đã xóa **${team?.name || 'Team'}** khỏi danh sách theo dõi của bạn.`);
+        setTimeout(() => {
+          confirmMsg.delete().catch(() => {});
+        }, 5000);
+      } catch (e) {
+        console.error('Error sending confirmation message:', e.message);
+      }
       
       return;
     }
