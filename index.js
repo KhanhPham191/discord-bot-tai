@@ -1575,63 +1575,129 @@ client.on('messageCreate', async (message) => {
     if (command === 'newphim') {
       console.log('🎬 New movies command triggered');
       
-      const page = args.length > 0 ? parseInt(args[0]) : 1;
+      let currentPage = args.length > 0 ? parseInt(args[0]) : 1;
       
-      if (isNaN(page) || page < 1) {
-        message.reply('❌ Trang phải là số nguyên dương! Ví dụ: `!newphim 1`');
+      if (isNaN(currentPage) || currentPage < 1) {
+        message.reply('❌ Trang phải là số nguyên dương! Ví dụ: `!newphim`');
         replied = true;
         return;
       }
 
       try {
-        const newMovies = await getNewMovies(page);
-        console.log(`✅ Found ${newMovies.length} new movies`);
+        const createMovieEmbed = async (page) => {
+          const newMovies = await getNewMovies(page);
+          console.log(`✅ Found ${newMovies.length} new movies on page ${page}`);
+          
+          if (!newMovies || newMovies.length === 0) {
+            return null;
+          }
+
+          // Limit to 10 results
+          const movies = newMovies.slice(0, 10);
+          
+          const embed = new EmbedBuilder()
+            .setColor('#e50914') // Netflix red
+            .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${page}`)
+            .setDescription(`Hiển thị **${movies.length}** phim mới nhất`)
+            .setTimestamp()
+            .setFooter({ text: 'New Movies | phim.nguonc.com' });
+
+          // Build movie list
+          let description = '';
+          movies.forEach((movie, idx) => {
+            const year = movie.year || 'N/A';
+            const slug = movie.slug || '';
+            const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
+            const title = movie.name || movie.title || 'Unknown';
+            
+            // Truncate long titles
+            const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
+            
+            description += `\n**${idx + 1}. ${displayTitle}** (${year})\n`;
+            
+            if (link !== 'N/A') {
+              description += `└─ [Xem phim →](${link})\n`;
+            }
+          });
+
+          embed.setDescription(description);
+          return embed;
+        };
+
+        const initialEmbed = await createMovieEmbed(currentPage);
         
-        if (!newMovies || newMovies.length === 0) {
-          await message.reply(`❌ Không tìm thấy phim mới trên trang **${page}**`);
+        if (!initialEmbed) {
+          await message.reply(`❌ Không tìm thấy phim mới trên trang **${currentPage}**`);
           replied = true;
           return;
         }
 
-        // Limit to 10 results
-        const movies = newMovies.slice(0, 10);
-        
-        const embed = new EmbedBuilder()
-          .setColor('#e50914') // Netflix red
-          .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${page}`)
-          .setDescription(`Hiển thị **${movies.length}** phim mới nhất`)
-          .setTimestamp()
-          .setFooter({ text: 'New Movies | phim.nguonc.com' });
+        const createButtons = () => {
+          return new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`newphim_prev_${message.author.id}`)
+                .setLabel('⬅️ Trước')
+                .setStyle(2)
+                .setDisabled(currentPage <= 1),
+              new ButtonBuilder()
+                .setCustomId(`newphim_next_${message.author.id}`)
+                .setLabel('Sau ➡️')
+                .setStyle(2)
+            );
+        };
 
-        // Build movie list
-        let description = '';
-        movies.forEach((movie, idx) => {
-          const year = movie.year || 'N/A';
-          const slug = movie.slug || '';
-          const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
-          const title = movie.name || movie.title || 'Unknown';
-          
-          // Truncate long titles
-          const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
-          
-          description += `\n**${idx + 1}. ${displayTitle}** (${year})\n`;
-          
-          if (link !== 'N/A') {
-            description += `└─ [Xem phim →](${link})\n`;
+        const response = await message.reply({
+          embeds: [initialEmbed],
+          components: [createButtons()]
+        });
+
+        const collector = response.createMessageComponentCollector({
+          filter: (interaction) => interaction.user.id === message.author.id,
+          time: 10 * 60 * 1000 // 10 minutes
+        });
+
+        collector.on('collect', async (interaction) => {
+          if (interaction.customId === `newphim_prev_${message.author.id}`) {
+            if (currentPage > 1) currentPage--;
+          } else if (interaction.customId === `newphim_next_${message.author.id}`) {
+            currentPage++;
           }
+
+          const newEmbed = await createMovieEmbed(currentPage);
+          
+          if (!newEmbed) {
+            await interaction.reply({
+              content: `❌ Không tìm thấy phim mới trên trang **${currentPage}**`,
+              flags: 64
+            });
+            return;
+          }
+
+          await interaction.update({
+            embeds: [newEmbed],
+            components: [createButtons()]
+          }).catch(() => {});
         });
 
-        embed.setDescription(description);
-        
-        // Add pagination info
-        embed.addFields({
-          name: '📖 Phân Trang',
-          value: `Trang ${page} | Dùng: \`!newphim <trang_số>\` để xem trang khác`,
-          inline: false
+        collector.on('end', async () => {
+          const disabledRow = new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`newphim_prev_${message.author.id}`)
+                .setLabel('⬅️ Trước')
+                .setStyle(2)
+                .setDisabled(true),
+              new ButtonBuilder()
+                .setCustomId(`newphim_next_${message.author.id}`)
+                .setLabel('Sau ➡️')
+                .setStyle(2)
+                .setDisabled(true)
+            );
+          await response.edit({ components: [disabledRow] }).catch(() => {});
         });
 
-        await message.reply({ embeds: [embed] });
-        console.log('✅ New movies sent successfully');
+        console.log('✅ New movies sent successfully with pagination buttons');
         
       } catch (error) {
         console.error('❌ Lỗi lấy phim mới:', error.message);
