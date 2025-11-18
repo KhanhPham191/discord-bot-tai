@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -6,10 +6,10 @@ require('dotenv').config();
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY;
-const AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
 const LIVESCORE_CHANNEL = '694577581298810946';
 const LIVESCORE_UPDATE_INTERVAL = 10 * 60 * 1000; // 10 minutes
 const PREFIX = '!';
+let AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
 
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 const PID_FILE = path.join(__dirname, '.bot.pid');
@@ -180,6 +180,16 @@ client.once('ready', () => {
   startLivescoreUpdate(client);
 });
 
+// Handle interactions (select menu, buttons)
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isStringSelectMenu()) return;
+  
+  if (interaction.customId === 'track_team_select') {
+    // This is handled in the track command collector
+    // No need to handle again here
+  }
+});
+
 // Auto-update livescore function - DISABLED to prevent API quota issues
 // Users can manually use !live, !fixtures, !livescore commands instead
 // Check for upcoming matches 1 day before
@@ -272,6 +282,9 @@ client.on('messageCreate', async (message) => {
   const content = message.content.trim();
   const lower = content.toLowerCase();
   let replied = false;
+  
+  // DEBUG: Log mỗi message
+  console.log(`📨 [${message.author.username}] ${content}`);
 
   // Phát hiện từ chửi - bot trả lời bằng lời khôn ngoan/hóm hỉnh
   // Không dùng \b vì nó không làm việc với tiếng Việt
@@ -306,6 +319,7 @@ client.on('messageCreate', async (message) => {
 
     if (command === 'ping') {
       message.reply('Pong! 🏓');
+      console.log(`✅ Replied to ping command`);
       replied = true;
       return;
     }
@@ -328,6 +342,9 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}adduser <@user>\` - thêm user vào danh sách`,
           `\`${PREFIX}removeuser <@user>\` - xóa user khỏi danh sách`,
           `\`${PREFIX}listusers\` - xem danh sách user`,
+          `\`${PREFIX}addreplychannel <channel_id>\` - thêm channel vào auto-reply`,
+          `\`${PREFIX}removereplychannel <channel_id>\` - xóa channel khỏi auto-reply`,
+          `\`${PREFIX}listreplychannels\` - xem danh sách auto-reply channels`,
           '',
           '⚽ Livescore:',
           `\`${PREFIX}live [league_id]\` - xem trận đang diễn ra (default: 39=Premier)`,
@@ -337,8 +354,8 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}findteam <name>\` - tìm Team ID để thêm vào config`,
           '',
           '📍 Team Tracking:',
-          `\`${PREFIX}teams\` - hiển thị UI chọn team để theo dõi`,
-          `\`${PREFIX}track <team_id>\` - theo dõi team (nhận update trận sắp tới)`,
+          `\`${PREFIX}teams\` - hiển thị danh sách team có sẵn`,
+          `\`${PREFIX}track\` - chọn team để theo dõi (UI dropdown)`,
           `\`${PREFIX}untrack <team_id>\` - hủy theo dõi team`,
           `\`${PREFIX}mytracks\` - xem danh sách team đang theo dõi`
         ].join('\n')
@@ -460,31 +477,139 @@ client.on('messageCreate', async (message) => {
       return;
     }
 
+    // Add reply channel command
+    if (command === 'addreplychannel') {
+      if (!isAdmin) {
+        message.reply('❌ Không có quyền!');
+        replied = true;
+        return;
+      }
+      const channelId = args[0];
+      if (!channelId) {
+        message.reply(`❌ Cách dùng: \`${PREFIX}addreplychannel <channel_id>\` hoặc reply message này ở channel cần add`);
+        replied = true;
+        return;
+      }
+      
+      if (AUTO_REPLY_CHANNELS.includes(channelId)) {
+        message.reply(`⚠️ Channel này đã được add rồi!`);
+        replied = true;
+        return;
+      }
+      
+      AUTO_REPLY_CHANNELS.push(channelId);
+      message.reply(`✅ Đã add channel ${channelId} vào danh sách auto-reply!`);
+      replied = true;
+      return;
+    }
+
+    // Remove reply channel command
+    if (command === 'removereplychannel') {
+      if (!isAdmin) {
+        message.reply('❌ Không có quyền!');
+        replied = true;
+        return;
+      }
+      const channelId = args[0];
+      if (!channelId) {
+        message.reply(`❌ Cách dùng: \`${PREFIX}removereplychannel <channel_id>\``);
+        replied = true;
+        return;
+      }
+      
+      if (!AUTO_REPLY_CHANNELS.includes(channelId)) {
+        message.reply(`⚠️ Channel này không được add!`);
+        replied = true;
+        return;
+      }
+      
+      AUTO_REPLY_CHANNELS = AUTO_REPLY_CHANNELS.filter(id => id !== channelId);
+      message.reply(`✅ Đã xóa channel ${channelId} khỏi danh sách auto-reply!`);
+      replied = true;
+      return;
+    }
+
+    // List reply channels command
+    if (command === 'listreplychannels') {
+      if (!isAdmin) {
+        message.reply('❌ Không có quyền!');
+        replied = true;
+        return;
+      }
+      if (AUTO_REPLY_CHANNELS.length === 0) {
+        message.reply('📭 Chưa có channel nào được add!');
+        replied = true;
+        return;
+      }
+      message.reply(`📋 Danh sách auto-reply channels:\n${AUTO_REPLY_CHANNELS.map(id => `• <#${id}> (\`${id}\`)`).join('\n')}`);
+      replied = true;
+      return;
+    }
+
     // Track team command
     if (command === 'track') {
-      const teamId = parseInt(args[0]);
-      if (!teamId) {
-        message.reply('❌ Sử dụng: `!track <team_id>` (e.g., `!track 61` cho Chelsea)');
-        return;
-      }
-
-      // Check if team ID is valid
-      const team = config.livescoreTeams.find(t => t.id === teamId);
-      if (!team) {
-        message.reply(`❌ Team ID không tồn tại. Các team có sẵn:\n${config.livescoreTeams.map(t => `- ${t.name} (ID: ${t.id})`).join('\n')}`);
-        return;
-      }
-
-      // Check if already tracked
-      if (config.trackedTeams.includes(teamId)) {
-        message.reply(`✅ Team **${team.name}** đã được theo dõi rồi!`);
-        return;
-      }
-
-      // Add to tracked teams
-      config.trackedTeams.push(teamId);
-      saveConfig(config);
-      message.reply(`✅ Đã thêm **${team.name}** vào danh sách theo dõi! Sẽ nhận update trận đấu sắp tới.`);
+      // Show team selection UI
+      const teams = config.livescoreTeams;
+      
+      // Create select menu options
+      const options = teams.map(team => ({
+        label: team.name,
+        value: team.id.toString(),
+        description: `ID: ${team.id}${config.trackedTeams.includes(team.id) ? ' ✅ (đang theo dõi)' : ''}`
+      }));
+      
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId('track_team_select')
+        .setPlaceholder('Chọn đội bóng để theo dõi')
+        .addOptions(options);
+      
+      const row = new ActionRowBuilder()
+        .addComponents(selectMenu);
+      
+      const response = await message.reply({
+        content: '⚽ **Chọn đội bóng muốn theo dõi:**',
+        components: [row]
+      });
+      
+      // Set timeout for interaction (15 minutes)
+      const collector = response.createMessageComponentCollector({ time: 15 * 60 * 1000 });
+      
+      collector.on('collect', async (interaction) => {
+        // Check if it's the same user
+        if (interaction.user.id !== message.author.id) {
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng UI này!', ephemeral: true });
+          return;
+        }
+        
+        const teamId = parseInt(interaction.values[0]);
+        const team = config.livescoreTeams.find(t => t.id === teamId);
+        
+        if (!team) {
+          await interaction.reply({ content: '❌ Team không tồn tại!', ephemeral: true });
+          return;
+        }
+        
+        // Check if already tracked
+        if (config.trackedTeams.includes(teamId)) {
+          await interaction.reply({ content: `⚠️ **${team.name}** đã được theo dõi rồi!`, ephemeral: true });
+          return;
+        }
+        
+        // Add to tracked teams
+        config.trackedTeams.push(teamId);
+        saveConfig(config);
+        
+        await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi!`, ephemeral: true });
+      });
+      
+      collector.on('end', () => {
+        // Disable select menu after interaction ends
+        const disabledRow = new ActionRowBuilder()
+          .addComponents(selectMenu.setDisabled(true));
+        response.edit({ components: [disabledRow] }).catch(() => {});
+      });
+      
+      replied = true;
       return;
     }
 
