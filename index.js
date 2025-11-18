@@ -1246,133 +1246,125 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'fixtures') {
-      if (args.length === 0) {
-        message.reply(`Cách dùng: \`${PREFIX}fixtures <team_id>\` (e.g., \`${PREFIX}fixtures 61\` cho Chelsea)`);
+      const userId = message.author.id;
+      const userTrackedTeams = getUserTrackedTeams(userId);
+      
+      if (userTrackedTeams.length === 0) {
+        message.reply('❌ Bạn chưa theo dõi team nào. Dùng `!track` để thêm team.');
         replied = true;
         return;
       }
       
-      const teamId = parseInt(args[0]);
-      if (isNaN(teamId)) {
-        message.reply(`❌ Team ID phải là số! (e.g., \`${PREFIX}fixtures 61\`)`);
-        replied = true;
-        return;
-      }
+      // Create select menu with tracked teams only
+      const trackedTeamsList = config.livescoreTeams.filter(t => userTrackedTeams.includes(t.id));
+      const options = trackedTeamsList.map(team => ({
+        label: team.name,
+        value: team.id.toString(),
+        description: `ID: ${team.id}`
+      }));
       
-      message.reply('⏳ Đang lấy lịch thi đấu...');
-      const fixtures = await getFixtures(teamId, 10);
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId('fixtures_team_select')
+        .setPlaceholder('Chọn đội bóng để xem lịch thi đấu')
+        .addOptions(options);
       
-      if (fixtures.length === 0) {
-        message.reply('❌ Không tìm thấy đội bóng hoặc lịch thi đấu!');
-        replied = true;
-        return;
-      }
+      const row = new ActionRowBuilder()
+        .addComponents(selectMenu);
       
-      // Get team name
-      const team = config.livescoreTeams.find(t => t.id === teamId);
-      const teamName = team?.name || `Team ${teamId}`;
-      
-      // Create main embed with professional styling (Tailwind-inspired)
-      const embeds = [];
-      const headerEmbed = new EmbedBuilder()
-        .setColor('#1e40af') // Tailwind blue-800
-        .setTitle(`⚽ ${teamName}`)
-        .setDescription(`**Lịch Thi Đấu Sắp Tới**\n${fixtures.length} trận`)
-        .setTimestamp()
-        .setFooter({ text: 'Football Bot | Updated' });
-      
-      embeds.push(headerEmbed);
-      
-      // Create individual embed for each fixture block
-      let currentText = '';
-      let matchCount = 0;
-      
-      fixtures.slice(0, 10).forEach((f, idx) => {
-        const date = new Date(f.utcDate);
-        const dateStr = date.toLocaleString('vi-VN', {
-          weekday: 'short',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
-        const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
-        const competition = f.competition?.name || 'Unknown';
-        
-        const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • 🏆 ${competition}\n`;
-        
-        currentText += matchStr;
-        matchCount++;
-        
-        // Create new embed every 5 matches to avoid character limit
-        if (matchCount === 5 || idx === fixtures.length - 1) {
-          const fixturesEmbed = new EmbedBuilder()
-            .setColor('#059669') // Tailwind green-600
-            .setDescription(currentText.trim())
-            .setFooter({ text: `Trận ${matchCount === 5 ? (idx - 4) + '-' + (idx + 1) : (idx - matchCount + 2) + '-' + (idx + 1)} của ${fixtures.length}` });
-          
-          embeds.push(fixturesEmbed);
-          currentText = '';
-          matchCount = 0;
-        }
+      const response = await message.reply({
+        content: '⚽ **Chọn đội bóng để xem lịch thi đấu:**',
+        components: [row]
       });
       
-      message.reply({ embeds });
-      replied = true;
-      return;
-    }
-
-    if (command === 'findteam') {
-      if (args.length === 0) {
-        message.reply(`Cách dùng: \`${PREFIX}findteam <team_name>\``);
-        replied = true;
-        return;
-      }
+      // Set timeout for interaction (15 minutes)
+      const collector = response.createMessageComponentCollector({ time: 15 * 60 * 1000 });
       
-      message.reply('⏳ Đang tìm đội bóng...');
-      
-      try {
-        // Search for team by name
-        const response = await axios.get(`${FOOTBALL_API_URL}/teams`, {
-          headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
-        });
-        
-        const searchTerm = args.join(' ').toLowerCase();
-        const matches = response.data.teams.filter(t => 
-          t.name.toLowerCase().includes(searchTerm) ||
-          t.shortName.toLowerCase().includes(searchTerm) ||
-          (t.tla && t.tla.toLowerCase().includes(searchTerm))
-        ).slice(0, 5);
-        
-        if (matches.length === 0) {
-          message.reply('❌ Không tìm thấy đội bóng!');
-          replied = true;
+      collector.on('collect', async (interaction) => {
+        // Check if it's the same user
+        if (interaction.user.id !== message.author.id) {
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng UI này!', flags: 64 });
           return;
         }
         
-        let teamList = `🔍 **TÌM KIẾM ĐỘI BÓNG**\n`;
-        teamList += `═══════════════════════════════════\n\n`;
+        const teamId = parseInt(interaction.values[0]);
         
-        matches.forEach((t, idx) => {
-          teamList += `${idx + 1}. **${t.name}**\n`;
-          teamList += `   ID: \`${t.id}\`\n`;
-          teamList += `   Quốc gia: ${t.area?.name || 'N/A'}\n`;
-          teamList += `\n`;
+        await interaction.deferReply();
+        
+        const fixtures = await getFixtures(teamId, 10);
+        
+        if (fixtures.length === 0) {
+          await interaction.editReply('❌ Không tìm thấy lịch thi đấu!');
+          return;
+        }
+        
+        // Get team name
+        const team = config.livescoreTeams.find(t => t.id === teamId);
+        const teamName = team?.name || `Team ${teamId}`;
+        
+        // Create main embed with professional styling (Tailwind-inspired)
+        const embeds = [];
+        const headerEmbed = new EmbedBuilder()
+          .setColor('#1e40af') // Tailwind blue-800
+          .setTitle(`⚽ ${teamName}`)
+          .setDescription(`**Lịch Thi Đấu Sắp Tới**\n${fixtures.length} trận`)
+          .setTimestamp()
+          .setFooter({ text: 'Football Bot | Updated' });
+        
+        embeds.push(headerEmbed);
+        
+        // Create individual embed for each fixture block
+        let currentText = '';
+        let matchCount = 0;
+        
+        fixtures.slice(0, 10).forEach((f, idx) => {
+          const date = new Date(f.utcDate);
+          const dateStr = date.toLocaleString('vi-VN', {
+            weekday: 'short',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
+          const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
+          const competition = f.competition?.name || 'Unknown';
+          
+          const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • 🏆 ${competition}\n`;
+          
+          currentText += matchStr;
+          matchCount++;
+          
+          // Create new embed every 5 matches to avoid character limit
+          if (matchCount === 5 || idx === fixtures.length - 1) {
+            const fixturesEmbed = new EmbedBuilder()
+              .setColor('#059669') // Tailwind green-600
+              .setDescription(currentText.trim())
+              .setFooter({ text: `Trận ${matchCount === 5 ? (idx - 4) + '-' + (idx + 1) : (idx - matchCount + 2) + '-' + (idx + 1)} của ${fixtures.length}` });
+            
+            embeds.push(fixturesEmbed);
+            currentText = '';
+            matchCount = 0;
+          }
         });
         
-        teamList += `═══════════════════════════════════\n`;
-        teamList += `💡 Copy ID để thêm vào config.json`;
+        await interaction.editReply({ embeds });
         
-        message.reply(teamList);
-      } catch (e) {
-        message.reply(`❌ Lỗi: ${e.response?.data?.message || e.message}`);
-      }
+        // Disable menu after selection
+        const disabledRow = new ActionRowBuilder()
+          .addComponents(selectMenu.setDisabled(true));
+        await response.edit({ components: [disabledRow] }).catch(() => {});
+        
+        // Stop collector after first selection
+        collector.stop();
+      });
+      
+      collector.on('end', () => {
+        // Menu is already disabled above
+      });
       
       replied = true;
       return;
     }
-
     message.reply(`Lệnh \`${PREFIX}${command}\` không tồn tại!`);
     replied = true;
     return;
