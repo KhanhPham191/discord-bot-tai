@@ -825,7 +825,7 @@ client.on('messageCreate', async (message) => {
           '',
           '🎬 Movie Search:',
           `\`${PREFIX}search <tên phim>\` - tìm phim (hiển thị 10 kết quả)`,
-          `\`${PREFIX}newphim [trang]\` - phim mới cập nhật (trang 1 nếu không chỉ định)`
+          `\`${PREFIX}newmovies [trang]\` - phim mới cập nhật (trang 1 nếu không chỉ định)`
         ].join('\n')
       );
       replied = true;
@@ -1572,7 +1572,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // New movies command
-    if (command === 'newphim') {
+    if (command === 'newmovies') {
       console.log('🎬 New movies command triggered');
       
       let currentPage = args.length > 0 ? parseInt(args[0]) : 1;
@@ -1636,12 +1636,12 @@ client.on('messageCreate', async (message) => {
           return new ActionRowBuilder()
             .addComponents(
               new ButtonBuilder()
-                .setCustomId(`newphim_prev_${message.author.id}`)
+                .setCustomId(`newmovies_prev_${message.author.id}`)
                 .setLabel('⬅️ Trước')
                 .setStyle(2)
                 .setDisabled(currentPage <= 1),
               new ButtonBuilder()
-                .setCustomId(`newphim_next_${message.author.id}`)
+                .setCustomId(`newmovies_next_${message.author.id}`)
                 .setLabel('Sau ➡️')
                 .setStyle(2)
             );
@@ -1658,9 +1658,9 @@ client.on('messageCreate', async (message) => {
         });
 
         collector.on('collect', async (interaction) => {
-          if (interaction.customId === `newphim_prev_${message.author.id}`) {
+          if (interaction.customId === `newmovies_prev_${message.author.id}`) {
             if (currentPage > 1) currentPage--;
-          } else if (interaction.customId === `newphim_next_${message.author.id}`) {
+          } else if (interaction.customId === `newmovies_next_${message.author.id}`) {
             currentPage++;
           }
 
@@ -1684,12 +1684,12 @@ client.on('messageCreate', async (message) => {
           const disabledRow = new ActionRowBuilder()
             .addComponents(
               new ButtonBuilder()
-                .setCustomId(`newphim_prev_${message.author.id}`)
+                .setCustomId(`newmovies_prev_${message.author.id}`)
                 .setLabel('⬅️ Trước')
                 .setStyle(2)
                 .setDisabled(true),
               new ButtonBuilder()
-                .setCustomId(`newphim_next_${message.author.id}`)
+                .setCustomId(`newmovies_next_${message.author.id}`)
                 .setLabel('Sau ➡️')
                 .setStyle(2)
                 .setDisabled(true)
