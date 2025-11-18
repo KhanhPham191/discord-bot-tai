@@ -101,7 +101,8 @@ async function getStandings(competitionId) {
 
 async function getFixtures(teamId, next = 10) {
   try {
-    const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
+    // Try to get from team endpoint first
+    let response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
       headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
       params: { 
         status: 'SCHEDULED,LIVE',
@@ -109,12 +110,45 @@ async function getFixtures(teamId, next = 10) {
       }
     });
     
-    if (!response.data.matches || response.data.matches.length === 0) {
+    let matches = response.data.matches || [];
+    
+    // If no recent matches or they're too far in the future, try competition endpoint
+    if (matches.length === 0 || (matches.length > 0 && new Date(matches[0].utcDate) > new Date(Date.now() + 90 * 24 * 60 * 60 * 1000))) {
+      console.log(`ℹ️ Team endpoint returned future matches, trying competition endpoint...`);
+      
+      // Get team info to find their competition
+      const teamRes = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}`, {
+        headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
+      });
+      
+      const activeCompetition = teamRes.data.runningCompetitions?.[0];
+      if (!activeCompetition) {
+        return [];
+      }
+      
+      // Get competition matches
+      const compRes = await axios.get(`${FOOTBALL_API_URL}/competitions/${activeCompetition.code}/matches?status=SCHEDULED,LIVE`, {
+        headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+        params: { limit: 50 }
+      });
+      
+      // Filter for this team only
+      matches = (compRes.data.matches || []).filter(m => 
+        m.homeTeam.id === teamId || m.awayTeam.id === teamId
+      );
+    }
+    
+    if (matches.length === 0) {
       console.log(`ℹ️ Không có trận sắp tới cho team ${teamId}`);
       return [];
     }
     
-    return response.data.matches.slice(0, next);
+    // Sort by date (ascending - earliest first)
+    const sorted = matches.sort((a, b) => 
+      new Date(a.utcDate) - new Date(b.utcDate)
+    );
+    
+    return sorted.slice(0, next);
   } catch (e) {
     console.error(`❌ Lỗi lấy lịch thi đấu (team ${teamId}):`, e.response?.data?.message || e.message);
     return [];
@@ -646,7 +680,7 @@ client.on('messageCreate', async (message) => {
       collector.on('collect', async (interaction) => {
         // Check if it's the same user
         if (interaction.user.id !== message.author.id) {
-          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng UI này!', ephemeral: true });
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng UI này!', flags: 64 });
           return;
         }
         
@@ -654,13 +688,13 @@ client.on('messageCreate', async (message) => {
         const team = config.livescoreTeams.find(t => t.id === teamId);
         
         if (!team) {
-          await interaction.reply({ content: '❌ Team không tồn tại!', ephemeral: true });
+          await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
           return;
         }
         
         // Check if already tracked
         if (config.trackedTeams.includes(teamId)) {
-          await interaction.reply({ content: `⚠️ **${team.name}** đã được theo dõi rồi!`, ephemeral: true });
+          await interaction.reply({ content: `⚠️ **${team.name}** đã được theo dõi rồi!`, flags: 64 });
           return;
         }
         
@@ -668,7 +702,7 @@ client.on('messageCreate', async (message) => {
         config.trackedTeams.push(teamId);
         saveConfig(config);
         
-        await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi!`, ephemeral: true });
+        await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi!`, flags: 64 });
       });
       
       collector.on('end', () => {
