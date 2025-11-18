@@ -929,15 +929,17 @@ client.on('messageCreate', async (message) => {
         // Reply to interaction (required by Discord, flags: 64 makes it ephemeral/hidden)
         await interaction.reply({ content: '✅', flags: 64 }).catch(() => {});
         
-        // Update menu to show latest state (other users' selections too)
-        await updateMenu();
+        // Disable menu after selection
+        const disabledRow = new ActionRowBuilder()
+          .addComponents(selectMenu.setDisabled(true));
+        await response.edit({ components: [disabledRow] }).catch(() => {});
+        
+        // Stop collector after first selection
+        collector.stop();
       });
       
       collector.on('end', () => {
-        // Disable select menu after interaction ends
-        const disabledRow = new ActionRowBuilder()
-          .addComponents(selectMenu.setDisabled(true));
-        response.edit({ components: [disabledRow] }).catch(() => {});
+        // Menu is already disabled above, no need to do it again
       });
       
       replied = true;
@@ -1051,15 +1053,17 @@ client.on('messageCreate', async (message) => {
         // Reply to interaction (required by Discord, flags: 64 makes it ephemeral/hidden)
         await interaction.reply({ content: '✅', flags: 64 }).catch(() => {});
         
-        // Update menu to show latest state
-        await updateUntrackMenu();
+        // Disable menu after selection
+        const disabledRow = new ActionRowBuilder()
+          .addComponents(selectMenu.setDisabled(true));
+        await response.edit({ components: [disabledRow] }).catch(() => {});
+        
+        // Stop collector after first selection
+        collector.stop();
       });
       
       collector.on('end', () => {
-        // Disable select menu after interaction ends
-        const disabledRow = new ActionRowBuilder()
-          .addComponents(selectMenu.setDisabled(true));
-        response.edit({ components: [disabledRow] }).catch(() => {});
+        // Menu is already disabled above, no need to do it again
       });
       
       return;
