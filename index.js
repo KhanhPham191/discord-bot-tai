@@ -806,7 +806,7 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}dashboard\` - xem dashboard với lịch thi đấu`,
           '',
           '🎬 Movie Search:',
-          `\`${PREFIX}search "tên phim"\` - tìm phim (hiển thị 10 kết quả)`
+          `\`${PREFIX}search <tên phim>\` - tìm phim (hiển thị 10 kết quả)`
         ].join('\n')
       );
       replied = true;
@@ -1551,75 +1551,76 @@ client.on('messageCreate', async (message) => {
       replied = true;
       return;
     }
-    message.reply(`Lệnh \`${PREFIX}${command}\` không tồn tại!`);
-    replied = true;
-    return;
-  }
 
-  // Search phim command
-  if (!replied && command === 'search') {
-    if (!args.length) {
-      message.reply('❌ Vui lòng cung cấp tên phim! Ví dụ: `!search "Regeneration"`');
-      replied = true;
-      return;
-    }
-
-    const keyword = args.join(' ').replace(/^"|"$/g, '');
-    
-    if (keyword.length < 2) {
-      message.reply('❌ Tên phim phải có ít nhất 2 ký tự!');
-      replied = true;
-      return;
-    }
-
-    await message.reply('🔍 Đang tìm phim...');
-
-    try {
-      const searchResults = await searchMovies(keyword);
-      
-      if (!searchResults || searchResults.length === 0) {
-        await message.reply(`❌ Không tìm thấy phim nào với từ khóa: **"${keyword}"**`);
+    // Search phim command
+    if (command === 'search') {
+      if (!args.length) {
+        message.reply('❌ Vui lòng cung cấp tên phim! Ví dụ: `!search Avatar`');
         replied = true;
         return;
       }
 
-      // Limit to 10 results
-      const movies = searchResults.slice(0, 10);
+      const keyword = args.join(' ');
       
-      const embed = new EmbedBuilder()
-        .setColor('#e50914') // Netflix red
-        .setTitle(`🎬 Kết Quả Tìm Kiếm: "${keyword}"`)
-        .setDescription(`Tìm thấy **${movies.length}** phim`)
-        .setTimestamp()
-        .setFooter({ text: 'Movie Search | phim.nguonc.com' });
+      if (keyword.length < 2) {
+        message.reply('❌ Tên phim phải có ít nhất 2 ký tự!');
+        replied = true;
+        return;
+      }
 
-      // Build movie list
-      let description = '';
-      movies.forEach((movie, idx) => {
-        const year = movie.year || 'N/A';
-        const slug = movie.slug || '';
-        const link = slug ? `https://phim.nguonc.com/${slug}` : 'N/A';
-        const title = movie.name || movie.title || 'Unknown';
+      await message.reply('🔍 Đang tìm phim...');
+
+      try {
+        const searchResults = await searchMovies(keyword);
         
-        // Truncate long titles
-        const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
-        
-        description += `\n**${idx + 1}. ${displayTitle}** (${year})\n`;
-        
-        if (link !== 'N/A') {
-          description += `└─ [Xem phim →](${link})\n`;
+        if (!searchResults || searchResults.length === 0) {
+          await message.reply(`❌ Không tìm thấy phim nào với từ khóa: **${keyword}**`);
+          replied = true;
+          return;
         }
-      });
 
-      embed.setDescription(description);
+        // Limit to 10 results
+        const movies = searchResults.slice(0, 10);
+        
+        const embed = new EmbedBuilder()
+          .setColor('#e50914') // Netflix red
+          .setTitle(`🎬 Kết Quả Tìm Kiếm: "${keyword}"`)
+          .setDescription(`Tìm thấy **${movies.length}** phim`)
+          .setTimestamp()
+          .setFooter({ text: 'Movie Search | phim.nguonc.com' });
 
-      await message.reply({ embeds: [embed] });
+        // Build movie list
+        let description = '';
+        movies.forEach((movie, idx) => {
+          const year = movie.year || 'N/A';
+          const slug = movie.slug || '';
+          const link = slug ? `https://phim.nguonc.com/${slug}` : 'N/A';
+          const title = movie.name || movie.title || 'Unknown';
+          
+          // Truncate long titles
+          const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
+          
+          description += `\n**${idx + 1}. ${displayTitle}** (${year})\n`;
+          
+          if (link !== 'N/A') {
+            description += `└─ [Xem phim →](${link})\n`;
+          }
+        });
+
+        embed.setDescription(description);
+
+        await message.reply({ embeds: [embed] });
+        
+      } catch (error) {
+        console.error('❌ Lỗi tìm kiếm phim:', error.message);
+        await message.reply('❌ Có lỗi xảy ra khi tìm kiếm phim. Vui lòng thử lại!');
+      }
       
-    } catch (error) {
-      console.error('❌ Lỗi tìm kiếm phim:', error.message);
-      await message.reply('❌ Có lỗi xảy ra khi tìm kiếm phim. Vui lòng thử lại!');
+      replied = true;
+      return;
     }
-    
+
+    message.reply(`Lệnh \`${PREFIX}${command}\` không tồn tại!`);
     replied = true;
     return;
   }
