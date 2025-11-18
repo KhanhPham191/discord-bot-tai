@@ -966,37 +966,123 @@ client.on('messageCreate', async (message) => {
       return;
     }
 
-    // Untrack team command
+    // Untrack team command (UI based)
     if (command === 'untrack') {
-      const teamId = parseInt(args[0]);
-      if (!teamId) {
-        message.reply('❌ Sử dụng: `!untrack <team_id>` (e.g., `!untrack 61` cho Chelsea)');
-        return;
-      }
-
-      // Check if team is tracked by this user
       const userId = message.author.id;
       const userTrackedTeams = getUserTrackedTeams(userId);
       
-      if (!userTrackedTeams.includes(teamId)) {
-        message.reply(`❌ Bạn chưa theo dõi Team ID này.`);
+      if (userTrackedTeams.length === 0) {
+        message.reply('❌ Bạn chưa theo dõi team nào để bỏ theo dõi. Dùng `!track` để thêm team.');
         return;
       }
-
-      // Remove from user's tracked teams
-      const team = config.livescoreTeams.find(t => t.id === teamId);
-      removeUserTrackedTeam(userId, teamId);
-      saveConfig(config);
       
-      // Send public notification only (deleted after 5 seconds)
-      try {
-        const publicMsg = await message.channel.send(`❌ **${message.author.username}** đã hủy theo dõi **${team?.name || 'Team'}**`);
-        setTimeout(() => {
-          publicMsg.delete().catch(() => {});
-        }, 5000);
-      } catch (e) {
-        console.error('Error sending public untrack message:', e.message);
-      }
+      // Create select menu with only tracked teams
+      const trackedTeamsList = config.livescoreTeams.filter(t => userTrackedTeams.includes(t.id));
+      const options = trackedTeamsList.map(team => ({
+        label: team.name,
+        value: team.id.toString(),
+        description: `ID: ${team.id}`
+      }));
+      
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId('untrack_team_select')
+        .setPlaceholder('Chọn đội bóng để bỏ theo dõi')
+        .addOptions(options);
+      
+      const row = new ActionRowBuilder()
+        .addComponents(selectMenu);
+      
+      const response = await message.reply({
+        content: '⚽ **Chọn đội bóng muốn bỏ theo dõi:**',
+        components: [row]
+      });
+      
+      // Set timeout for interaction (15 minutes)
+      const collector = response.createMessageComponentCollector({ time: 15 * 60 * 1000 });
+      
+      const updateUntrackMenu = async () => {
+        // Rebuild menu with latest tracked status
+        const freshUserTeams = getUserTrackedTeams(userId);
+        const freshTrackedTeams = config.livescoreTeams.filter(t => freshUserTeams.includes(t.id));
+        
+        if (freshTrackedTeams.length === 0) {
+          // No more teams, disable menu
+          const disabledRow = new ActionRowBuilder()
+            .addComponents(selectMenu.setDisabled(true));
+          await response.edit({ 
+            content: '✅ Bạn không còn theo dõi team nào!',
+            components: [disabledRow] 
+          }).catch(() => {});
+          collector.stop();
+          return;
+        }
+        
+        const updatedOptions = freshTrackedTeams.map(team => ({
+          label: team.name,
+          value: team.id.toString(),
+          description: `ID: ${team.id}`
+        }));
+        
+        const updatedMenu = new StringSelectMenuBuilder()
+          .setCustomId('untrack_team_select')
+          .setPlaceholder('Chọn đội bóng để bỏ theo dõi')
+          .addOptions(updatedOptions);
+        
+        const updatedRow = new ActionRowBuilder()
+          .addComponents(updatedMenu);
+        
+        await response.edit({ components: [updatedRow] }).catch(() => {});
+      };
+      
+      collector.on('collect', async (interaction) => {
+        // Check if it's the same user
+        if (interaction.user.id !== message.author.id) {
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng UI này!', flags: 64 });
+          return;
+        }
+        
+        const teamId = parseInt(interaction.values[0]);
+        const team = config.livescoreTeams.find(t => t.id === teamId);
+        
+        if (!team) {
+          await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+          return;
+        }
+        
+        // Check if user tracks this team
+        const currentUserTeams = getUserTrackedTeams(interaction.user.id);
+        if (!currentUserTeams.includes(teamId)) {
+          await interaction.reply({ content: `⚠️ Bạn không theo dõi **${team.name}**!`, flags: 64 });
+          return;
+        }
+        
+        // Remove from user's tracked teams
+        removeUserTrackedTeam(interaction.user.id, teamId);
+        saveConfig(config);
+        
+        // Send public notification with auto-delete
+        try {
+          const publicMsg = await interaction.channel.send(`❌ **${interaction.user.username}** đã hủy theo dõi **${team.name}**`);
+          setTimeout(() => {
+            publicMsg.delete().catch(() => {});
+          }, 5000);
+        } catch (e) {
+          console.error('Error sending public untrack message:', e.message);
+        }
+        
+        // Reply to interaction (required by Discord, flags: 64 makes it ephemeral/hidden)
+        await interaction.reply({ content: '✅', flags: 64 }).catch(() => {});
+        
+        // Update menu to show latest state
+        await updateUntrackMenu();
+      });
+      
+      collector.on('end', () => {
+        // Disable select menu after interaction ends
+        const disabledRow = new ActionRowBuilder()
+          .addComponents(selectMenu.setDisabled(true));
+        response.edit({ components: [disabledRow] }).catch(() => {});
+      });
       
       return;
     }
