@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -160,6 +160,74 @@ function loadConfig() {
 function saveConfig() {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
   console.log('✅ Config đã được lưu vào config.json');
+}
+
+// Create tracked teams dashboard UI
+async function createTrackedTeamsDashboard() {
+  if (!config.trackedTeams || config.trackedTeams.length === 0) {
+    return {
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#ef4444')
+          .setTitle('📭 Không có team nào được theo dõi')
+          .setDescription('Hãy dùng `!track` để chọn team để theo dõi!')
+          .setTimestamp()
+      ]
+    };
+  }
+
+  const embeds = [];
+  
+  // Header embed
+  const headerEmbed = new EmbedBuilder()
+    .setColor('#3b82f6')
+    .setTitle('⚽ Dashboard Theo Dõi Đội Bóng')
+    .setDescription(`Đang theo dõi **${config.trackedTeams.length}** đội bóng`)
+    .setTimestamp();
+  
+  embeds.push(headerEmbed);
+
+  // Team info embeds
+  for (const teamId of config.trackedTeams) {
+    try {
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      if (!team) continue;
+
+      const fixtures = await getFixtures(teamId, 5);
+      
+      let fixturesText = '';
+      if (fixtures.length === 0) {
+        fixturesText = '🚫 Không có trận sắp tới';
+      } else {
+        fixtures.slice(0, 3).forEach((f, idx) => {
+          const date = new Date(f.utcDate).toLocaleString('vi-VN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
+          const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
+          fixturesText += `${idx + 1}. ${isHome} vs **${opponent}**\n   📅 ${date}\n`;
+        });
+      }
+
+      const teamEmbed = new EmbedBuilder()
+        .setColor('#10b981')
+        .setTitle(`⚽ ${team.name}`)
+        .addFields(
+          { name: '📋 Trận sắp tới', value: fixturesText || 'N/A', inline: false },
+          { name: '🔗 Team ID', value: teamId.toString(), inline: true }
+        )
+        .setTimestamp();
+
+      embeds.push(teamEmbed);
+    } catch (err) {
+      console.error(`Error fetching fixtures for team ${teamId}:`, err.message);
+    }
+  }
+
+  return { embeds };
 }
 
 checkPidFile();
@@ -357,7 +425,8 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}teams\` - hiển thị danh sách team có sẵn`,
           `\`${PREFIX}track\` - chọn team để theo dõi (UI dropdown)`,
           `\`${PREFIX}untrack <team_id>\` - hủy theo dõi team`,
-          `\`${PREFIX}mytracks\` - xem danh sách team đang theo dõi`
+          `\`${PREFIX}mytracks\` - xem danh sách team đang theo dõi`,
+          `\`${PREFIX}dashboard\` - xem dashboard với lịch thi đấu`
         ].join('\n')
       );
       replied = true;
@@ -639,7 +708,7 @@ client.on('messageCreate', async (message) => {
     // Show tracked teams command
     if (command === 'mytracks') {
       if (config.trackedTeams.length === 0) {
-        message.reply('📋 Bạn chưa theo dõi team nào. Dùng `!track <team_id>` để thêm team.');
+        message.reply('📋 Bạn chưa theo dõi team nào. Dùng `!track` để thêm team.');
         return;
       }
 
@@ -651,6 +720,15 @@ client.on('messageCreate', async (message) => {
         .join('\n');
       
       message.reply(`📋 **Danh sách team bạn theo dõi:**\n${trackedTeamNames}\n\nDùng \`!untrack <team_id>\` để xóa.`);
+      return;
+    }
+
+    // Dashboard command - Show tracked teams with fixtures
+    if (command === 'dashboard' || command === 'tracklist') {
+      message.reply('⏳ Đang tải dashboard...');
+      
+      const dashboardContent = await createTrackedTeamsDashboard();
+      message.reply(dashboardContent);
       return;
     }
 
