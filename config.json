@@ -67,7 +67,7 @@
     },
     {
       "name": "Aston Villa",
-      "id": 66,
+      "id": 74,
       "enabled": false
     },
     {
@@ -198,6 +198,9 @@
       "country": "Brazil",
       "enabled": false
     }
+  ],
+  "trackedTeams": [
+    61
   ],
   "allowedUsers": []
 }
