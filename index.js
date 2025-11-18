@@ -12,33 +12,6 @@ const PREFIX = '!';
 let AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
 
 const CONFIG_FILE = path.join(__dirname, 'config.json');
-const PID_FILE = path.join(__dirname, '.bot.pid');
-
-// Pidfile guard - prevent multiple bot instances
-function checkPidFile() {
-  if (fs.existsSync(PID_FILE)) {
-    try {
-      const oldPid = parseInt(fs.readFileSync(PID_FILE, 'utf8'));
-      const isProcessRunning = process.kill(oldPid, 0);
-      if (isProcessRunning) {
-        console.error(`❌ Bot đang chạy với PID ${oldPid}. Không thể khởi động lại!`);
-        process.exit(1);
-      } else {
-        // Process không còn chạy, xóa pidfile cũ
-        fs.unlinkSync(PID_FILE);
-        console.log('🗑️ Pidfile cũ đã được xóa');
-      }
-    } catch (e) {
-      // Xóa pidfile nếu có error
-      try {
-        fs.unlinkSync(PID_FILE);
-      } catch (e2) {}
-    }
-  }
-  // Ghi PID hiện tại
-  fs.writeFileSync(PID_FILE, process.pid.toString());
-  console.log(`📌 PID ${process.pid} được ghi vào pidfile`);
-}
 
 // Football API functions
 const FOOTBALL_API_URL = process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4';
@@ -334,8 +307,6 @@ async function createTrackedTeamsDashboard(userId) {
   return { embeds };
 }
 
-
-checkPidFile();
 
 const client = new Client({
   intents: [
@@ -1443,10 +1414,6 @@ client.on('messageCreate', async (message) => {
 process.on('SIGINT', () => {
   console.log('\n⏹️ Bot đang tắt...');
   saveConfig();
-  if (fs.existsSync(PID_FILE)) {
-    fs.unlinkSync(PID_FILE);
-    console.log('🗑️ Pidfile đã bị xóa');
-  }
   process.exit(0);
 });
 
