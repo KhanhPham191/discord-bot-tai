@@ -746,14 +746,6 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}hello\` - bot chào bạn`,
           `\`${PREFIX}echo <nội dung>\` - bot lặp lại câu bạn nói`,
           '',
-          'Admin:',
-          `\`${PREFIX}adduser <@user>\` - thêm user vào danh sách`,
-          `\`${PREFIX}removeuser <@user>\` - xóa user khỏi danh sách`,
-          `\`${PREFIX}listusers\` - xem danh sách user`,
-          `\`${PREFIX}addreplychannel <channel_id>\` - thêm channel vào auto-reply`,
-          `\`${PREFIX}removereplychannel <channel_id>\` - xóa channel khỏi auto-reply`,
-          `\`${PREFIX}listreplychannels\` - xem danh sách auto-reply channels`,
-          '',
           '⚽ Livescore:',
           `\`${PREFIX}live [league_id]\` - xem trận đang diễn ra`,
           `\`${PREFIX}standings [league_code]\` - bảng xếp hạng`,
@@ -802,154 +794,44 @@ client.on('messageCreate', async (message) => {
       return;
     }
 
+    // ⛔ DISABLED: adduser command
     if (command === 'adduser') {
-      if (!isAdmin) {
-        message.reply('Không có quyền!');
-        replied = true;
-        return;
-      }
-      const userInput = args[0];
-      if (!userInput) {
-        message.reply(`Cách dùng: \`${PREFIX}adduser <@user>\``);
-        replied = true;
-        return;
-      }
-      
-      let userId = userInput;
-      if (message.mentions.users.size > 0) {
-        userId = message.mentions.users.first().id;
-      } else if (userInput.startsWith('<@') && userInput.endsWith('>')) {
-        userId = userInput.replace(/[<@!>]/g, '');
-      } else if (isNaN(userInput)) {
-        const member = message.guild.members.cache.find(m => 
-          m.user.username === userInput || m.displayName === userInput
-        );
-        if (member) {
-          userId = member.id;
-        } else {
-          message.reply(`Không tìm thấy user "${userInput}"`);
-          replied = true;
-          return;
-        }
-      }
-      
-      if (config.allowedUsers.includes(userId)) {
-        message.reply(`User này đã được add rồi!`);
-        replied = true;
-        return;
-      }
-      config.allowedUsers.push(userId);
-      saveConfig();
-      message.reply(`Thêm <@${userId}> vào danh sách thành công!`);
+      message.reply('❌ Admin commands đã được vô hiệu hóa!');
       replied = true;
       return;
     }
 
+    // ⛔ DISABLED: removeuser command
     if (command === 'removeuser') {
-      if (!isAdmin) {
-        message.reply('Không có quyền!');
-        replied = true;
-        return;
-      }
-      const userId = args[0];
-      if (!userId) {
-        message.reply(`Cách dùng: \`${PREFIX}removeuser <@user>\``);
-        replied = true;
-        return;
-      }
-      if (!config.allowedUsers.includes(userId)) {
-        message.reply(`User này không có trong danh sách!`);
-        replied = true;
-        return;
-      }
-      config.allowedUsers = config.allowedUsers.filter(id => id !== userId);
-      saveConfig();
-      message.reply(`Xóa user ${userId} thành công!`);
+      message.reply('❌ Admin commands đã được vô hiệu hóa!');
       replied = true;
       return;
     }
 
+    // ⛔ DISABLED: listusers command
     if (command === 'listusers') {
-      if (!isAdmin) {
-        message.reply('Không có quyền!');
-        replied = true;
-        return;
-      }
-      if (config.allowedUsers.length === 0) {
-        message.reply('Chưa có user nào!');
-        replied = true;
-        return;
-      }
-      message.reply(`Danh sách user: ${config.allowedUsers.join(', ')}`);
+      message.reply('❌ Admin commands đã được vô hiệu hóa!');
       replied = true;
       return;
     }
 
-    // Add reply channel command
+    // ⛔ DISABLED: addreplychannel command
     if (command === 'addreplychannel') {
-      if (!isAdmin) {
-        message.reply('❌ Không có quyền!');
-        replied = true;
-        return;
-      }
-      const channelId = args[0];
-      if (!channelId) {
-        message.reply(`❌ Cách dùng: \`${PREFIX}addreplychannel <channel_id>\` hoặc reply message này ở channel cần add`);
-        replied = true;
-        return;
-      }
-      
-      if (AUTO_REPLY_CHANNELS.includes(channelId)) {
-        message.reply(`⚠️ Channel này đã được add rồi!`);
-        replied = true;
-        return;
-      }
-      
-      AUTO_REPLY_CHANNELS.push(channelId);
-      message.reply(`✅ Đã add channel ${channelId} vào danh sách auto-reply!`);
+      message.reply('❌ Admin commands đã được vô hiệu hóa!');
       replied = true;
       return;
     }
 
-    // Remove reply channel command
+    // ⛔ DISABLED: removereplychannel command
     if (command === 'removereplychannel') {
-      if (!isAdmin) {
-        message.reply('❌ Không có quyền!');
-        replied = true;
-        return;
-      }
-      const channelId = args[0];
-      if (!channelId) {
-        message.reply(`❌ Cách dùng: \`${PREFIX}removereplychannel <channel_id>\``);
-        replied = true;
-        return;
-      }
-      
-      if (!AUTO_REPLY_CHANNELS.includes(channelId)) {
-        message.reply(`⚠️ Channel này không được add!`);
-        replied = true;
-        return;
-      }
-      
-      AUTO_REPLY_CHANNELS = AUTO_REPLY_CHANNELS.filter(id => id !== channelId);
-      message.reply(`✅ Đã xóa channel ${channelId} khỏi danh sách auto-reply!`);
+      message.reply('❌ Admin commands đã được vô hiệu hóa!');
       replied = true;
       return;
     }
 
-    // List reply channels command
+    // ⛔ DISABLED: listreplychannels command
     if (command === 'listreplychannels') {
-      if (!isAdmin) {
-        message.reply('❌ Không có quyền!');
-        replied = true;
-        return;
-      }
-      if (AUTO_REPLY_CHANNELS.length === 0) {
-        message.reply('📭 Chưa có channel nào được add!');
-        replied = true;
-        return;
-      }
-      message.reply(`📋 Danh sách auto-reply channels:\n${AUTO_REPLY_CHANNELS.map(id => `• <#${id}> (\`${id}\`)`).join('\n')}`);
+      message.reply('❌ Admin commands đã được vô hiệu hóa!');
       replied = true;
       return;
     }
