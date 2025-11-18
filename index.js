@@ -19,6 +19,10 @@ const fixturesCooldown = new Map();   // Per-user cooldown for !fixtures selecto
 const DASHBOARD_COOLDOWN_MS = 60 * 1000;  // 60 seconds
 const FIXTURES_COOLDOWN_MS = 30 * 1000;   // 30 seconds (fixtures is heavier)
 
+// Cache for API responses (reduce API calls)
+const fixturesCache = new Map();  // Cache: key = teamId, value = {data, timestamp}
+const FIXTURES_CACHE_TTL = 10 * 60 * 1000;  // 10 minutes cache
+
 // Football API functions
 const FOOTBALL_API_URL = process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4';
 
@@ -86,6 +90,16 @@ async function getStandings(competitionId) {
 }
 
 async function getFixtures(teamId, next = 10) {
+  // Check cache first
+  const now = Date.now();
+  if (fixturesCache.has(teamId)) {
+    const cached = fixturesCache.get(teamId);
+    if (now - cached.timestamp < FIXTURES_CACHE_TTL) {
+      console.log(`✅ Using cached fixtures for team ${teamId}`);
+      return cached.data.slice(0, next);
+    }
+  }
+  
   try {
     // Try to get from team endpoint first
     let response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
@@ -133,6 +147,9 @@ async function getFixtures(teamId, next = 10) {
     const sorted = matches.sort((a, b) => 
       new Date(a.utcDate) - new Date(b.utcDate)
     );
+    
+    // Cache the result
+    fixturesCache.set(teamId, { data: sorted, timestamp: now });
     
     return sorted.slice(0, next);
   } catch (e) {
@@ -916,6 +933,13 @@ client.on('messageCreate', async (message) => {
         const currentUserTeams = getUserTrackedTeams(interaction.user.id);
         if (currentUserTeams.includes(teamId)) {
           await interaction.reply({ content: `⚠️ **${team.name}** đã được bạn theo dõi rồi!`, flags: 64 });
+          return;
+        }
+        
+        // Check limit (max 3 teams per user)
+        const MAX_TRACKED_TEAMS = 3;
+        if (currentUserTeams.length >= MAX_TRACKED_TEAMS) {
+          await interaction.reply({ content: `⚠️ Bạn chỉ có thể theo dõi tối đa ${MAX_TRACKED_TEAMS} đội bóng. Vui lòng bỏ theo dõi một đội khác trước!`, flags: 64 });
           return;
         }
         
