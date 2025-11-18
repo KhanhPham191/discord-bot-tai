@@ -918,7 +918,7 @@ client.on('messageCreate', async (message) => {
         addUserTrackedTeam(interaction.user.id, teamId);
         saveConfig(config);
         
-        // Send public notification only (no private confirmation)
+        // Send public notification with auto-delete
         try {
           const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đang theo dõi **${team.name}**`);
           setTimeout(() => {
@@ -927,6 +927,9 @@ client.on('messageCreate', async (message) => {
         } catch (e) {
           console.error('Error sending public track message:', e.message);
         }
+        
+        // Reply to interaction (required by Discord, flags: 64 makes it ephemeral/hidden)
+        await interaction.reply({ content: '✅', flags: 64 }).catch(() => {});
       });
       
       collector.on('end', () => {
