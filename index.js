@@ -449,11 +449,10 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}listreplychannels\` - xem danh sách auto-reply channels`,
           '',
           '⚽ Livescore:',
-          `\`${PREFIX}live [league_id]\` - xem trận đang diễn ra (default: 39=Premier)`,
-          `\`${PREFIX}livescore <team>\` - xem kết quả live`,
-          `\`${PREFIX}standings [league_name/id]\` - bảng xếp hạng (không argument = danh sách giải)`,
-          `\`${PREFIX}fixtures <team>\` - lịch thi đấu sắp tới`,
-          `\`${PREFIX}findteam <name>\` - tìm Team ID để thêm vào config`,
+          `\`${PREFIX}live [league_id]\` - xem trận đang diễn ra`,
+          `\`${PREFIX}standings [league_code]\` - bảng xếp hạng`,
+          `\`${PREFIX}fixtures <team_id>\` - lịch thi đấu sắp tới`,
+          `\`${PREFIX}findteam <name>\` - tìm Team ID`,
           '',
           '📍 Team Tracking:',
           `\`${PREFIX}teams\` - hiển thị danh sách team có sẵn`,
@@ -914,13 +913,19 @@ client.on('messageCreate', async (message) => {
 
     if (command === 'fixtures') {
       if (args.length === 0) {
-        message.reply(`Cách dùng: \`${PREFIX}fixtures <team_id>\``);
+        message.reply(`Cách dùng: \`${PREFIX}fixtures <team_id>\` (e.g., \`${PREFIX}fixtures 61\` cho Chelsea)`);
+        replied = true;
+        return;
+      }
+      
+      const teamId = parseInt(args[0]);
+      if (isNaN(teamId)) {
+        message.reply(`❌ Team ID phải là số! (e.g., \`${PREFIX}fixtures 61\`)`);
         replied = true;
         return;
       }
       
       message.reply('⏳ Đang lấy lịch thi đấu...');
-      const teamId = args[0];
       const fixtures = await getFixtures(teamId, 10);
       
       if (fixtures.length === 0) {
