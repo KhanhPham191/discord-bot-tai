@@ -918,7 +918,17 @@ client.on('messageCreate', async (message) => {
         addUserTrackedTeam(interaction.user.id, teamId);
         saveConfig(config);
         
-        // Send private confirmation only (no public notification to avoid duplicates)
+        // Send public notification only (no private confirmation)
+        try {
+          const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đang theo dõi **${team.name}**`);
+          setTimeout(() => {
+            publicMsg.delete().catch(() => {});
+          }, 5000);
+        } catch (e) {
+          console.error('Error sending public track message:', e.message);
+        }
+        
+        // Send ephemeral confirmation (only user sees, disappears)
         await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi của bạn!`, flags: 64 });
       });
       
