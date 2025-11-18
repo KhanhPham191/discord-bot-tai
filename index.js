@@ -1093,10 +1093,31 @@ client.on('messageCreate', async (message) => {
 
     // Dashboard command - Show tracked teams with fixtures
     if (command === 'dashboard' || command === 'tracklist') {
+      const userId = message.author.id;
+      const now = Date.now();
+      
+      // Check cooldown - 60 seconds per user
+      if (dashboardCooldown.has(userId)) {
+        const cooldownExpires = dashboardCooldown.get(userId);
+        if (now < cooldownExpires) {
+          const secondsLeft = Math.ceil((cooldownExpires - now) / 1000);
+          message.reply(`⏳ Dashboard cooldown. Vui lòng chờ ${secondsLeft}s trước khi sử dụng lại.`);
+          return;
+        }
+      }
+      
+      // Set cooldown for this user (60 seconds)
+      dashboardCooldown.set(userId, now + DASHBOARD_COOLDOWN_MS);
+      
       message.reply('⏳ Đang tải dashboard...');
       
-      const dashboardContent = await createTrackedTeamsDashboard(message.author.id);
-      message.reply(dashboardContent);
+      try {
+        const dashboardContent = await createTrackedTeamsDashboard(userId);
+        message.reply(dashboardContent);
+      } catch (e) {
+        console.error('❌ Lỗi tải dashboard:', e.message);
+        message.reply('❌ Lỗi khi tải dashboard. Vui lòng thử lại.');
+      }
       return;
     }
 
