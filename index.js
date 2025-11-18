@@ -161,9 +161,17 @@ async function getFixturesWithCL(teamId, next = 10) {
         m.homeTeam.id === teamId || m.awayTeam.id === teamId
       ).map(m => ({ ...m, inChampionsLeague: true }));
       
-      matches.push(...clMatches);
+      if (clMatches.length === 0) {
+        console.log(`ℹ️ Team ${teamId} not in Champions League or no scheduled matches`);
+      } else {
+        matches.push(...clMatches);
+      }
     } catch (e) {
-      console.log('ℹ️ Champions League data not available or team not in CL');
+      if (e.response?.status === 429) {
+        console.warn(`⚠️ CL API rate limit hit: ${e.response.data.message}`);
+      } else {
+        console.log(`ℹ️ CL data unavailable: ${e.response?.data?.message || e.message}`);
+      }
     }
     
     // Sort by date and return top next
