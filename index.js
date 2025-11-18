@@ -13,6 +13,12 @@ let AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
 
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 
+// Cooldown tracking for commands (per-user rate limiting)
+const dashboardCooldown = new Map();  // Per-user cooldown for !dashboard
+const fixturesCooldown = new Map();   // Per-user cooldown for !fixtures selector
+const DASHBOARD_COOLDOWN_MS = 60 * 1000;  // 60 seconds
+const FIXTURES_COOLDOWN_MS = 30 * 1000;   // 30 seconds (fixtures is heavier)
+
 // Football API functions
 const FOOTBALL_API_URL = process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4';
 
@@ -1269,6 +1275,22 @@ client.on('messageCreate', async (message) => {
 
     if (command === 'fixtures') {
       const userId = message.author.id;
+      const now = Date.now();
+      
+      // Check cooldown - 30 seconds per user
+      if (fixturesCooldown.has(userId)) {
+        const cooldownExpires = fixturesCooldown.get(userId);
+        if (now < cooldownExpires) {
+          const secondsLeft = Math.ceil((cooldownExpires - now) / 1000);
+          message.reply(`⏳ Fixtures cooldown. Vui lòng chờ ${secondsLeft}s trước khi sử dụng lại.`);
+          replied = true;
+          return;
+        }
+      }
+      
+      // Set cooldown for this user (30 seconds)
+      fixturesCooldown.set(userId, now + FIXTURES_COOLDOWN_MS);
+      
       const userTrackedTeams = getUserTrackedTeams(userId);
       
       if (userTrackedTeams.length === 0) {
