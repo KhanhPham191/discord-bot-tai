@@ -1554,13 +1554,16 @@ client.on('messageCreate', async (message) => {
 
     // Search phim command
     if (command === 'search') {
+      console.log('🔍 Search command triggered with args:', args);
+      
       if (!args.length) {
-        message.reply('❌ Vui lòng cung cấp tên phim! Ví dụ: `!search Regeneration`');
+        message.reply('❌ Vui lòng cung cấp tên phim! Ví dụ: `!search avatar`');
         replied = true;
         return;
       }
 
       const keyword = args.join(' ').replace(/^"|"$/g, '');
+      console.log('📝 Searching for:', keyword);
       
       if (keyword.length < 2) {
         message.reply('❌ Tên phim phải có ít nhất 2 ký tự!');
@@ -1568,10 +1571,9 @@ client.on('messageCreate', async (message) => {
         return;
       }
 
-      await message.reply('🔍 Đang tìm phim...');
-
       try {
         const searchResults = await searchMovies(keyword);
+        console.log(`✅ Found ${searchResults.length} results`);
         
         if (!searchResults || searchResults.length === 0) {
           await message.reply(`❌ Không tìm thấy phim nào với từ khóa: **${keyword}**`);
@@ -1610,6 +1612,7 @@ client.on('messageCreate', async (message) => {
         embed.setDescription(description);
 
         await message.reply({ embeds: [embed] });
+        console.log('✅ Search results sent successfully');
         
       } catch (error) {
         console.error('❌ Lỗi tìm kiếm phim:', error.message);
