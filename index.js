@@ -934,30 +934,58 @@ client.on('messageCreate', async (message) => {
         return;
       }
       
-      let fixturesText = `📅 **LỊCH THI ĐẤU SẮP TỚI**\n`;
-      fixturesText += `═══════════════════════════════════\n\n`;
+      // Get team name
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      const teamName = team?.name || `Team ${teamId}`;
       
-      fixtures.forEach((f, idx) => {
-        const date = new Date(f.utcDate).toLocaleString('vi-VN', {
-          year: 'numeric',
+      // Create main embed with professional styling (Tailwind-inspired)
+      const embeds = [];
+      const headerEmbed = new EmbedBuilder()
+        .setColor('#1e40af') // Tailwind blue-800
+        .setTitle(`⚽ ${teamName}`)
+        .setDescription(`**Lịch Thi Đấu Sắp Tới**\n${fixtures.length} trận`)
+        .setTimestamp()
+        .setFooter({ text: 'Football Bot | Updated' });
+      
+      embeds.push(headerEmbed);
+      
+      // Create individual embed for each fixture block
+      let currentText = '';
+      let matchCount = 0;
+      
+      fixtures.slice(0, 10).forEach((f, idx) => {
+        const date = new Date(f.utcDate);
+        const dateStr = date.toLocaleString('vi-VN', {
+          weekday: 'short',
           month: '2-digit',
           day: '2-digit',
           hour: '2-digit',
           minute: '2-digit'
         });
-        const home = f.homeTeam.name;
-        const away = f.awayTeam.name;
+        const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
+        const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
         const competition = f.competition?.name || 'Unknown';
-        const status = f.status;
+        const status = f.status === 'LIVE' ? '🔴 LIVE' : '⏱️ ' + (f.status || 'SCH');
         
-        fixturesText += `${idx + 1}. **${home}** vs **${away}**\n`;
-        fixturesText += `   📅 ${date}\n`;
-        fixturesText += `   🏆 ${competition} | Status: ${status}\n`;
-        fixturesText += `\n`;
+        const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • 🏆 ${competition}\n`;
+        
+        currentText += matchStr;
+        matchCount++;
+        
+        // Create new embed every 5 matches to avoid character limit
+        if (matchCount === 5 || idx === fixtures.length - 1) {
+          const fixturesEmbed = new EmbedBuilder()
+            .setColor('#059669') // Tailwind green-600
+            .setDescription(currentText.trim())
+            .setFooter({ text: `Trận ${matchCount === 5 ? (idx - 4) + '-' + (idx + 1) : (idx - matchCount + 2) + '-' + (idx + 1)} của ${fixtures.length}` });
+          
+          embeds.push(fixturesEmbed);
+          currentText = '';
+          matchCount = 0;
+        }
       });
       
-      fixturesText += `═══════════════════════════════════`;
-      message.reply(fixturesText);
+      message.reply({ embeds });
       replied = true;
       return;
     }
