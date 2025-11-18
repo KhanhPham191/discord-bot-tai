@@ -1533,8 +1533,9 @@ client.on('messageCreate', async (message) => {
     if (command === 'newmovies' || command === 'newphim') {
       console.log('🎬 New movies command triggered');
       
-      // If user just types !newmovies or !newphim without args, show help
-      if (args.length === 0 || (args[0] && args[0].toLowerCase() === 'help')) {
+      // Check if asking for help first
+      const firstArg = args.length > 0 ? args[0].toLowerCase() : '';
+      if (firstArg === 'help') {
         const helpText = `
 📌 **Hướng Dẫn Lệnh Phim Mới**
 
@@ -1706,7 +1707,11 @@ client.on('messageCreate', async (message) => {
     if (command === 'search') {
       console.log('🔍 Search command triggered with args:', args);
       
-      if (!args.length || (args[0] && args[0].toLowerCase() === 'help')) {
+      // Combine args into keyword first
+      const keyword = args.join(' ').trim();
+      
+      // Check if asking for help
+      if (!keyword || keyword.toLowerCase() === 'help') {
         const helpText = `
 📌 **Hướng Dẫn Lệnh Tìm Kiếm Phim**
 
@@ -1732,8 +1737,7 @@ client.on('messageCreate', async (message) => {
         replied = true;
         return;
       }
-
-      const keyword = args.join(' ').replace(/^"|"$/g, '');
+      
       console.log('📝 Searching for:', keyword);
       
       if (keyword.length < 2) {
