@@ -241,14 +241,9 @@ async function createTrackedTeamsDashboard() {
             minute: '2-digit'
           });
           const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
-          const opponentId = f.homeTeam.id === teamId ? f.awayTeam.id : f.homeTeam.id;
           const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
           
-          // Get opponent flag
-          const opponentTeam = config.livescoreTeams.find(t => t.id === opponentId);
-          const opponentFlag = opponentTeam?.flag || '🏴';
-          
-          fixturesText += `${idx + 1}. ${isHome} ${opponentFlag} vs **${opponent}**\n   📅 ${date}\n`;
+          fixturesText += `${idx + 1}. ${isHome} vs **${opponent}**\n   📅 ${date}\n`;
         });
       }
 
@@ -969,15 +964,10 @@ client.on('messageCreate', async (message) => {
           minute: '2-digit'
         });
         const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
-        const opponentId = f.homeTeam.id === teamId ? f.awayTeam.id : f.homeTeam.id;
         const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
         const competition = f.competition?.name || 'Unknown';
         
-        // Get opponent flag
-        const opponentTeam = config.livescoreTeams.find(t => t.id === opponentId);
-        const opponentFlag = opponentTeam?.flag || '🏴';
-        
-        const matchStr = `\`${idx + 1}.\` ${isHome} ${opponentFlag} **${opponent}**\n└─ 📅 ${dateStr} • 🏆 ${competition}\n`;
+        const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • 🏆 ${competition}\n`;
         
         currentText += matchStr;
         matchCount++;
