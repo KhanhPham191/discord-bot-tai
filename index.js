@@ -293,9 +293,264 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
+
 // Auto-update livescore function - DISABLED to prevent API quota issues
 // Users can manually use !live, !fixtures, !livescore commands instead
 // Check for upcoming matches 1 day before
+
+// Get match lineup (3 hours before match)
+async function getMatchLineup(matchId) {
+  try {
+    const response = await axios.get(`${FOOTBALL_API_URL}/matches/${matchId}`, {
+      headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
+    });
+    
+    const match = response.data.match;
+    return {
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      utcDate: match.utcDate,
+      competition: match.competition,
+      status: match.status
+    };
+  } catch (e) {
+    console.error(`❌ Lỗi lấy line-up (match ${matchId}):`, e.response?.data?.message || e.message);
+    return null;
+  }
+}
+
+// Track live match updates (every 5 minutes during match)
+const liveMatchTracking = new Map(); // matchId -> { lastUpdate, lastGoals, lastBookings }
+
+async function checkLiveMatches(client) {
+  try {
+    if (!config.trackedTeams || config.trackedTeams.length === 0) return;
+    
+    const now = new Date();
+    
+    for (const teamId of config.trackedTeams) {
+      try {
+        const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
+          headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+          params: { status: 'IN_PLAY' }
+        });
+        
+        const matches = response.data.matches || [];
+        
+        for (const match of matches) {
+          const matchId = match.id;
+          
+          // Get full match details for goals and bookings
+          const fullMatch = await axios.get(`${FOOTBALL_API_URL}/matches/${matchId}`, {
+            headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
+          }).then(r => r.data.match).catch(e => null);
+          
+          if (!fullMatch) continue;
+          
+          const tracked = liveMatchTracking.get(matchId) || {
+            lastUpdate: now,
+            lastGoals: [],
+            lastBookings: [],
+            lastSubstitutions: []
+          };
+          
+          // Check for new goals
+          const newGoals = (fullMatch.goals || []).filter(g => 
+            !tracked.lastGoals.some(lg => lg.minute === g.minute && lg.scorer.id === g.scorer.id)
+          );
+          
+          // Check for new bookings
+          const newBookings = (fullMatch.bookings || []).filter(b =>
+            !tracked.lastBookings.some(lb => lb.minute === b.minute && lb.player.id === b.player.id)
+          );
+          
+          // Check for new substitutions
+          const newSubstitutions = (fullMatch.substitutions || []).filter(s =>
+            !tracked.lastSubstitutions.some(ls => ls.minute === s.minute && ls.playerOut.id === s.playerOut.id)
+          );
+          
+          // Send updates if there are new events
+          if (newGoals.length > 0 || newBookings.length > 0 || newSubstitutions.length > 0) {
+            const team = config.livescoreTeams.find(t => t.id === teamId);
+            const teamName = team?.name || `Team ${teamId}`;
+            
+            // Find notification channel
+            const guilds = client.guilds.cache;
+            for (const guild of guilds.values()) {
+              const textChannels = guild.channels.cache.filter(ch => ch.isTextBased());
+              const notifyChannel = textChannels.first();
+              
+              if (notifyChannel) {
+                let updateText = `🔴 **LIVE UPDATE: ${teamName}** (${fullMatch.homeTeam.name} ${fullMatch.score?.fullTime?.home || 0} - ${fullMatch.score?.fullTime?.away || 0} ${fullMatch.awayTeam.name})\n\n`;
+                
+                if (newGoals.length > 0) {
+                  updateText += `⚽ **BÀNG THẮNG!**\n`;
+                  newGoals.forEach(goal => {
+                    updateText += `   ${goal.minute}' - **${goal.scorer.name}** (${goal.team.name})`;
+                    if (goal.assist) updateText += ` [Hỗ trợ: ${goal.assist.name}]`;
+                    updateText += `\n`;
+                  });
+                  updateText += `\n`;
+                }
+                
+                if (newBookings.length > 0) {
+                  updateText += `🟨 **THẺ PHẠT!**\n`;
+                  newBookings.forEach(booking => {
+                    const cardType = booking.card === 'YELLOW_CARD' ? '🟨 Thẻ vàng' : '🟥 Thẻ đỏ';
+                    updateText += `   ${booking.minute}' - ${cardType} - ${booking.player.name} (${booking.team.name})\n`;
+                  });
+                  updateText += `\n`;
+                }
+                
+                if (newSubstitutions.length > 0) {
+                  updateText += `🔄 **THAY NGƯỜI!**\n`;
+                  newSubstitutions.forEach(sub => {
+                    updateText += `   ${sub.minute}' - ${sub.playerOut.name} ❌ → ✅ ${sub.playerIn.name} (${sub.team.name})\n`;
+                  });
+                  updateText += `\n`;
+                }
+                
+                try {
+                  await notifyChannel.send(updateText);
+                  console.log(`✅ Sent live update for ${teamName} match #${matchId}`);
+                } catch (err) {
+                  console.error(`❌ Failed to send live update: ${err.message}`);
+                }
+                
+                break; // Only send to first guild
+              }
+            }
+            
+            // Update tracking data
+            tracked.lastGoals = [...tracked.lastGoals, ...newGoals];
+            tracked.lastBookings = [...tracked.lastBookings, ...newBookings];
+            tracked.lastSubstitutions = [...tracked.lastSubstitutions, ...newSubstitutions];
+            tracked.lastUpdate = now;
+          }
+          
+          liveMatchTracking.set(matchId, tracked);
+        }
+      } catch (err) {
+        console.error(`❌ Error checking live matches for team ${teamId}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error in checkLiveMatches:', err.message);
+  }
+}
+
+// Check for upcoming matches 3 hours before (send lineup)
+async function checkUpcomingLineups(client) {
+  try {
+    if (!config.trackedTeams || config.trackedTeams.length === 0) return;
+    
+    const now = new Date();
+    const in3Hours = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    const in2Hours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    
+    console.log(`📋 Checking for upcoming lineups... (${config.trackedTeams.length} tracked teams)`);
+    
+    for (const teamId of config.trackedTeams) {
+      try {
+        const fixtures = await getFixtures(teamId, 20);
+        
+        // Find matches scheduled for next 3 hours
+        const upcomingMatches = fixtures.filter(match => {
+          const matchDate = new Date(match.utcDate);
+          return matchDate >= in2Hours && matchDate <= in3Hours;
+        });
+        
+        if (upcomingMatches.length > 0) {
+          const team = config.livescoreTeams.find(t => t.id === teamId);
+          const teamName = team?.name || `Team ${teamId}`;
+          
+          // Get full match data with lineup
+          for (const match of upcomingMatches) {
+            try {
+              const fullMatch = await getMatchLineup(match.id);
+              if (!fullMatch) continue;
+              
+              // Find notification channel
+              const guilds = client.guilds.cache;
+              for (const guild of guilds.values()) {
+                const textChannels = guild.channels.cache.filter(ch => ch.isTextBased());
+                const notifyChannel = textChannels.first();
+                
+                if (notifyChannel) {
+                  const matchDate = new Date(fullMatch.utcDate).toLocaleString('vi-VN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                  
+                  const isHome = fullMatch.homeTeam.id === teamId;
+                  const opponent = isHome ? fullMatch.awayTeam : fullMatch.homeTeam;
+                  
+                  let lineupText = `📋 **LINE-UP: ${teamName} vs ${opponent.name}**\n`;
+                  lineupText += `🕐 ${matchDate} • 🏆 ${fullMatch.competition?.name || 'Unknown'}\n`;
+                  lineupText += `═════════════════════════════════════\n\n`;
+                  
+                  // Home team lineup
+                  lineupText += `🏠 **${fullMatch.homeTeam.name}**\n`;
+                  lineupText += `👨‍💼 Coach: ${fullMatch.homeTeam.coach?.name || 'Unknown'}\n`;
+                  lineupText += `**Line-up:**\n`;
+                  
+                  (fullMatch.homeTeam.lineup || []).slice(0, 11).forEach((player, idx) => {
+                    lineupText += `  ${idx + 1}. ${player.name} (${player.position})\n`;
+                  });
+                  
+                  lineupText += `\n**Bench:**\n`;
+                  (fullMatch.homeTeam.bench || []).slice(0, 7).forEach(player => {
+                    lineupText += `  • ${player.name} (${player.position})\n`;
+                  });
+                  
+                  lineupText += `\n\n`;
+                  
+                  // Away team lineup
+                  lineupText += `✈️ **${fullMatch.awayTeam.name}**\n`;
+                  lineupText += `👨‍💼 Coach: ${fullMatch.awayTeam.coach?.name || 'Unknown'}\n`;
+                  lineupText += `**Line-up:**\n`;
+                  
+                  (fullMatch.awayTeam.lineup || []).slice(0, 11).forEach((player, idx) => {
+                    lineupText += `  ${idx + 1}. ${player.name} (${player.position})\n`;
+                  });
+                  
+                  lineupText += `\n**Bench:**\n`;
+                  (fullMatch.awayTeam.bench || []).slice(0, 7).forEach(player => {
+                    lineupText += `  • ${player.name} (${player.position})\n`;
+                  });
+                  
+                  try {
+                    // Split into chunks if too long (Discord 2000 char limit)
+                    const chunks = lineupText.match(/[\s\S]{1,1900}/g) || [lineupText];
+                    for (const chunk of chunks) {
+                      await notifyChannel.send(chunk);
+                    }
+                    console.log(`✅ Sent lineup for ${teamName} vs ${opponent.name}`);
+                  } catch (err) {
+                    console.error(`❌ Failed to send lineup: ${err.message}`);
+                  }
+                  
+                  break; // Only send to first guild
+                }
+              }
+            } catch (err) {
+              console.error(`❌ Error getting lineup for match ${match.id}: ${err.message}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`❌ Error checking fixtures for team ${teamId}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error in checkUpcomingLineups:', err.message);
+  }
+}
+
 async function checkOneDayNotifications(client) {
   try {
     // Only notify if there are tracked teams
@@ -376,8 +631,21 @@ async function startLivescoreUpdate(client) {
     checkOneDayNotifications(client);
   }, 60 * 60 * 1000); // 1 hour
   
+  // Check for upcoming lineups (3 hours before match) every 30 minutes
+  setInterval(() => {
+    checkUpcomingLineups(client);
+  }, 30 * 60 * 1000); // 30 minutes
+  
+  // Check for live match updates every 5 minutes
+  setInterval(() => {
+    checkLiveMatches(client);
+  }, 5 * 60 * 1000); // 5 minutes
+  
   console.log('🔔 1-day notification checker started (checks every hour)');
+  console.log('📋 Lineup checker started (checks every 30 minutes)');
+  console.log('🔴 Live match tracker started (checks every 5 minutes)');
 }
+
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
