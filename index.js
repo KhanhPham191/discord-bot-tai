@@ -927,6 +927,13 @@ client.on('messageCreate', async (message) => {
           return;
         }
         
+        // Check limit (max 2 teams per user to reduce API calls)
+        const MAX_TRACKED_TEAMS = 2;
+        if (currentUserTeams.length >= MAX_TRACKED_TEAMS) {
+          await interaction.reply({ content: `⚠️ Bạn chỉ có thể theo dõi tối đa ${MAX_TRACKED_TEAMS} đội bóng. Vui lòng bỏ theo dõi một đội khác trước!`, flags: 64 });
+          return;
+        }
+        
         // Add to user's tracked teams
         addUserTrackedTeam(interaction.user.id, teamId);
         saveConfig(config);
