@@ -265,18 +265,9 @@ async function createTrackedTeamsDashboard(userId) {
     };
   }
 
-  const embeds = [];
+  // Return array of team pages instead of single message
+  const pages = [];
   
-  // Header embed
-  const headerEmbed = new EmbedBuilder()
-    .setColor('#3b82f6')
-    .setTitle('⚽ Dashboard Theo Dõi Đội Bóng')
-    .setDescription(`Đang theo dõi **${userTeams.length}** đội bóng`)
-    .setTimestamp();
-  
-  embeds.push(headerEmbed);
-
-  // Team info embeds
   for (const teamId of userTeams) {
     try {
       const team = config.livescoreTeams.find(t => t.id === teamId);
@@ -311,15 +302,16 @@ async function createTrackedTeamsDashboard(userId) {
           { name: '📋 Trận sắp tới', value: fixturesText || 'N/A', inline: false },
           { name: '🔗 Team ID', value: teamId.toString(), inline: true }
         )
+        .setFooter({ text: `Trang ${pages.length + 1} / ${userTeams.length}` })
         .setTimestamp();
 
-      embeds.push(teamEmbed);
+      pages.push({ embeds: [teamEmbed], teamId });
     } catch (err) {
       console.error(`Error fetching fixtures for team ${teamId}:`, err.message);
     }
   }
 
-  return { embeds };
+  return pages;
 }
 
 
@@ -1159,8 +1151,79 @@ client.on('messageCreate', async (message) => {
       message.reply('⏳ Đang tải dashboard...');
       
       try {
-        const dashboardContent = await createTrackedTeamsDashboard(userId);
-        message.reply(dashboardContent);
+        const pages = await createTrackedTeamsDashboard(userId);
+        
+        if (!pages || pages.length === 0) {
+          message.reply('❌ Không có team nào được theo dõi.');
+          return;
+        }
+        
+        // If only 1 page, just send it without buttons
+        if (pages.length === 1) {
+          message.reply(pages[0]);
+          return;
+        }
+        
+        // Multi-page dashboard with navigation buttons
+        let currentPage = 0;
+        
+        const createButtons = () => {
+          return new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`dashboard_prev_${userId}`)
+                .setLabel('⬅️ Trước')
+                .setStyle(2) // Secondary style
+                .setDisabled(currentPage === 0),
+              new ButtonBuilder()
+                .setCustomId(`dashboard_next_${userId}`)
+                .setLabel('Sau ➡️')
+                .setStyle(2)
+                .setDisabled(currentPage === pages.length - 1)
+            );
+        };
+        
+        const response = await message.reply({
+          ...pages[currentPage],
+          components: [createButtons()]
+        });
+        
+        // Create collector for button interactions
+        const collector = response.createMessageComponentCollector({ 
+          filter: (interaction) => interaction.user.id === userId,
+          time: 5 * 60 * 1000 // 5 minutes timeout
+        });
+        
+        collector.on('collect', async (interaction) => {
+          if (interaction.customId === `dashboard_prev_${userId}`) {
+            currentPage--;
+          } else if (interaction.customId === `dashboard_next_${userId}`) {
+            currentPage++;
+          }
+          
+          await interaction.update({
+            ...pages[currentPage],
+            components: [createButtons()]
+          }).catch(() => {});
+        });
+        
+        collector.on('end', async () => {
+          // Disable buttons when timeout
+          const disabledRow = new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`dashboard_prev_${userId}`)
+                .setLabel('⬅️ Trước')
+                .setStyle(2)
+                .setDisabled(true),
+              new ButtonBuilder()
+                .setCustomId(`dashboard_next_${userId}`)
+                .setLabel('Sau ➡️')
+                .setStyle(2)
+                .setDisabled(true)
+            );
+          await response.edit({ components: [disabledRow] }).catch(() => {});
+        });
       } catch (e) {
         console.error('❌ Lỗi tải dashboard:', e.message);
         message.reply('❌ Lỗi khi tải dashboard. Vui lòng thử lại.');
