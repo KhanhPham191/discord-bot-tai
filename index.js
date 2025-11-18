@@ -1596,7 +1596,7 @@ client.on('messageCreate', async (message) => {
         movies.forEach((movie, idx) => {
           const year = movie.year || 'N/A';
           const slug = movie.slug || '';
-          const link = slug ? `https://phim.nguonc.com/${slug}` : 'N/A';
+          const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
           const title = movie.name || movie.title || 'Unknown';
           
           // Truncate long titles
