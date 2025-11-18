@@ -235,6 +235,24 @@ function extractYearFromMovie(movie) {
   return 'N/A';
 }
 
+// Get newly updated movies
+async function getNewMovies(page = 1) {
+  try {
+    const response = await axios.get(`https://phim.nguonc.com/api/films/phim-moi-cap-nhat?page=${page}`);
+    
+    const items = response.data.items || [];
+    
+    // Extract year from description or created date
+    return items.map(item => ({
+      ...item,
+      year: extractYearFromMovie(item)
+    }));
+  } catch (error) {
+    console.error('❌ Lỗi API lấy phim mới:', error.response?.data?.message || error.message);
+    return [];
+  }
+}
+
 let config = {
   allowedUsers: [],
   aiEnabled: false,
@@ -806,7 +824,8 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}dashboard\` - xem dashboard với lịch thi đấu`,
           '',
           '🎬 Movie Search:',
-          `\`${PREFIX}search "tên phim"\` - tìm phim (hiển thị 10 kết quả)`
+          `\`${PREFIX}search <tên phim>\` - tìm phim (hiển thị 10 kết quả)`,
+          `\`${PREFIX}newphim [trang]\` - phim mới cập nhật (trang 1 nếu không chỉ định)`
         ].join('\n')
       );
       replied = true;
@@ -1547,6 +1566,77 @@ client.on('messageCreate', async (message) => {
       collector.on('end', () => {
         // Menu is already disabled above
       });
+      
+      replied = true;
+      return;
+    }
+
+    // New movies command
+    if (command === 'newphim') {
+      console.log('🎬 New movies command triggered');
+      
+      const page = args.length > 0 ? parseInt(args[0]) : 1;
+      
+      if (isNaN(page) || page < 1) {
+        message.reply('❌ Trang phải là số nguyên dương! Ví dụ: `!newphim 1`');
+        replied = true;
+        return;
+      }
+
+      try {
+        const newMovies = await getNewMovies(page);
+        console.log(`✅ Found ${newMovies.length} new movies`);
+        
+        if (!newMovies || newMovies.length === 0) {
+          await message.reply(`❌ Không tìm thấy phim mới trên trang **${page}**`);
+          replied = true;
+          return;
+        }
+
+        // Limit to 10 results
+        const movies = newMovies.slice(0, 10);
+        
+        const embed = new EmbedBuilder()
+          .setColor('#e50914') // Netflix red
+          .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${page}`)
+          .setDescription(`Hiển thị **${movies.length}** phim mới nhất`)
+          .setTimestamp()
+          .setFooter({ text: 'New Movies | phim.nguonc.com' });
+
+        // Build movie list
+        let description = '';
+        movies.forEach((movie, idx) => {
+          const year = movie.year || 'N/A';
+          const slug = movie.slug || '';
+          const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
+          const title = movie.name || movie.title || 'Unknown';
+          
+          // Truncate long titles
+          const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
+          
+          description += `\n**${idx + 1}. ${displayTitle}** (${year})\n`;
+          
+          if (link !== 'N/A') {
+            description += `└─ [Xem phim →](${link})\n`;
+          }
+        });
+
+        embed.setDescription(description);
+        
+        // Add pagination info
+        embed.addFields({
+          name: '📖 Phân Trang',
+          value: `Trang ${page} | Dùng: \`!newphim <trang_số>\` để xem trang khác`,
+          inline: false
+        });
+
+        await message.reply({ embeds: [embed] });
+        console.log('✅ New movies sent successfully');
+        
+      } catch (error) {
+        console.error('❌ Lỗi lấy phim mới:', error.message);
+        await message.reply('❌ Có lỗi xảy ra khi lấy phim mới. Vui lòng thử lại!');
+      }
       
       replied = true;
       return;
