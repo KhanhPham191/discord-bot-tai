@@ -892,6 +892,26 @@ client.on('messageCreate', async (message) => {
       // Set timeout for interaction (15 minutes)
       const collector = response.createMessageComponentCollector({ time: 15 * 60 * 1000 });
       
+      const updateMenu = async () => {
+        // Rebuild menu with latest tracked status
+        const freshUserTeams = getUserTrackedTeams(userId);
+        const updatedOptions = config.livescoreTeams.map(team => ({
+          label: team.name,
+          value: team.id.toString(),
+          description: `ID: ${team.id}${freshUserTeams.includes(team.id) ? ' ✅ (bạn theo dõi)' : ''}`
+        }));
+        
+        const updatedMenu = new StringSelectMenuBuilder()
+          .setCustomId('track_team_select')
+          .setPlaceholder('Chọn đội bóng để theo dõi')
+          .addOptions(updatedOptions);
+        
+        const updatedRow = new ActionRowBuilder()
+          .addComponents(updatedMenu);
+        
+        await response.edit({ components: [updatedRow] }).catch(() => {});
+      };
+      
       collector.on('collect', async (interaction) => {
         // Check if it's the same user
         if (interaction.user.id !== message.author.id) {
@@ -930,6 +950,9 @@ client.on('messageCreate', async (message) => {
         
         // Reply to interaction (required by Discord, flags: 64 makes it ephemeral/hidden)
         await interaction.reply({ content: '✅', flags: 64 }).catch(() => {});
+        
+        // Update menu to show latest state (other users' selections too)
+        await updateMenu();
       });
       
       collector.on('end', () => {
