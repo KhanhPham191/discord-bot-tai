@@ -182,8 +182,88 @@ client.once('ready', () => {
 
 // Auto-update livescore function - DISABLED to prevent API quota issues
 // Users can manually use !live, !fixtures, !livescore commands instead
+// Check for upcoming matches 1 day before
+async function checkOneDayNotifications(client) {
+  try {
+    // Only notify if there are tracked teams
+    if (!config.trackedTeams || config.trackedTeams.length === 0) return;
+    
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    
+    // Log: Starting notification check
+    console.log(`🔔 Checking 1-day notifications... (${config.trackedTeams.length} tracked teams)`);
+    
+    for (const teamId of config.trackedTeams) {
+      try {
+        const fixtures = await getFixtures(teamId, 20);
+        
+        // Find matches scheduled for tomorrow (within 24 hours)
+        const upcomingMatches = fixtures.filter(match => {
+          const matchDate = new Date(match.utcDate);
+          const hoursDiff = (matchDate - now) / (1000 * 60 * 60);
+          return hoursDiff > 0 && hoursDiff <= 24;
+        });
+        
+        if (upcomingMatches.length > 0) {
+          const team = config.livescoreTeams.find(t => t.id === teamId);
+          const teamName = team?.name || `Team ${teamId}`;
+          
+          // Find notification channel (use first text channel in guild)
+          const guilds = client.guilds.cache;
+          for (const guild of guilds.values()) {
+            const textChannels = guild.channels.cache.filter(ch => ch.isTextBased());
+            const notifyChannel = textChannels.first();
+            
+            if (notifyChannel) {
+              let notifyText = `🔔 **THÔNG BÁO: ${teamName} có trận đấu sắp tới trong 24 giờ!**\n\n`;
+              
+              upcomingMatches.forEach((match, idx) => {
+                const date = new Date(match.utcDate).toLocaleString('vi-VN', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+                const opponent = match.homeTeam.id === teamId ? match.awayTeam.name : match.homeTeam.name;
+                const competition = match.competition?.name || 'Unknown';
+                
+                notifyText += `${idx + 1}. ${teamName} vs ${opponent}\n`;
+                notifyText += `   📅 ${date}\n`;
+                notifyText += `   🏆 ${competition}\n\n`;
+              });
+              
+              try {
+                await notifyChannel.send(notifyText);
+                console.log(`✅ Sent 1-day notification for ${teamName}`);
+              } catch (err) {
+                console.error(`❌ Failed to send notification: ${err.message}`);
+              }
+              
+              break; // Only send to first guild
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`❌ Error checking fixtures for team ${teamId}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error in checkOneDayNotifications:', err.message);
+  }
+}
+
 async function startLivescoreUpdate(client) {
   console.log('💡 Auto-livescore update disabled (use !live, !fixtures, !livescore commands instead)');
+  
+  // Check for 1-day notifications every 1 hour
+  setInterval(() => {
+    checkOneDayNotifications(client);
+  }, 60 * 60 * 1000); // 1 hour
+  
+  console.log('🔔 1-day notification checker started (checks every hour)');
 }
 
 client.on('messageCreate', async (message) => {
