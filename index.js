@@ -207,11 +207,32 @@ async function searchMovies(keyword) {
       params: { keyword: keyword }
     });
     
-    return response.data.items || response.data.data || response.data || [];
+    const items = response.data.items || [];
+    
+    // Extract year from description or created date
+    return items.map(item => ({
+      ...item,
+      year: extractYearFromMovie(item)
+    }));
   } catch (error) {
     console.error('❌ Lỗi API tìm kiếm phim:', error.response?.data?.message || error.message);
     return [];
   }
+}
+
+function extractYearFromMovie(movie) {
+  // Try to extract year from description or use year from created date
+  if (movie.description) {
+    const yearMatch = movie.description.match(/(\d{4})/);
+    if (yearMatch) return yearMatch[1];
+  }
+  
+  // Fallback: extract year from created date
+  if (movie.created) {
+    return movie.created.split('-')[0];
+  }
+  
+  return 'N/A';
 }
 
 let config = {
@@ -1576,11 +1597,18 @@ client.on('messageCreate', async (message) => {
       let description = '';
       movies.forEach((movie, idx) => {
         const year = movie.year || 'N/A';
-        const link = movie.slug ? `https://phim.nguonc.com/${movie.slug}` : movie.url || 'N/A';
+        const slug = movie.slug || '';
+        const link = slug ? `https://phim.nguonc.com/${slug}` : 'N/A';
         const title = movie.name || movie.title || 'Unknown';
         
-        description += `\n**${idx + 1}. ${title}** (${year})\n`;
-        description += `└─ [Xem phim →](${link})\n`;
+        // Truncate long titles
+        const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
+        
+        description += `\n**${idx + 1}. ${displayTitle}** (${year})\n`;
+        
+        if (link !== 'N/A') {
+          description += `└─ [Xem phim →](${link})\n`;
+        }
       });
 
       embed.setDescription(description);
