@@ -38,7 +38,7 @@
     {
       "name": "Manchester United",
       "id": 66,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "Manchester City",
@@ -53,7 +53,7 @@
     {
       "name": "Arsenal",
       "id": 57,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "Tottenham Hotspur",
@@ -206,8 +206,7 @@
   "userTrackedTeams": {
     "322648312958287872": [
       61,
-      66,
-      64
+      65
     ],
     "418995467720982561": [
       66,
