@@ -139,7 +139,8 @@ async function getLiveMatches(competitionId) {
 
 let config = {
   allowedUsers: [],
-  aiEnabled: false
+  aiEnabled: false,
+  trackedTeams: [] // User-selected teams to track
 };
 
 function loadConfig() {
@@ -179,85 +180,10 @@ client.once('ready', () => {
   startLivescoreUpdate(client);
 });
 
-// Auto-update livescore function
+// Auto-update livescore function - DISABLED to prevent API quota issues
+// Users can manually use !live, !fixtures, !livescore commands instead
 async function startLivescoreUpdate(client) {
-  const updateLivescore = async () => {
-    try {
-      const channel = await client.channels.fetch(LIVESCORE_CHANNEL);
-      if (!channel) {
-        console.error('❌ Không tìm thấy channel livescore');
-        return;
-      }
-      
-      // Get enabled teams from config
-      const enabledTeams = config.livescoreTeams ? config.livescoreTeams.filter(t => t.enabled) : [];
-      
-      for (const team of enabledTeams) {
-        try {
-          // Get live score
-          const score = await getLiveScore(team.id);
-          if (score) {
-            const fixture = score;
-            const homeTeam = fixture.homeTeam.name;
-            const awayTeam = fixture.awayTeam.name;
-            const homeGoals = fixture.score?.fullTime?.home || 0;
-            const awayGoals = fixture.score?.fullTime?.away || 0;
-            const status = fixture.status;
-            
-            const scoreMsg = `⚽ **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\nStatus: ${status}`;
-            await channel.send(scoreMsg);
-          }
-          
-          // Get fixtures
-          const fixtures = await getFixtures(team.id, 3);
-          if (fixtures.length > 0) {
-            let fixturesText = `📅 **${team.name} - Lịch thi đấu sắp tới:**\n`;
-            fixtures.forEach((f, idx) => {
-              const date = new Date(f.utcDate).toLocaleString('vi-VN');
-              fixturesText += `${idx + 1}. ${f.homeTeam.name} vs ${f.awayTeam.name}\n   ${date}\n`;
-            });
-            await channel.send(fixturesText);
-          }
-        } catch (e) {
-          console.error(`Lỗi update team ${team.name}:`, e.message);
-        }
-      }
-      
-      // Get standings for enabled leagues
-      // DISABLED: Causes API quota issues on free tier
-      // Uncomment if you upgrade to paid plan
-      /*
-      const enabledLeagues = config.leagues ? config.leagues.filter(l => l.enabled) : [];
-      
-      for (const league of enabledLeagues) {
-        try {
-          const standings = await getStandings(league.id);
-          if (standings && standings.standings && standings.standings.length > 0) {
-            const table = standings.standings[0].table;
-            let standingsText = `📊 **${standings.competition.name} - Top 5**\n`;
-            table.slice(0, 5).forEach((team, idx) => {
-              standingsText += `${team.position}. ${team.team.name} - ${team.points}pts\n`;
-            });
-            await channel.send(standingsText);
-          }
-        } catch (e) {
-          console.error(`Lỗi update league ${league.name}:`, e.message);
-        }
-      }
-      */
-      
-      console.log(`✅ Đã update livescore vào lúc ${new Date().toLocaleTimeString()}`);
-    } catch (e) {
-      console.error('Lỗi auto-update livescore:', e.message);
-    }
-  };
-  
-  // Run immediately on startup
-  await updateLivescore();
-  
-  // Then run every LIVESCORE_UPDATE_INTERVAL
-  setInterval(updateLivescore, LIVESCORE_UPDATE_INTERVAL);
-  console.log(`⏰ Livescore sẽ tự động update mỗi ${LIVESCORE_UPDATE_INTERVAL / 60000} phút`);
+  console.log('💡 Auto-livescore update disabled (use !live, !fixtures, !livescore commands instead)');
 }
 
 client.on('messageCreate', async (message) => {
@@ -328,9 +254,34 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}livescore <team>\` - xem kết quả live`,
           `\`${PREFIX}standings [league_name/id]\` - bảng xếp hạng (không argument = danh sách giải)`,
           `\`${PREFIX}fixtures <team>\` - lịch thi đấu sắp tới`,
-          `\`${PREFIX}findteam <name>\` - tìm Team ID để thêm vào config`
+          `\`${PREFIX}findteam <name>\` - tìm Team ID để thêm vào config`,
+          '',
+          '📍 Team Tracking:',
+          `\`${PREFIX}teams\` - hiển thị UI chọn team để theo dõi`,
+          `\`${PREFIX}track <team_id>\` - theo dõi team (nhận update trận sắp tới)`,
+          `\`${PREFIX}untrack <team_id>\` - hủy theo dõi team`,
+          `\`${PREFIX}mytracks\` - xem danh sách team đang theo dõi`
         ].join('\n')
       );
+      replied = true;
+      return;
+    }
+
+    if (command === 'teams') {
+      // Show interactive UI with team selection buttons
+      const premierLeagueTeams = config.livescoreTeams.slice(0, 10); // Show first 10 teams
+      
+      let teamsText = '⚽ **Chọn đội bóng để theo dõi:**\n\n';
+      premierLeagueTeams.forEach((team, idx) => {
+        const tracked = config.trackedTeams.includes(team.id) ? '✅' : '  ';
+        teamsText += `${tracked} ${idx + 1}. **${team.name}** (ID: ${team.id})\n`;
+      });
+      
+      teamsText += `\n💡 Dùng \`${PREFIX}track <team_id>\` để theo dõi\n`;
+      teamsText += `💡 Dùng \`${PREFIX}untrack <team_id>\` để hủy theo dõi\n`;
+      teamsText += `💡 Dùng \`${PREFIX}mytracks\` để xem danh sách theo dõi`;
+      
+      message.reply(teamsText);
       replied = true;
       return;
     }
@@ -426,6 +377,75 @@ client.on('messageCreate', async (message) => {
       }
       message.reply(`Danh sách user: ${config.allowedUsers.join(', ')}`);
       replied = true;
+      return;
+    }
+
+    // Track team command
+    if (command === 'track') {
+      const teamId = parseInt(args[0]);
+      if (!teamId) {
+        message.reply('❌ Sử dụng: `!track <team_id>` (e.g., `!track 61` cho Chelsea)');
+        return;
+      }
+
+      // Check if team ID is valid
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      if (!team) {
+        message.reply(`❌ Team ID không tồn tại. Các team có sẵn:\n${config.livescoreTeams.map(t => `- ${t.name} (ID: ${t.id})`).join('\n')}`);
+        return;
+      }
+
+      // Check if already tracked
+      if (config.trackedTeams.includes(teamId)) {
+        message.reply(`✅ Team **${team.name}** đã được theo dõi rồi!`);
+        return;
+      }
+
+      // Add to tracked teams
+      config.trackedTeams.push(teamId);
+      saveConfig(config);
+      message.reply(`✅ Đã thêm **${team.name}** vào danh sách theo dõi! Sẽ nhận update trận đấu sắp tới.`);
+      return;
+    }
+
+    // Untrack team command
+    if (command === 'untrack') {
+      const teamId = parseInt(args[0]);
+      if (!teamId) {
+        message.reply('❌ Sử dụng: `!untrack <team_id>` (e.g., `!untrack 61` cho Chelsea)');
+        return;
+      }
+
+      // Check if team is tracked
+      const index = config.trackedTeams.indexOf(teamId);
+      if (index === -1) {
+        message.reply(`❌ Team ID này chưa được theo dõi.`);
+        return;
+      }
+
+      // Remove from tracked teams
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      config.trackedTeams.splice(index, 1);
+      saveConfig(config);
+      message.reply(`✅ Đã xóa **${team?.name || 'Team'}** khỏi danh sách theo dõi.`);
+      return;
+    }
+
+    // Show tracked teams command
+    if (command === 'mytracks') {
+      if (config.trackedTeams.length === 0) {
+        message.reply('📋 Bạn chưa theo dõi team nào. Dùng `!track <team_id>` để thêm team.');
+        return;
+      }
+
+      const trackedTeamNames = config.trackedTeams
+        .map(id => {
+          const team = config.livescoreTeams.find(t => t.id === id);
+          return team ? team.name : `ID: ${id}`;
+        })
+        .join('\n');
+      
+      message.reply(`📋 **Danh sách team bạn theo dõi:**\n${trackedTeamNames}\n\nDùng \`!untrack <team_id>\` để xóa.`);
       return;
     }
 
