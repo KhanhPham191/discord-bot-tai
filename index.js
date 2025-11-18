@@ -927,9 +927,6 @@ client.on('messageCreate', async (message) => {
         } catch (e) {
           console.error('Error sending public track message:', e.message);
         }
-        
-        // Send ephemeral confirmation (only user sees, disappears)
-        await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi của bạn!`, flags: 64 });
       });
       
       collector.on('end', () => {
