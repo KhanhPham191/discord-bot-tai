@@ -200,6 +200,20 @@ async function getLiveMatches(competitionId) {
   }
 }
 
+// Movie search function
+async function searchMovies(keyword) {
+  try {
+    const response = await axios.get('https://phim.nguonc.com/api/films/search', {
+      params: { keyword: keyword }
+    });
+    
+    return response.data.items || response.data.data || response.data || [];
+  } catch (error) {
+    console.error('❌ Lỗi API tìm kiếm phim:', error.response?.data?.message || error.message);
+    return [];
+  }
+}
+
 let config = {
   allowedUsers: [],
   aiEnabled: false,
@@ -768,7 +782,10 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}track\` - chọn team để theo dõi (UI dropdown)`,
           `\`${PREFIX}untrack <team_id>\` - hủy theo dõi team`,
           `\`${PREFIX}mytracks\` - xem danh sách team đang theo dõi`,
-          `\`${PREFIX}dashboard\` - xem dashboard với lịch thi đấu`
+          `\`${PREFIX}dashboard\` - xem dashboard với lịch thi đấu`,
+          '',
+          '🎬 Movie Search:',
+          `\`${PREFIX}search "tên phim"\` - tìm phim (hiển thị 10 kết quả)`
         ].join('\n')
       );
       replied = true;
@@ -1514,6 +1531,67 @@ client.on('messageCreate', async (message) => {
       return;
     }
     message.reply(`Lệnh \`${PREFIX}${command}\` không tồn tại!`);
+    replied = true;
+    return;
+  }
+
+  // Search phim command
+  if (!replied && command === 'search') {
+    if (!args.length) {
+      message.reply('❌ Vui lòng cung cấp tên phim! Ví dụ: `!search "Regeneration"`');
+      replied = true;
+      return;
+    }
+
+    const keyword = args.join(' ').replace(/^"|"$/g, '');
+    
+    if (keyword.length < 2) {
+      message.reply('❌ Tên phim phải có ít nhất 2 ký tự!');
+      replied = true;
+      return;
+    }
+
+    await message.reply('🔍 Đang tìm phim...');
+
+    try {
+      const searchResults = await searchMovies(keyword);
+      
+      if (!searchResults || searchResults.length === 0) {
+        await message.reply(`❌ Không tìm thấy phim nào với từ khóa: **"${keyword}"**`);
+        replied = true;
+        return;
+      }
+
+      // Limit to 10 results
+      const movies = searchResults.slice(0, 10);
+      
+      const embed = new EmbedBuilder()
+        .setColor('#e50914') // Netflix red
+        .setTitle(`🎬 Kết Quả Tìm Kiếm: "${keyword}"`)
+        .setDescription(`Tìm thấy **${movies.length}** phim`)
+        .setTimestamp()
+        .setFooter({ text: 'Movie Search | phim.nguonc.com' });
+
+      // Build movie list
+      let description = '';
+      movies.forEach((movie, idx) => {
+        const year = movie.year || 'N/A';
+        const link = movie.slug ? `https://phim.nguonc.com/${movie.slug}` : movie.url || 'N/A';
+        const title = movie.name || movie.title || 'Unknown';
+        
+        description += `\n**${idx + 1}. ${title}** (${year})\n`;
+        description += `└─ [Xem phim →](${link})\n`;
+      });
+
+      embed.setDescription(description);
+
+      await message.reply({ embeds: [embed] });
+      
+    } catch (error) {
+      console.error('❌ Lỗi tìm kiếm phim:', error.message);
+      await message.reply('❌ Có lỗi xảy ra khi tìm kiếm phim. Vui lòng thử lại!');
+    }
+    
     replied = true;
     return;
   }
