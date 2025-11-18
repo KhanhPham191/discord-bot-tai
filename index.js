@@ -862,48 +862,6 @@ client.on('messageCreate', async (message) => {
       return;
     }
 
-    // ⛔ DISABLED: adduser command
-    if (command === 'adduser') {
-      message.reply('❌ Admin commands đã được vô hiệu hóa!');
-      replied = true;
-      return;
-    }
-
-    // ⛔ DISABLED: removeuser command
-    if (command === 'removeuser') {
-      message.reply('❌ Admin commands đã được vô hiệu hóa!');
-      replied = true;
-      return;
-    }
-
-    // ⛔ DISABLED: listusers command
-    if (command === 'listusers') {
-      message.reply('❌ Admin commands đã được vô hiệu hóa!');
-      replied = true;
-      return;
-    }
-
-    // ⛔ DISABLED: addreplychannel command
-    if (command === 'addreplychannel') {
-      message.reply('❌ Admin commands đã được vô hiệu hóa!');
-      replied = true;
-      return;
-    }
-
-    // ⛔ DISABLED: removereplychannel command
-    if (command === 'removereplychannel') {
-      message.reply('❌ Admin commands đã được vô hiệu hóa!');
-      replied = true;
-      return;
-    }
-
-    // ⛔ DISABLED: listreplychannels command
-    if (command === 'listreplychannels') {
-      message.reply('❌ Admin commands đã được vô hiệu hóa!');
-      replied = true;
-      return;
-    }
-
     // Track team command
     if (command === 'track') {
       // Show team selection UI
@@ -1609,11 +1567,19 @@ client.on('messageCreate', async (message) => {
             const slug = movie.slug || '';
             const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
             const title = movie.name || movie.title || 'Unknown';
+            const englishTitle = movie.original_name || '';
             
             // Truncate long titles
             const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
             
-            description += `\n**${idx + 1}. ${displayTitle}** (${year})\n`;
+            // Build the title with English name if available
+            let titleDisplay = `**${idx + 1}. ${displayTitle}**`;
+            if (englishTitle && englishTitle !== title) {
+              titleDisplay += ` (${englishTitle})`;
+            }
+            titleDisplay += ` (${year})`;
+            
+            description += `\n${titleDisplay}\n`;
             
             if (link !== 'N/A') {
               description += `└─ [Xem phim →](${link})\n`;
@@ -1754,11 +1720,19 @@ client.on('messageCreate', async (message) => {
           const slug = movie.slug || '';
           const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
           const title = movie.name || movie.title || 'Unknown';
+          const englishTitle = movie.original_name || '';
           
           // Truncate long titles
           const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
           
-          description += `\n**${idx + 1}. ${displayTitle}** (${year})\n`;
+          // Build the title with English name if available
+          let titleDisplay = `**${idx + 1}. ${displayTitle}**`;
+          if (englishTitle && englishTitle !== title) {
+            titleDisplay += ` (${englishTitle})`;
+          }
+          titleDisplay += ` (${year})`;
+          
+          description += `\n${titleDisplay}\n`;
           
           if (link !== 'N/A') {
             description += `└─ [Xem phim →](${link})\n`;
