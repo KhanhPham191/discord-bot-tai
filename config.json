@@ -166,7 +166,7 @@
       "name": "Champions League",
       "id": "CL",
       "country": "Europe",
-      "enabled": false
+      "enabled": true
     },
     {
       "name": "Europa League",
