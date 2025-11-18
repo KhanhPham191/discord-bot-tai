@@ -918,6 +918,13 @@ client.on('messageCreate', async (message) => {
         addUserTrackedTeam(interaction.user.id, teamId);
         saveConfig(config);
         
+        // Send public notification (deleted after 5 seconds)
+        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đang theo dõi **${team.name}**`);
+        setTimeout(() => {
+          publicMsg.delete().catch(() => {});
+        }, 5000);
+        
+        // Send private confirmation
         await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi của bạn!`, flags: 64 });
       });
       
@@ -953,7 +960,19 @@ client.on('messageCreate', async (message) => {
       const team = config.livescoreTeams.find(t => t.id === teamId);
       removeUserTrackedTeam(userId, teamId);
       saveConfig(config);
-      message.reply(`✅ Đã xóa **${team?.name || 'Team'}** khỏi danh sách theo dõi của bạn.`);
+      
+      // Send public notification (deleted after 5 seconds)
+      const publicMsg = await message.channel.send(`❌ **${message.author.username}** đã hủy theo dõi **${team?.name || 'Team'}**`);
+      setTimeout(() => {
+        publicMsg.delete().catch(() => {});
+      }, 5000);
+      
+      // Send private confirmation
+      const confirmMsg = await message.reply(`✅ Đã xóa **${team?.name || 'Team'}** khỏi danh sách theo dõi của bạn.`);
+      setTimeout(() => {
+        confirmMsg.delete().catch(() => {});
+      }, 5000);
+      
       return;
     }
 
