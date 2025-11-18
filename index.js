@@ -955,7 +955,7 @@ client.on('messageCreate', async (message) => {
       removeUserTrackedTeam(userId, teamId);
       saveConfig(config);
       
-      // Send public notification (deleted after 5 seconds)
+      // Send public notification only (deleted after 5 seconds)
       try {
         const publicMsg = await message.channel.send(`❌ **${message.author.username}** đã hủy theo dõi **${team?.name || 'Team'}**`);
         setTimeout(() => {
@@ -963,16 +963,6 @@ client.on('messageCreate', async (message) => {
         }, 5000);
       } catch (e) {
         console.error('Error sending public untrack message:', e.message);
-      }
-      
-      // Send private confirmation (deleted after 5 seconds)
-      try {
-        const confirmMsg = await message.reply(`✅ Đã xóa **${team?.name || 'Team'}** khỏi danh sách theo dõi của bạn.`);
-        setTimeout(() => {
-          confirmMsg.delete().catch(() => {});
-        }, 5000);
-      } catch (e) {
-        console.error('Error sending confirmation message:', e.message);
       }
       
       return;
