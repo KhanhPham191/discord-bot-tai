@@ -1530,13 +1530,41 @@ client.on('messageCreate', async (message) => {
     }
 
     // New movies command
-    if (command === 'newmovies') {
+    if (command === 'newmovies' || command === 'newphim') {
       console.log('🎬 New movies command triggered');
+      
+      // If user just types !newmovies or !newphim without args, show help
+      if (args.length === 0 || (args[0] && args[0].toLowerCase() === 'help')) {
+        const helpText = `
+📌 **Hướng Dẫn Lệnh Phim Mới**
+
+**Cú pháp:**
+\`!newmovies [trang]\` hoặc \`!newphim [trang]\`
+
+**Ví dụ:**
+• \`!newmovies\` - Hiển thị phim mới trang 1
+• \`!newmovies 2\` - Hiển thị phim mới trang 2
+• \`!newmovies 3\` - Hiển thị phim mới trang 3
+
+**Tính năng:**
+✅ Hiển thị 10 phim mới nhất trên mỗi trang
+✅ Hiển thị tên Việt + tên Anh + năm phát hành
+✅ Nút điều hướng: ⬅️ Trước | Sau ➡️
+✅ Link xem phim trực tiếp
+
+**Lệnh khác:**
+• \`!search <tên phim>\` - Tìm phim theo từ khóa
+• \`!help\` - Xem tất cả lệnh
+`;
+        message.reply(helpText);
+        replied = true;
+        return;
+      }
       
       let currentPage = args.length > 0 ? parseInt(args[0]) : 1;
       
       if (isNaN(currentPage) || currentPage < 1) {
-        message.reply('❌ Trang phải là số nguyên dương! Ví dụ: `!newphim`');
+        message.reply('❌ Trang phải là số nguyên dương! Ví dụ: `!newmovies 1`\n\n💡 Gõ `!newmovies help` để xem hướng dẫn chi tiết');
         replied = true;
         return;
       }
@@ -1678,8 +1706,29 @@ client.on('messageCreate', async (message) => {
     if (command === 'search') {
       console.log('🔍 Search command triggered with args:', args);
       
-      if (!args.length) {
-        message.reply('❌ Vui lòng cung cấp tên phim! Ví dụ: `!search avatar`');
+      if (!args.length || (args[0] && args[0].toLowerCase() === 'help')) {
+        const helpText = `
+📌 **Hướng Dẫn Lệnh Tìm Kiếm Phim**
+
+**Cú pháp:**
+\`!search <tên phim>\`
+
+**Ví dụ:**
+• \`!search avatar\` - Tìm phim "avatar"
+• \`!search the marvel\` - Tìm phim "the marvel"
+• \`!search mưa đỏ\` - Tìm phim "mưa đỏ"
+
+**Tính năng:**
+✅ Tìm kiếm phim từ API phim.nguonc.com
+✅ Hiển thị tên Việt + tên Anh + năm phát hành
+✅ Tối đa 10 kết quả trên mỗi lần tìm
+✅ Link xem phim trực tiếp
+
+**Lệnh khác:**
+• \`!newmovies [trang]\` - Xem phim mới cập nhật
+• \`!help\` - Xem tất cả lệnh
+`;
+        message.reply(helpText);
         replied = true;
         return;
       }
@@ -1688,7 +1737,7 @@ client.on('messageCreate', async (message) => {
       console.log('📝 Searching for:', keyword);
       
       if (keyword.length < 2) {
-        message.reply('❌ Tên phim phải có ít nhất 2 ký tự!');
+        message.reply('❌ Tên phim phải có ít nhất 2 ký tự!\n\n💡 Gõ `!search help` để xem hướng dẫn chi tiết');
         replied = true;
         return;
       }
