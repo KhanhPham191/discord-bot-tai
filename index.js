@@ -915,8 +915,17 @@ client.on('messageCreate', async (message) => {
         const teamId = parseInt(interaction.values[0]);
         const team = config.livescoreTeams.find(t => t.id === teamId);
         
+        // Helper to disable menu and stop collector
+        const disableMenuAndStop = async () => {
+          const disabledRow = new ActionRowBuilder()
+            .addComponents(selectMenu.setDisabled(true));
+          await response.edit({ components: [disabledRow] }).catch(() => {});
+          collector.stop();
+        };
+        
         if (!team) {
           await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+          await disableMenuAndStop();
           return;
         }
         
@@ -924,6 +933,7 @@ client.on('messageCreate', async (message) => {
         const currentUserTeams = getUserTrackedTeams(interaction.user.id);
         if (currentUserTeams.includes(teamId)) {
           await interaction.reply({ content: `⚠️ **${team.name}** đã được bạn theo dõi rồi!`, flags: 64 });
+          await disableMenuAndStop();
           return;
         }
         
@@ -931,6 +941,7 @@ client.on('messageCreate', async (message) => {
         const MAX_TRACKED_TEAMS = 2;
         if (currentUserTeams.length >= MAX_TRACKED_TEAMS) {
           await interaction.reply({ content: `⚠️ Bạn chỉ có thể theo dõi tối đa ${MAX_TRACKED_TEAMS} đội bóng. Vui lòng bỏ theo dõi một đội khác trước!`, flags: 64 });
+          await disableMenuAndStop();
           return;
         }
         
@@ -961,7 +972,10 @@ client.on('messageCreate', async (message) => {
       });
       
       collector.on('end', () => {
-        // Menu is already disabled above, no need to do it again
+        // Disable menu on timeout
+        const disabledRow = new ActionRowBuilder()
+          .addComponents(selectMenu.setDisabled(true));
+        response.edit({ components: [disabledRow] }).catch(() => {});
       });
       
       replied = true;
@@ -1046,8 +1060,17 @@ client.on('messageCreate', async (message) => {
         const teamId = parseInt(interaction.values[0]);
         const team = config.livescoreTeams.find(t => t.id === teamId);
         
+        // Helper to disable menu and stop collector
+        const disableMenuAndStop = async () => {
+          const disabledRow = new ActionRowBuilder()
+            .addComponents(selectMenu.setDisabled(true));
+          await response.edit({ components: [disabledRow] }).catch(() => {});
+          collector.stop();
+        };
+        
         if (!team) {
           await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+          await disableMenuAndStop();
           return;
         }
         
@@ -1085,7 +1108,10 @@ client.on('messageCreate', async (message) => {
       });
       
       collector.on('end', () => {
-        // Menu is already disabled above, no need to do it again
+        // Disable menu on timeout
+        const disabledRow = new ActionRowBuilder()
+          .addComponents(selectMenu.setDisabled(true));
+        response.edit({ components: [disabledRow] }).catch(() => {});
       });
       
       return;
