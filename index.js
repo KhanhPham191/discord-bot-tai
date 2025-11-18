@@ -135,6 +135,41 @@ async function getFixtures(teamId, next = 10) {
   }
 }
 
+// Get fixtures including Champions League
+async function getFixturesWithCL(teamId, next = 10) {
+  try {
+    const matches = [];
+    
+    // Get regular league fixtures
+    const leagueMatches = await getFixtures(teamId, next);
+    matches.push(...leagueMatches);
+    
+    // Try to get Champions League fixtures
+    try {
+      const clRes = await axios.get(`${FOOTBALL_API_URL}/competitions/CL/matches?status=SCHEDULED,LIVE`, {
+        headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+        params: { limit: 50 }
+      });
+      
+      const clMatches = (clRes.data.matches || []).filter(m => 
+        m.homeTeam.id === teamId || m.awayTeam.id === teamId
+      ).map(m => ({ ...m, inChampionsLeague: true }));
+      
+      matches.push(...clMatches);
+    } catch (e) {
+      console.log('ℹ️ Champions League data not available or team not in CL');
+    }
+    
+    // Sort by date and return top next
+    return matches
+      .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))
+      .slice(0, next);
+  } catch (e) {
+    console.error(`❌ Lỗi lấy lịch thi đấu với CL:`, e.message);
+    return [];
+  }
+}
+
 async function getLiveMatches(competitionId) {
   try {
     console.log(`🔴 Fetching live matches for competition ${competitionId}...`);
@@ -233,30 +268,14 @@ async function createTrackedTeamsDashboard(userId) {
       const team = config.livescoreTeams.find(t => t.id === teamId);
       if (!team) continue;
 
-      // Get fixtures from regular competitions
-      const fixtures = await getFixtures(teamId, 5);
-      
-      // Get Champions League fixtures if available
-      let c1Fixtures = [];
-      try {
-        const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
-          headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
-          params: { status: 'SCHEDULED,LIVE', limit: 30 }
-        });
-        
-        // Filter for Champions League matches (competition code = CL or name includes Champions)
-        c1Fixtures = (response.data.matches || []).filter(m => 
-          m.competition?.code === 'CL' || m.competition?.name?.includes('Champions League')
-        ).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate)).slice(0, 3);
-      } catch (err) {
-        console.error(`Lỗi lấy C1 fixtures cho team ${teamId}:`, err.message);
-      }
+      // Get fixtures including Champions League
+      const fixtures = await getFixturesWithCL(teamId, 5);
       
       let fixturesText = '';
       if (fixtures.length === 0) {
         fixturesText = '🚫 Không có trận sắp tới';
       } else {
-        fixtures.slice(0, 3).forEach((f, idx) => {
+        fixtures.slice(0, 5).forEach((f, idx) => {
           const date = new Date(f.utcDate).toLocaleString('vi-VN', {
             month: '2-digit',
             day: '2-digit',
@@ -265,27 +284,9 @@ async function createTrackedTeamsDashboard(userId) {
           });
           const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
           const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
-          const comp = f.competition?.name ? ` [${f.competition.name}]` : '';
+          const comp = f.inChampionsLeague ? '🏆 CL' : (f.competition?.name ? ` [${f.competition.name}]` : '');
           
-          fixturesText += `${idx + 1}. ${isHome} vs **${opponent}**\n   📅 ${date}${comp}\n`;
-        });
-      }
-
-      // Add Champions League fixtures if any
-      let c1Text = '';
-      if (c1Fixtures.length > 0) {
-        c1Text = '\n🏆 **CHAMPIONS LEAGUE:**\n';
-        c1Fixtures.forEach((f, idx) => {
-          const date = new Date(f.utcDate).toLocaleString('vi-VN', {
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
-          const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
-          
-          c1Text += `${idx + 1}. ${isHome} vs **${opponent}**\n   📅 ${date}\n`;
+          fixturesText += `${idx + 1}. ${isHome} vs **${opponent}**\n   📅 ${date} ${comp}\n`;
         });
       }
 
@@ -293,7 +294,7 @@ async function createTrackedTeamsDashboard(userId) {
         .setColor('#10b981')
         .setTitle(`⚽ ${team.name}`)
         .addFields(
-          { name: '📋 Trận sắp tới', value: (fixturesText + c1Text) || 'N/A', inline: false },
+          { name: '📋 Trận sắp tới', value: fixturesText || 'N/A', inline: false },
           { name: '🔗 Team ID', value: teamId.toString(), inline: true }
         )
         .setTimestamp();
@@ -1290,7 +1291,7 @@ client.on('messageCreate', async (message) => {
         
         await interaction.deferReply();
         
-        const fixtures = await getFixtures(teamId, 10);
+        const fixtures = await getFixturesWithCL(teamId, 10);
         
         if (fixtures.length === 0) {
           await interaction.editReply('❌ Không tìm thấy lịch thi đấu!');
@@ -1327,9 +1328,9 @@ client.on('messageCreate', async (message) => {
           });
           const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
           const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
-          const competition = f.competition?.name || 'Unknown';
+          const competition = f.inChampionsLeague ? '🏆 Champions League' : (f.competition?.name || 'Unknown');
           
-          const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • 🏆 ${competition}\n`;
+          const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • ${competition}\n`;
           
           currentText += matchStr;
           matchCount++;
