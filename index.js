@@ -197,8 +197,34 @@ function saveConfig() {
 }
 
 // Create tracked teams dashboard UI
-async function createTrackedTeamsDashboard() {
-  if (!config.trackedTeams || config.trackedTeams.length === 0) {
+// Get tracked teams for a specific user
+function getUserTrackedTeams(userId) {
+  if (!config.userTrackedTeams) config.userTrackedTeams = {};
+  return config.userTrackedTeams[userId] || [];
+}
+
+// Add team to user's tracked list
+function addUserTrackedTeam(userId, teamId) {
+  if (!config.userTrackedTeams) config.userTrackedTeams = {};
+  if (!config.userTrackedTeams[userId]) {
+    config.userTrackedTeams[userId] = [];
+  }
+  if (!config.userTrackedTeams[userId].includes(teamId)) {
+    config.userTrackedTeams[userId].push(teamId);
+  }
+}
+
+// Remove team from user's tracked list
+function removeUserTrackedTeam(userId, teamId) {
+  if (!config.userTrackedTeams) config.userTrackedTeams = {};
+  if (config.userTrackedTeams[userId]) {
+    config.userTrackedTeams[userId] = config.userTrackedTeams[userId].filter(id => id !== teamId);
+  }
+}
+
+async function createTrackedTeamsDashboard(userId) {
+  const userTeams = getUserTrackedTeams(userId);
+  if (!userTeams || userTeams.length === 0) {
     return {
       embeds: [
         new EmbedBuilder()
@@ -216,13 +242,13 @@ async function createTrackedTeamsDashboard() {
   const headerEmbed = new EmbedBuilder()
     .setColor('#3b82f6')
     .setTitle('⚽ Dashboard Theo Dõi Đội Bóng')
-    .setDescription(`Đang theo dõi **${config.trackedTeams.length}** đội bóng`)
+    .setDescription(`Đang theo dõi **${userTeams.length}** đội bóng`)
     .setTimestamp();
   
   embeds.push(headerEmbed);
 
   // Team info embeds
-  for (const teamId of config.trackedTeams) {
+  for (const teamId of userTeams) {
     try {
       const team = config.livescoreTeams.find(t => t.id === teamId);
       if (!team) continue;
@@ -840,12 +866,14 @@ client.on('messageCreate', async (message) => {
     if (command === 'track') {
       // Show team selection UI
       const teams = config.livescoreTeams;
+      const userId = message.author.id;
+      const userTrackedTeams = getUserTrackedTeams(userId);
       
       // Create select menu options
       const options = teams.map(team => ({
         label: team.name,
         value: team.id.toString(),
-        description: `ID: ${team.id}${config.trackedTeams.includes(team.id) ? ' ✅ (đang theo dõi)' : ''}`
+        description: `ID: ${team.id}${userTrackedTeams.includes(team.id) ? ' ✅ (bạn theo dõi)' : ''}`
       }));
       
       const selectMenu = new StringSelectMenuBuilder()
@@ -880,16 +908,17 @@ client.on('messageCreate', async (message) => {
         }
         
         // Check if already tracked
-        if (config.trackedTeams.includes(teamId)) {
-          await interaction.reply({ content: `⚠️ **${team.name}** đã được theo dõi rồi!`, flags: 64 });
+        const currentUserTeams = getUserTrackedTeams(interaction.user.id);
+        if (currentUserTeams.includes(teamId)) {
+          await interaction.reply({ content: `⚠️ **${team.name}** đã được bạn theo dõi rồi!`, flags: 64 });
           return;
         }
         
-        // Add to tracked teams
-        config.trackedTeams.push(teamId);
+        // Add to user's tracked teams
+        addUserTrackedTeam(interaction.user.id, teamId);
         saveConfig(config);
         
-        await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi!`, flags: 64 });
+        await interaction.reply({ content: `✅ Đã thêm **${team.name}** vào danh sách theo dõi của bạn!`, flags: 64 });
       });
       
       collector.on('end', () => {
@@ -911,29 +940,34 @@ client.on('messageCreate', async (message) => {
         return;
       }
 
-      // Check if team is tracked
-      const index = config.trackedTeams.indexOf(teamId);
-      if (index === -1) {
-        message.reply(`❌ Team ID này chưa được theo dõi.`);
+      // Check if team is tracked by this user
+      const userId = message.author.id;
+      const userTrackedTeams = getUserTrackedTeams(userId);
+      
+      if (!userTrackedTeams.includes(teamId)) {
+        message.reply(`❌ Bạn chưa theo dõi Team ID này.`);
         return;
       }
 
-      // Remove from tracked teams
+      // Remove from user's tracked teams
       const team = config.livescoreTeams.find(t => t.id === teamId);
-      config.trackedTeams.splice(index, 1);
+      removeUserTrackedTeam(userId, teamId);
       saveConfig(config);
-      message.reply(`✅ Đã xóa **${team?.name || 'Team'}** khỏi danh sách theo dõi.`);
+      message.reply(`✅ Đã xóa **${team?.name || 'Team'}** khỏi danh sách theo dõi của bạn.`);
       return;
     }
 
     // Show tracked teams command
     if (command === 'mytracks') {
-      if (config.trackedTeams.length === 0) {
+      const userId = message.author.id;
+      const userTrackedTeams = getUserTrackedTeams(userId);
+      
+      if (userTrackedTeams.length === 0) {
         message.reply('📋 Bạn chưa theo dõi team nào. Dùng `!track` để thêm team.');
         return;
       }
 
-      const trackedTeamNames = config.trackedTeams
+      const trackedTeamNames = userTrackedTeams
         .map(id => {
           const team = config.livescoreTeams.find(t => t.id === id);
           return team ? team.name : `ID: ${id}`;
@@ -948,7 +982,7 @@ client.on('messageCreate', async (message) => {
     if (command === 'dashboard' || command === 'tracklist') {
       message.reply('⏳ Đang tải dashboard...');
       
-      const dashboardContent = await createTrackedTeamsDashboard();
+      const dashboardContent = await createTrackedTeamsDashboard(message.author.id);
       message.reply(dashboardContent);
       return;
     }
