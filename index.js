@@ -1305,8 +1305,8 @@ client.on('messageCreate', async (message) => {
                 { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
                 { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
                 { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
-                { name: '📺 Số tập', value: detail.totalEpisodes?.toString() || 'N/A', inline: true },
-                { name: '▶️ Tập hiện tại', value: detail.currentEpisode || 'N/A', inline: true }
+                { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
+                { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
               )
               .setTimestamp()
               .setFooter({ text: 'Movie Detail' });
