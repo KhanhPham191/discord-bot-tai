@@ -863,6 +863,8 @@ client.on('messageCreate', async (message) => {
       const userId = message.author.id;
       const now = Date.now();
       
+      console.log('🎯 fixtures command:', { args, argsLength: args.length, arg1: args[1], check: args.length > 1 && !isNaN(parseInt(args[1])) });
+      
       // Check cooldown - 30 seconds per user
       if (fixturesCooldown.has(userId)) {
         const cooldownExpires = fixturesCooldown.get(userId);
@@ -879,6 +881,7 @@ client.on('messageCreate', async (message) => {
       
       // If team ID is provided as argument, show fixtures directly
       if (args.length > 1 && !isNaN(parseInt(args[1]))) {
+        console.log('✅ Entering direct fixtures block with teamId:', args[1]);
         const teamId = parseInt(args[1]);
         
         try {
