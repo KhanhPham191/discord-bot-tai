@@ -137,42 +137,12 @@ async function getFixtures(teamId, next = 10) {
 // Get fixtures including Champions League
 async function getFixturesWithCL(teamId, next = 10) {
   try {
-    const matches = [];
-    
-    // Get regular league fixtures
-    const leagueMatches = await getFixtures(teamId, next);
-    matches.push(...leagueMatches);
-    
-    // Try to get Champions League fixtures
-    try {
-      const clRes = await axios.get(`${FOOTBALL_API_URL}/competitions/CL/matches?status=SCHEDULED,LIVE`, {
-        headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
-        params: { limit: 50 }
-      });
-      
-      const clMatches = (clRes.data.matches || []).filter(m => 
-        m.homeTeam.id === teamId || m.awayTeam.id === teamId
-      ).map(m => ({ ...m, inChampionsLeague: true }));
-      
-      if (clMatches.length === 0) {
-        console.log(`ℹ️ Team ${teamId} not in Champions League or no scheduled matches`);
-      } else {
-        matches.push(...clMatches);
-      }
-    } catch (e) {
-      if (e.response?.status === 429) {
-        console.warn(`⚠️ CL API rate limit hit: ${e.response.data.message}`);
-      } else {
-        console.log(`ℹ️ CL data unavailable: ${e.response?.data?.message || e.message}`);
-      }
-    }
-    
-    // Sort by date and return top next
-    return matches
-      .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))
-      .slice(0, next);
+    // The team endpoint already includes all competitions (league + CL)
+    // So we just call getFixtures directly
+    const matches = await getFixtures(teamId, next);
+    return matches;
   } catch (e) {
-    console.error(`❌ Lỗi lấy lịch thi đấu với CL:`, e.message);
+    console.error(`❌ Error fetching fixtures:`, e.message);
     return [];
   }
 }
@@ -194,20 +164,65 @@ async function getLiveMatches(competitionId) {
   }
 }
 
-// Get match lineup
+// Get match lineup (full details with formations and players)
+// Note: Lineup data is only available after match starts (status = IN_PLAY or finished)
 async function getMatchLineup(matchId) {
   try {
     const response = await axios.get(`${FOOTBALL_API_URL}/matches/${matchId}`, {
       headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
     });
     
-    const match = response.data.match;
+    const match = response.data;
+    
+    // Check if lineup data is available (only for live/finished matches)
+    if (!match.homeTeamLineup && !match.awayTeamLineup) {
+      // Try to get from /teams/{id}/matches endpoint for more detail
+      const homeTeamResponse = await axios.get(`${FOOTBALL_API_URL}/teams/${match.homeTeam.id}/matches/${matchId}`, {
+        headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
+      }).catch(() => null);
+      
+      if (!homeTeamResponse) {
+        return {
+          id: match.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          utcDate: match.utcDate,
+          competition: match.competition,
+          status: match.status,
+          homeTeamLineup: [],
+          awayTeamLineup: [],
+          homeTeamFormation: 'N/A',
+          awayTeamFormation: 'N/A',
+          lineupNotAvailable: true,
+          message: `Line-up chưa được công bố. Trạng thái: ${match.status}`
+        };
+      }
+      
+      return {
+        id: match.id,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        utcDate: match.utcDate,
+        competition: match.competition,
+        status: match.status,
+        homeTeamLineup: homeTeamResponse.data.homeTeamLineup || [],
+        awayTeamLineup: homeTeamResponse.data.awayTeamLineup || [],
+        homeTeamFormation: homeTeamResponse.data.homeTeamFormation || 'N/A',
+        awayTeamFormation: homeTeamResponse.data.awayTeamFormation || 'N/A'
+      };
+    }
+    
     return {
+      id: match.id,
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       utcDate: match.utcDate,
       competition: match.competition,
-      status: match.status
+      status: match.status,
+      homeTeamLineup: match.homeTeamLineup || [],
+      awayTeamLineup: match.awayTeamLineup || [],
+      homeTeamFormation: match.homeTeamFormation || 'N/A',
+      awayTeamFormation: match.awayTeamFormation || 'N/A'
     };
   } catch (e) {
     console.error(`❌ Lỗi lấy line-up (match ${matchId}):`, e.response?.data?.message || e.message);

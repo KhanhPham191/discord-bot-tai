@@ -160,6 +160,66 @@ const client = new Client({
 client.once('ready', () => {
   console.log(`✅ Bot đã đăng nhập với tư cách: ${client.user.tag}`);
   loadConfig();
+  
+  // Setup auto-reminder for upcoming matches (1 hour before)
+  setInterval(async () => {
+    console.log('🕐 Checking for upcoming matches to remind...');
+    
+    if (!config.userTrackedTeams) return;
+    
+    for (const [userId, teamIds] of Object.entries(config.userTrackedTeams)) {
+      if (!Array.isArray(teamIds) || teamIds.length === 0) continue;
+      
+      try {
+        const user = await client.users.fetch(userId);
+        if (!user) continue;
+        
+        // Check each team's fixtures
+        for (const teamId of teamIds) {
+          const fixtures = await getFixturesWithCL(teamId, 5);
+          
+          // Find matches in next 1.5 hours
+          const now = new Date();
+          const in1Hour = new Date(now.getTime() + 60 * 60 * 1000);
+          const in90Min = new Date(now.getTime() + 90 * 60 * 1000);
+          
+          const upcomingMatches = fixtures.filter(f => {
+            const matchTime = new Date(f.utcDate);
+            return matchTime > now && matchTime <= in90Min;
+          });
+          
+          if (upcomingMatches.length > 0) {
+            // Send reminder DM
+            const team = config.livescoreTeams.find(t => t.id === teamId);
+            const teamName = team?.name || `Team ${teamId}`;
+            
+            upcomingMatches.forEach(match => {
+              const opponent = match.homeTeam.id === teamId ? match.awayTeam.name : match.homeTeam.name;
+              const isHome = match.homeTeam.id === teamId ? '🏠' : '✈️';
+              const timeUntilMatch = Math.floor((new Date(match.utcDate) - now) / 60 / 1000); // minutes
+              
+              const reminderEmbed = new EmbedBuilder()
+                .setColor('#f59e0b')
+                .setTitle(`⚠️ Trận đấu sắp bắt đầu!`)
+                .setDescription(`${isHome} **${teamName}** vs **${opponent}**`)
+                .addFields(
+                  { name: '🕐 Bắt đầu sau', value: `${timeUntilMatch} phút`, inline: true },
+                  { name: '🏆 Giải đấu', value: match.competition?.name || 'N/A', inline: true }
+                )
+                .setFooter({ text: 'Football Bot Reminder' })
+                .setTimestamp();
+              
+              user.send({ embeds: [reminderEmbed] }).catch(err => {
+                console.log(`⚠️ Could not send reminder to ${user.tag}:`, err.message);
+              });
+            });
+          }
+        }
+      } catch (err) {
+        console.error(`Error checking matches for user ${userId}:`, err.message);
+      }
+    }
+  }, 15 * 60 * 1000); // Check every 15 minutes
 });
 
 // Handle interactions (select menu, buttons)
@@ -239,18 +299,20 @@ client.on('messageCreate', async (message) => {
           `\`${PREFIX}hello\` - bot chào bạn`,
           `\`${PREFIX}echo <nội dung>\` - bot lặp lại câu bạn nói`,
           '',
-          '⚽ Livescore:',
+          '⚽ Livescore & Fixtures:',
           `\`${PREFIX}live [league_id]\` - xem trận đang diễn ra`,
           `\`${PREFIX}standings [league_code]\` - bảng xếp hạng`,
           `\`${PREFIX}fixtures <team_id>\` - lịch thi đấu sắp tới`,
+          `\`${PREFIX}lineup <match_id>\` - xem line-up trước trận (khi công bố)`,
           `\`${PREFIX}findteam <name>\` - tìm Team ID`,
           '',
-          '📍 Team Tracking:',
+          '📍 Team Tracking (Auto-Reminder):',
           `\`${PREFIX}teams\` - hiển thị danh sách team có sẵn`,
           `\`${PREFIX}track\` - chọn team để theo dõi (UI dropdown)`,
           `\`${PREFIX}untrack <team_id>\` - hủy theo dõi team`,
           `\`${PREFIX}mytracks\` - xem danh sách team đang theo dõi`,
           `\`${PREFIX}dashboard\` - xem dashboard với lịch thi đấu`,
+          '💡 **Auto-Reminder**: Bot sẽ nhắc 1h trước mỗi trận của team bạn track',
           '',
           '🎬 Movie Search:',
           `\`${PREFIX}search <tên phim>\` - tìm phim (hiển thị 10 kết quả)`,
@@ -863,6 +925,114 @@ client.on('messageCreate', async (message) => {
       
       standingsText += `═══════════════════════════════════`;
       message.reply(standingsText);
+      replied = true;
+      return;
+    }
+
+    // Get lineup for a match (before match)
+    if (command === 'lineup') {
+      if (args.length === 1) {
+        message.reply(`Cách dùng: \`${PREFIX}lineup <match_id>\`\n\nMatch ID có thể lấy từ lịch thi đấu hoặc từ live matches`);
+        replied = true;
+        return;
+      }
+
+      const matchId = args[1];
+      message.reply('⏳ Đang lấy line-up...');
+
+      try {
+        const matchData = await getMatchLineup(matchId);
+        
+        if (!matchData) {
+          await message.reply('❌ Không tìm thấy thông tin trận đấu!');
+          replied = true;
+          return;
+        }
+
+        const homeTeam = matchData.homeTeam;
+        const awayTeam = matchData.awayTeam;
+        const utcDate = new Date(matchData.utcDate);
+        const dateStr = utcDate.toLocaleString('vi-VN', {
+          weekday: 'long',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        // Create embeds for lineup
+        const embeds = [];
+        
+        const headerEmbed = new EmbedBuilder()
+          .setColor('#3b82f6')
+          .setTitle(`📋 Line-up: ${homeTeam.name} vs ${awayTeam.name}`)
+          .setDescription(`🏆 ${matchData.competition?.name || 'Unknown'}\n📅 ${dateStr}\n📊 Status: ${matchData.status}`)
+          .setTimestamp();
+
+        embeds.push(headerEmbed);
+
+        // Check if lineup is available
+        if (matchData.lineupNotAvailable) {
+          const messageEmbed = new EmbedBuilder()
+            .setColor('#f97316')
+            .setDescription(matchData.message || 'Line-up chưa được công bố. Trạng thái: ' + matchData.status);
+          
+          embeds.push(messageEmbed);
+          await message.reply({ embeds });
+          replied = true;
+          return;
+        }
+
+        // Home team lineup
+        const homeLineup = matchData.homeTeamLineup || [];
+        let homeText = `🏠 **${homeTeam.name}** (Formation: ${matchData.homeTeamFormation || 'N/A'})\n\n`;
+        
+        if (homeLineup.length > 0) {
+          homeText += '**Starting XI:**\n';
+          homeLineup.slice(0, 11).forEach((player, idx) => {
+            if (player && player.position && player.position !== 'UNKNOWN') {
+              homeText += `${idx + 1}. ${player.name} - ${player.position}\n`;
+            }
+          });
+        } else {
+          homeText += '_Line-up chưa được công bố_\n';
+        }
+
+        const homeEmbed = new EmbedBuilder()
+          .setColor('#ef4444')
+          .setDescription(homeText.slice(0, 2048))
+          .setFooter({ text: `${homeTeam.name}` });
+
+        embeds.push(homeEmbed);
+
+        // Away team lineup
+        const awayLineup = matchData.awayTeamLineup || [];
+        let awayText = `✈️ **${awayTeam.name}** (Formation: ${matchData.awayTeamFormation || 'N/A'})\n\n`;
+        
+        if (awayLineup.length > 0) {
+          awayText += '**Starting XI:**\n';
+          awayLineup.slice(0, 11).forEach((player, idx) => {
+            if (player && player.position && player.position !== 'UNKNOWN') {
+              awayText += `${idx + 1}. ${player.name} - ${player.position}\n`;
+            }
+          });
+        } else {
+          awayText += '_Line-up chưa được công bố_\n';
+        }
+
+        const awayEmbed = new EmbedBuilder()
+          .setColor('#3b82f6')
+          .setDescription(awayText.slice(0, 2048))
+          .setFooter({ text: `${awayTeam.name}` });
+
+        embeds.push(awayEmbed);
+
+        await message.reply({ embeds });
+      } catch (e) {
+        console.error('❌ Lỗi lấy line-up:', e.message);
+        await message.reply('❌ Có lỗi xảy ra. Vui lòng thử lại!');
+      }
       replied = true;
       return;
     }
