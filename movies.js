@@ -71,6 +71,18 @@ async function getMovieDetail(slug) {
     
     const movie = response.data.movie || {};
     
+    // Extract year from description if year field is null
+    let year = movie.year;
+    if (!year && movie.description) {
+      const yearMatch = movie.description.match(/(\d{4})/);
+      if (yearMatch) year = yearMatch[1];
+    }
+    
+    // If still no year, extract from created date
+    if (!year && movie.created) {
+      year = movie.created.split('-')[0];
+    }
+    
     return {
       name: movie.name,
       original_name: movie.original_name,
@@ -81,7 +93,7 @@ async function getMovieDetail(slug) {
       quality: movie.quality,
       language: movie.language,
       time: movie.time,
-      year: movie.year,
+      year: year || 'N/A',
       director: movie.director,
       casts: movie.casts,
       total_episodes: movie.total_episodes,
