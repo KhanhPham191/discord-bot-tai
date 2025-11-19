@@ -4,7 +4,7 @@ const path = require('path');
 const axios = require('axios');
 
 // Import movie functions
-const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, extractYearFromMovie } = require('./movies');
+const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpisodes, extractYearFromMovie } = require('./movies');
 
 // Import football functions
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
@@ -1263,18 +1263,223 @@ client.on('messageCreate', async (message) => {
           const movieTitle = movies[i - 1].name.substring(0, 20);
           buttons.push(
             new ButtonBuilder()
+              .setCustomId(`movie_select_${i}_${message.author.id}`)
               .setLabel(`${i}. ${movieTitle}`)
-              .setURL(movieLinks[i])
-              .setStyle(5) // Link button style
+              .setStyle(1) // Primary style
           );
         }
 
         const row = buttons.length > 0 ? new ActionRowBuilder().addComponents(buttons) : null;
 
-        await message.reply({ 
+        const response = await message.reply({ 
           embeds: [embed],
           components: row ? [row] : []
         });
+
+        // Collector for movie selection
+        const movieCollector = response.createMessageComponentCollector({
+          filter: (interaction) => interaction.user.id === message.author.id && interaction.customId.startsWith('movie_select_'),
+          time: 5 * 60 * 1000 // 5 minutes
+        });
+
+        movieCollector.on('collect', async (interaction) => {
+          // Extract movie number from customId
+          const movieNum = parseInt(interaction.customId.split('_')[2]);
+          const selectedMovie = movies[movieNum - 1];
+          const slug = selectedMovie.slug;
+
+          try {
+            const detail = await getMovieDetail(slug);
+            
+            if (!detail) {
+              await interaction.reply({ content: '❌ Không thể lấy thông tin phim', flags: 64 });
+              return;
+            }
+
+            // Show movie detail with server selection buttons
+            const movieDetail = new EmbedBuilder()
+              .setColor('#e50914')
+              .setTitle(`🎬 ${detail.name}`)
+              .setThumbnail(detail.thumb_url)
+              .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
+              .addFields(
+                { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
+                { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
+                { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
+                { name: '📺 Số tập', value: detail.totalEpisodes?.toString() || 'N/A', inline: true },
+                { name: '▶️ Tập hiện tại', value: detail.currentEpisode || 'N/A', inline: true }
+              )
+              .setTimestamp()
+              .setFooter({ text: 'Movie Detail' });
+
+            // Create server selection buttons
+            const serverButtons = [];
+            for (let i = 0; i < detail.episodes.length; i++) {
+              serverButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`server_select_${i}_${slug}_${message.author.id}`)
+                  .setLabel(detail.episodes[i].server_name.substring(0, 20))
+                  .setStyle(2) // Secondary style
+              );
+            }
+
+            const serverRow = serverButtons.length > 0 ? new ActionRowBuilder().addComponents(serverButtons) : null;
+
+            await interaction.update({
+              embeds: [movieDetail],
+              components: serverRow ? [serverRow] : []
+            });
+
+            // Collector for server selection
+            const serverCollector = response.createMessageComponentCollector({
+              filter: (inter) => inter.user.id === message.author.id && inter.customId.startsWith('server_select_'),
+              time: 5 * 60 * 1000
+            });
+
+            serverCollector.on('collect', async (serverInteraction) => {
+              const serverIndex = parseInt(serverInteraction.customId.split('_')[2]);
+              let currentPage = 1;
+
+              const createEpisodesEmbed = async (page) => {
+                const result = await getEpisodes(slug, page, serverIndex);
+                
+                if (!result.episodes || result.episodes.length === 0) {
+                  return null;
+                }
+
+                const episodeEmbed = new EmbedBuilder()
+                  .setColor('#e50914')
+                  .setTitle(`🎬 ${result.movieName}`)
+                  .setDescription(`📺 Server: **${result.serverName}**`)
+                  .setTimestamp()
+                  .setFooter({ text: `Trang ${result.currentPage}/${result.totalPages} | Tổng ${result.totalEpisodes} tập` });
+
+                let episodeList = '';
+                for (const episode of result.episodes) {
+                  const episodeNum = episode.name;
+                  episodeList += `**Tập ${episodeNum}**: [Xem →](${episode.embed})\n`;
+                }
+
+                episodeEmbed.addFields({ name: 'Danh sách tập', value: episodeList });
+                return episodeEmbed;
+              };
+
+              const initialEmbed = await createEpisodesEmbed(1);
+              
+              if (!initialEmbed) {
+                await serverInteraction.reply({
+                  content: `❌ Không tìm thấy tập phim`,
+                  flags: 64
+                });
+                return;
+              }
+
+              const epResult = await getEpisodes(slug, 1, serverIndex);
+
+              // Create pagination buttons
+              const createPaginationButtons = () => {
+                const paginationButtons = [];
+                
+                if (currentPage > 1) {
+                  paginationButtons.push(
+                    new ButtonBuilder()
+                      .setCustomId(`ep_prev_${serverIndex}_${slug}_${message.author.id}`)
+                      .setLabel('⬅️ Trang trước')
+                      .setStyle(1)
+                  );
+                }
+
+                paginationButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`ep_page_${serverIndex}_${slug}_${message.author.id}`)
+                    .setLabel(`${currentPage}/${epResult.totalPages}`)
+                    .setStyle(2)
+                    .setDisabled(true)
+                );
+
+                if (currentPage < epResult.totalPages) {
+                  paginationButtons.push(
+                    new ButtonBuilder()
+                      .setCustomId(`ep_next_${serverIndex}_${slug}_${message.author.id}`)
+                      .setLabel('Trang sau ➡️')
+                      .setStyle(1)
+                  );
+                }
+
+                return paginationButtons;
+              };
+
+              await serverInteraction.update({
+                embeds: [initialEmbed],
+                components: createPaginationButtons().length > 0 ? [new ActionRowBuilder().addComponents(createPaginationButtons())] : []
+              });
+
+              // Collector for pagination
+              const pageCollector = response.createMessageComponentCollector({
+                filter: (inter) => inter.user.id === message.author.id && inter.customId.includes(`_${serverIndex}_${slug}_`),
+                time: 5 * 60 * 1000
+              });
+
+              pageCollector.on('collect', async (pageInteraction) => {
+                if (pageInteraction.customId.includes('ep_prev_')) {
+                  if (currentPage > 1) currentPage--;
+                } else if (pageInteraction.customId.includes('ep_next_')) {
+                  currentPage++;
+                }
+
+                const newEmbed = await createEpisodesEmbed(currentPage);
+                
+                if (!newEmbed) {
+                  await pageInteraction.reply({
+                    content: `❌ Không tìm thấy tập trên trang **${currentPage}**`,
+                    flags: 64
+                  });
+                  return;
+                }
+
+                const newResult = await getEpisodes(slug, currentPage, serverIndex);
+                
+                const newPaginationButtons = [];
+                
+                if (currentPage > 1) {
+                  newPaginationButtons.push(
+                    new ButtonBuilder()
+                      .setCustomId(`ep_prev_${serverIndex}_${slug}_${message.author.id}`)
+                      .setLabel('⬅️ Trang trước')
+                      .setStyle(1)
+                  );
+                }
+
+                newPaginationButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`ep_page_${serverIndex}_${slug}_${message.author.id}`)
+                    .setLabel(`${currentPage}/${newResult.totalPages}`)
+                    .setStyle(2)
+                    .setDisabled(true)
+                );
+
+                if (currentPage < newResult.totalPages) {
+                  newPaginationButtons.push(
+                    new ButtonBuilder()
+                      .setCustomId(`ep_next_${serverIndex}_${slug}_${message.author.id}`)
+                      .setLabel('Trang sau ➡️')
+                      .setStyle(1)
+                  );
+                }
+
+                await pageInteraction.update({
+                  embeds: [newEmbed],
+                  components: newPaginationButtons.length > 0 ? [new ActionRowBuilder().addComponents(newPaginationButtons)] : []
+                });
+              });
+            });
+
+          } catch (error) {
+            console.error('❌ Lỗi khi chọn phim:', error.message);
+            await interaction.reply({ content: '❌ Có lỗi xảy ra. Vui lòng thử lại!', flags: 64 });
+          }
+        });
+
         console.log('✅ Search results sent successfully');
         
       } catch (error) {
@@ -1282,6 +1487,162 @@ client.on('messageCreate', async (message) => {
         await message.reply('❌ Có lỗi xảy ra khi tìm kiếm phim. Vui lòng thử lại!');
       }
       
+      replied = true;
+      return;
+    }
+
+    // Episodes command
+    if (command === 'episodes' || command === 'ep') {
+      const slug = args.join('-').toLowerCase();
+      
+      if (!slug) {
+        await message.reply('❌ Vui lòng nhập slug phim! Ví dụ: `!episodes hoa-thien-cot`');
+        replied = true;
+        return;
+      }
+
+      try {
+        let currentPage = 1;
+
+        const createEpisodesEmbed = async (page) => {
+          const result = await getEpisodes(slug, page);
+          
+          if (!result.episodes || result.episodes.length === 0) {
+            return null;
+          }
+
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 ${result.movieName}`)
+            .setDescription(`📅 Năm phát hành: ${result.movieYear}`)
+            .setTimestamp()
+            .setFooter({ text: `Trang ${result.currentPage}/${result.totalPages} | Tổng ${result.totalEpisodes} tập` });
+
+          let episodeList = '';
+          for (const episode of result.episodes) {
+            const episodeNum = episode.name;
+            episodeList += `**Tập ${episodeNum}**: [Xem →](${episode.embed})\n`;
+          }
+
+          embed.addFields({ name: 'Danh sách tập', value: episodeList });
+          return embed;
+        };
+
+        const initialEmbed = await createEpisodesEmbed(1);
+        
+        if (!initialEmbed) {
+          await message.reply(`❌ Không tìm thấy phim với slug: **${slug}**`);
+          replied = true;
+          return;
+        }
+
+        const result = await getEpisodes(slug, 1);
+
+        // Buttons for pagination
+        const createButtons = () => {
+          const buttons = [];
+          
+          if (currentPage > 1) {
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`episodes_prev_${message.author.id}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(1)
+            );
+          }
+
+          buttons.push(
+            new ButtonBuilder()
+              .setCustomId(`episodes_page_${message.author.id}`)
+              .setLabel(`Trang ${currentPage}/${result.totalPages}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+
+          if (currentPage < result.totalPages) {
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`episodes_next_${message.author.id}`)
+                .setLabel('Trang sau ➡️')
+                .setStyle(1)
+            );
+          }
+
+          return buttons;
+        };
+
+        const response = await message.reply({
+          embeds: [initialEmbed],
+          components: createButtons().length > 0 ? [new ActionRowBuilder().addComponents(createButtons())] : []
+        });
+
+        const collector = response.createMessageComponentCollector({
+          filter: (interaction) => interaction.user.id === message.author.id,
+          time: 5 * 60 * 1000 // 5 minutes
+        });
+
+        collector.on('collect', async (interaction) => {
+          if (interaction.customId === `episodes_prev_${message.author.id}`) {
+            if (currentPage > 1) currentPage--;
+          } else if (interaction.customId === `episodes_next_${message.author.id}`) {
+            currentPage++;
+          }
+
+          const newEmbed = await createEpisodesEmbed(currentPage);
+          
+          if (!newEmbed) {
+            await interaction.reply({
+              content: `❌ Không tìm thấy tập trên trang **${currentPage}**`,
+              flags: 64
+            });
+            return;
+          }
+
+          const newResult = await getEpisodes(slug, currentPage);
+          
+          const newButtons = [];
+          
+          if (currentPage > 1) {
+            newButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`episodes_prev_${message.author.id}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(1)
+            );
+          }
+
+          newButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`episodes_page_${message.author.id}`)
+              .setLabel(`Trang ${currentPage}/${newResult.totalPages}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+
+          if (currentPage < newResult.totalPages) {
+            newButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`episodes_next_${message.author.id}`)
+                .setLabel('Trang sau ➡️')
+                .setStyle(1)
+            );
+          }
+
+          await interaction.update({
+            embeds: [newEmbed],
+            components: newButtons.length > 0 ? [new ActionRowBuilder().addComponents(newButtons)] : []
+          });
+        });
+
+        collector.on('end', () => {
+          console.log('Episode pagination ended');
+        });
+
+      } catch (error) {
+        console.error('❌ Lỗi lấy danh sách tập:', error.message);
+        await message.reply('❌ Có lỗi xảy ra khi lấy danh sách tập. Vui lòng thử lại!');
+      }
+
       replied = true;
       return;
     }

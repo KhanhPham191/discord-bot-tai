@@ -150,10 +150,46 @@ async function getMovieDetail(slug) {
   }
 }
 
+// Get episodes for a movie with pagination and server selection
+async function getEpisodes(slug, page = 1, serverIndex = 0) {
+  try {
+    const detail = await getMovieDetail(slug);
+    if (!detail || !detail.episodes) {
+      return { episodes: [], totalPages: 0, currentPage: 1, totalEpisodes: 0, serverName: '' };
+    }
+
+    // Get episodes from specified server (default: first server = Vietsub)
+    const selectedServer = detail.episodes[serverIndex] || detail.episodes[0];
+    const allEpisodes = selectedServer.items || [];
+
+    const totalEpisodes = allEpisodes.length;
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(totalEpisodes / itemsPerPage);
+    const startIdx = (page - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    const paginatedEpisodes = allEpisodes.slice(startIdx, endIdx);
+
+    return {
+      episodes: paginatedEpisodes,
+      totalPages,
+      currentPage: page,
+      totalEpisodes,
+      movieName: detail.name,
+      movieYear: detail.year,
+      serverName: selectedServer.server_name,
+      availableServers: detail.episodes.map(s => s.server_name)
+    };
+  } catch (error) {
+    console.error('❌ Lỗi API lấy danh sách tập:', error.message);
+    return { episodes: [], totalPages: 0, currentPage: 1, totalEpisodes: 0, serverName: '' };
+  }
+}
+
 module.exports = {
   searchMovies,
   searchMoviesByYear,
   getNewMovies,
   getMovieDetail,
+  getEpisodes,
   extractYearFromMovie
 };
