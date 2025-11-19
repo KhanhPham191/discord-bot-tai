@@ -1054,21 +1054,27 @@ client.on('messageCreate', async (message) => {
             titleDisplay += ` (${englishTitle})`;
           }
           
-          description += `${titleDisplay}`;
+          description += `${titleDisplay}\n`;
+          
+          let infoLine = '';
           
           // Show year if available
           if (year !== 'N/A') {
-            description += ` | 📅 ${year}`;
+            infoLine += `📅 ${year}`;
           }
           
           // Show category if available
           if (category !== 'N/A') {
-            description += category !== 'N/A' ? ` | 📺 ${category}` : '';
+            infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
           }
           
           // Show episode count
           if (totalEpisodes !== 'N/A') {
-            description += totalEpisodes !== 'N/A' ? ` | 🎬 ${totalEpisodes} tập` : '';
+            infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+          }
+          
+          if (infoLine) {
+            description += infoLine + '\n';
           }
           
           description += '\n';
@@ -1492,19 +1498,25 @@ client.on('messageCreate', async (message) => {
           
           description += `\n${titleDisplay}\n`;
           
+          let infoLine = '';
+          
           // Show year if available
           if (year !== 'N/A') {
-            description += `📅 Năm phát hành: ${year}`;
+            infoLine += `📅 ${year}`;
           }
           
           // Show category if available
           if (category !== 'N/A') {
-            description += category !== 'N/A' ? ` | 📺 ${category}` : '';
+            infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
           }
           
           // Show episode count
           if (totalEpisodes !== 'N/A') {
-            description += totalEpisodes !== 'N/A' ? ` | 🎬 ${totalEpisodes} tập` : '';
+            infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+          }
+          
+          if (infoLine) {
+            description += infoLine + '\n';
           }
           
           description += '\n';

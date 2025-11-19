@@ -142,6 +142,7 @@ async function getMovieDetail(slug) {
       total_episodes: movie.total_episodes,
       current_episode: movie.current_episode,
       watchSource: watchSource,
+      category: movie.category || {}, // Include category for type detection
       episodes: movie.episodes || [] // Array of episodes with watch sources
     };
   } catch (error) {
