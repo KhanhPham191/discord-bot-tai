@@ -1189,13 +1189,13 @@ client.on('messageCreate', async (message) => {
           return;
         }
 
-        // Limit to 25 results (Discord max 5 rows x 5 buttons)
-        const movies = searchResults.slice(0, 25);
+        // Limit to 10 results
+        const movies = searchResults.slice(0, 10);
         
         const embed = new EmbedBuilder()
           .setColor('#e50914') // Netflix red
           .setTitle(`🎬 Kết Quả Tìm Kiếm: "${keyword}"`)
-          .setDescription(`Tìm thấy **${searchResults.length}** phim, hiển thị **${movies.length}** kết quả`)
+          .setDescription(`Tìm thấy **${searchResults.length}** phim`)
           .setTimestamp();
 
         // Build movie list with detailed info
@@ -1265,9 +1265,9 @@ client.on('messageCreate', async (message) => {
 
         embed.setDescription(description);
         
-        // Create buttons for all movies (up to 25) - Discord allows max 5 buttons per row (5 rows)
+        // Create buttons for all movies (up to 10) - Discord allows max 5 buttons per row
         const buttons = [];
-        for (let i = 1; i <= Math.min(25, movies.length); i++) {
+        for (let i = 1; i <= Math.min(10, movies.length); i++) {
           const movieTitle = movies[i - 1].name.substring(0, 15);
           buttons.push(
             new ButtonBuilder()
