@@ -1708,7 +1708,6 @@ client.on('messageCreate', async (message) => {
 • \`!search the marvel\` - Tìm phim "the marvel"
 
 **Tính năng:**
-✅ Tìm kiếm phim từ API phim.nguonc.com
 ✅ Hiển thị tên Việt + tên Anh + năm phát hành
 ✅ Tối đa 10 kết quả trên mỗi lần tìm
 ✅ Link xem phim trực tiếp
