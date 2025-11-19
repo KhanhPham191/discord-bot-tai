@@ -1545,14 +1545,15 @@ client.on('messageCreate', async (message) => {
 📌 **Hướng Dẫn Lệnh Phim Mới**
 
 **Cú pháp:**
-\`!newmovies [trang]\` hoặc \`!newphim [trang]\`
+\`!newmovies\` hoặc \`!newphim\`
 
 **Ví dụ:**
-• \`!newmovies\` - Hiển thị phim mới trang 1
-• \`!newmovies 2\` - Hiển thị phim mới trang 2
-• \`!newmovies 3\` - Hiển thị phim mới trang 3
+• \`!newmovies\` - Hiển thị phim mới (trang 1 mặc định)
+• \`!newmovies 2\` - Chuyển sang trang 2
+• \`!newmovies 3\` - Chuyển sang trang 3
 
 **Tính năng:**
+✅ Mặc định trang 1 khi không nhập số
 ✅ Hiển thị 10 phim mới nhất trên mỗi trang
 ✅ Hiển thị tên Việt + tên Anh + năm phát hành
 ✅ Nút điều hướng: ⬅️ Trước | Sau ➡️
