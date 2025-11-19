@@ -1,0 +1,6 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+restartPolicyMaxRetries = 5
+numReplicas = 1
