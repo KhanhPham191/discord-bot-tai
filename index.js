@@ -1265,10 +1265,10 @@ client.on('messageCreate', async (message) => {
 
         embed.setDescription(description);
         
-        // Create buttons for first 3 movies to view details
+        // Create buttons for all movies (up to 10) - Discord allows max 5 buttons per row
         const buttons = [];
-        for (let i = 1; i <= Math.min(3, movies.length); i++) {
-          const movieTitle = movies[i - 1].name.substring(0, 20);
+        for (let i = 1; i <= Math.min(10, movies.length); i++) {
+          const movieTitle = movies[i - 1].name.substring(0, 15);
           buttons.push(
             new ButtonBuilder()
               .setCustomId(`movie_detail_${i}_${message.author.id}`)
@@ -1277,11 +1277,15 @@ client.on('messageCreate', async (message) => {
           );
         }
 
-        const row = buttons.length > 0 ? new ActionRowBuilder().addComponents(buttons) : null;
+        // Split buttons into rows (max 5 per row)
+        const buttonRows = [];
+        for (let i = 0; i < buttons.length; i += 5) {
+          buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+        }
 
         const response = await message.reply({ 
           embeds: [embed],
-          components: row ? [row] : []
+          components: buttonRows.length > 0 ? buttonRows : []
         });
 
         // Collector for movie selection
