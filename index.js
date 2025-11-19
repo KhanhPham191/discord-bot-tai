@@ -4,7 +4,7 @@ const path = require('path');
 const axios = require('axios');
 
 // Import movie functions
-const { searchMovies, getNewMovies, extractYearFromMovie } = require('./movies');
+const { searchMovies, getNewMovies, getMovieDetail, extractYearFromMovie } = require('./movies');
 
 // Import football functions
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
@@ -1201,12 +1201,17 @@ client.on('messageCreate', async (message) => {
 
         // Build movie list
         let description = '';
+        const movieLinks = {};
+        
         movies.forEach((movie, idx) => {
           const year = movie.year || 'N/A';
           const slug = movie.slug || '';
           const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
           const title = movie.name || movie.title || 'Unknown';
           const englishTitle = movie.original_name || '';
+          
+          // Store link for button use
+          movieLinks[idx + 1] = link;
           
           // Truncate long titles
           const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
@@ -1226,8 +1231,25 @@ client.on('messageCreate', async (message) => {
         });
 
         embed.setDescription(description);
+        
+        // Create buttons for first 3 movies
+        const buttons = [];
+        for (let i = 1; i <= Math.min(3, movies.length); i++) {
+          const movieTitle = movies[i - 1].name.substring(0, 20);
+          buttons.push(
+            new ButtonBuilder()
+              .setLabel(`${i}. ${movieTitle}`)
+              .setURL(movieLinks[i])
+              .setStyle(5) // Link button style
+          );
+        }
 
-        await message.reply({ embeds: [embed] });
+        const row = buttons.length > 0 ? new ActionRowBuilder().addComponents(buttons) : null;
+
+        await message.reply({ 
+          embeds: [embed],
+          components: row ? [row] : []
+        });
         console.log('✅ Search results sent successfully');
         
       } catch (error) {

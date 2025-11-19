@@ -54,8 +54,39 @@ async function getNewMovies(page = 1) {
   }
 }
 
+// Get detailed movie info (with watch source)
+async function getMovieDetail(slug) {
+  try {
+    const response = await axios.get(`https://phim.nguonc.com/api/film/${slug}`);
+    
+    const movie = response.data.movie || {};
+    
+    return {
+      name: movie.name,
+      original_name: movie.original_name,
+      slug: movie.slug,
+      thumb_url: movie.thumb_url,
+      poster_url: movie.poster_url,
+      description: movie.description,
+      quality: movie.quality,
+      language: movie.language,
+      time: movie.time,
+      year: movie.year,
+      director: movie.director,
+      casts: movie.casts,
+      total_episodes: movie.total_episodes,
+      current_episode: movie.current_episode,
+      episodes: movie.episodes || [] // Array of episodes with watch sources
+    };
+  } catch (error) {
+    console.error('❌ Lỗi API lấy chi tiết phim:', error.response?.data?.message || error.message);
+    return null;
+  }
+}
+
 module.exports = {
   searchMovies,
   getNewMovies,
+  getMovieDetail,
   extractYearFromMovie
 };
