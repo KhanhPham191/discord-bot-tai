@@ -1018,9 +1018,33 @@ client.on('messageCreate', async (message) => {
         let description = '';
         for (let idx = 0; idx < movies.length; idx++) {
           const movie = movies[idx];
+          const slug = movie.slug || '';
           const title = movie.name || movie.title || 'Unknown';
           const englishTitle = movie.original_name || '';
           const year = movie.year || 'N/A';
+          
+          // Fetch detail for category and episode count
+          let totalEpisodes = 'N/A';
+          let category = 'N/A';
+          try {
+            if (slug) {
+              const detail = await getMovieDetail(slug);
+              if (detail) {
+                if (detail.total_episodes) {
+                  totalEpisodes = detail.total_episodes.toString();
+                }
+                // Extract category from detail
+                if (detail.category && detail.category[1]) {
+                  const categoryList = detail.category[1].list;
+                  if (categoryList && categoryList.length > 0) {
+                    category = categoryList[0].name;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.log(`⚠️ Could not fetch detail for ${slug}`);
+          }
           
           const movieNum = idx + 1;
           
@@ -1035,6 +1059,16 @@ client.on('messageCreate', async (message) => {
           // Show year if available
           if (year !== 'N/A') {
             description += ` | 📅 ${year}`;
+          }
+          
+          // Show category if available
+          if (category !== 'N/A') {
+            description += category !== 'N/A' ? ` | 📺 ${category}` : '';
+          }
+          
+          // Show episode count
+          if (totalEpisodes !== 'N/A') {
+            description += totalEpisodes !== 'N/A' ? ` | 🎬 ${totalEpisodes} tập` : '';
           }
           
           description += '\n';
