@@ -110,26 +110,17 @@ async function getMovieDetail(slug) {
     
     // If year field is null, try to extract from description
     if (!year && movie.description) {
-      // Look for year patterns in description like "năm 2015", "2015", "bộ phim 2015" etc
-      const patterns = [
-        /năm\s+(\d{4})/i,           // "năm 2015"
-        /phát hành\s+(\d{4})/i,     // "phát hành 2015"
-        /release.*?(\d{4})/i,        // "release 2015"
-        /(\d{4})\s+film/i,           // "2015 film"
-        /^(\d{4})/,                  // Year at start of description
-        /(\d{4})/                    // Any 4-digit number
-      ];
+      // Find ALL 4-digit numbers that could be years
+      const allYears = movie.description.match(/(\d{4})/g) || [];
       
-      for (const pattern of patterns) {
-        const match = movie.description.match(pattern);
-        if (match && match[1]) {
-          const possibleYear = parseInt(match[1]);
-          // Only accept years between 1900 and current year
-          if (possibleYear >= 1900 && possibleYear <= new Date().getFullYear()) {
-            year = possibleYear.toString();
-            break;
-          }
-        }
+      // Filter for reasonable release years (1980-2099) and get the latest one
+      const reasonableYears = allYears
+        .map(y => parseInt(y))
+        .filter(y => y >= 1980 && y <= new Date().getFullYear() + 1)
+        .sort((a, b) => b - a); // Sort descending
+      
+      if (reasonableYears.length > 0) {
+        year = reasonableYears[0].toString(); // Take the latest/highest year
       }
     }
     
