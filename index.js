@@ -1259,21 +1259,34 @@ client.on('messageCreate', async (message) => {
           
           description += '\n';
           
-          // Show detail link
-          if (link !== 'N/A') {
-            description += `→ [Chi tiết phim](${link})\n`;
-          }
+          // Store slug for button use
+          movieLinks[idx + 1] = slug;
         }
 
         embed.setDescription(description);
         
+        // Create buttons for first 3 movies to view details
+        const buttons = [];
+        for (let i = 1; i <= Math.min(3, movies.length); i++) {
+          const movieTitle = movies[i - 1].name.substring(0, 20);
+          buttons.push(
+            new ButtonBuilder()
+              .setCustomId(`movie_detail_${i}_${message.author.id}`)
+              .setLabel(`${i}. ${movieTitle}`)
+              .setStyle(1) // Primary style
+          );
+        }
+
+        const row = buttons.length > 0 ? new ActionRowBuilder().addComponents(buttons) : null;
+
         const response = await message.reply({ 
-          embeds: [embed]
+          embeds: [embed],
+          components: row ? [row] : []
         });
 
-        // Collector for movie selection via link (removed buttons)
+        // Collector for movie selection
         const movieCollector = response.createMessageComponentCollector({
-          filter: (interaction) => interaction.user.id === message.author.id && interaction.customId.startsWith('movie_select_'),
+          filter: (interaction) => interaction.user.id === message.author.id && interaction.customId.startsWith('movie_detail_'),
           time: 5 * 60 * 1000 // 5 minutes
         });
 
