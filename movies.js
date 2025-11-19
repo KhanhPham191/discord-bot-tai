@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-// Movie search function
+// Movie search function with release year
 async function searchMovies(keyword) {
   try {
     const response = await axios.get('https://phim.nguonc.com/api/films/search', {
@@ -9,13 +9,51 @@ async function searchMovies(keyword) {
     
     const items = response.data.items || [];
     
-    // Extract year from description or created date
-    return items.map(item => ({
-      ...item,
-      year: extractYearFromMovie(item)
+    // Try to fetch release year from year endpoint for each movie
+    const moviesWithYear = await Promise.all(items.map(async (item) => {
+      try {
+        // Try to get release year from nam-phat-hanh endpoint
+        const yearResponse = await axios.get(`https://phim.nguonc.com/api/films/nam-phat-hanh/${item.created.split('-')[0]}?page=1`);
+        const yearItems = yearResponse.data.items || [];
+        const found = yearItems.find(m => m.slug === item.slug);
+        
+        if (found) {
+          return {
+            ...item,
+            year: item.created.split('-')[0]
+          };
+        }
+      } catch (e) {
+        // Fallback if year endpoint fails
+      }
+      
+      // Fallback: extract year from other sources
+      return {
+        ...item,
+        year: extractYearFromMovie(item)
+      };
     }));
+    
+    return moviesWithYear;
   } catch (error) {
     console.error('❌ Lỗi API tìm kiếm phim:', error.response?.data?.message || error.message);
+    return [];
+  }
+}
+
+// Search movies by release year
+async function searchMoviesByYear(year, page = 1) {
+  try {
+    const response = await axios.get(`https://phim.nguonc.com/api/films/nam-phat-hanh/${year}?page=${page}`);
+    
+    const items = response.data.items || [];
+    
+    return items.map(item => ({
+      ...item,
+      year: year
+    }));
+  } catch (error) {
+    console.error(`❌ Lỗi API tìm phim theo năm ${year}:`, error.response?.data?.message || error.message);
     return [];
   }
 }
@@ -108,6 +146,7 @@ async function getMovieDetail(slug) {
 
 module.exports = {
   searchMovies,
+  searchMoviesByYear,
   getNewMovies,
   getMovieDetail,
   extractYearFromMovie

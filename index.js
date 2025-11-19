@@ -4,7 +4,7 @@ const path = require('path');
 const axios = require('axios');
 
 // Import movie functions
-const { searchMovies, getNewMovies, getMovieDetail, extractYearFromMovie } = require('./movies');
+const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, extractYearFromMovie } = require('./movies');
 
 // Import football functions
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
@@ -1209,6 +1209,7 @@ client.on('messageCreate', async (message) => {
           const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
           const title = movie.name || movie.title || 'Unknown';
           const englishTitle = movie.original_name || '';
+          const year = movie.year || 'N/A';
           
           // Store link for button use
           movieLinks[idx + 1] = link;
@@ -1223,6 +1224,11 @@ client.on('messageCreate', async (message) => {
           }
           
           description += `\n${titleDisplay}\n`;
+          
+          // Show year if available
+          if (year !== 'N/A') {
+            description += `📅 Năm phát hành: ${year}\n`;
+          }
           
           if (link !== 'N/A') {
             description += `└─ [Xem phim →](${link})\n`;
