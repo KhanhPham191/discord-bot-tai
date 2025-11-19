@@ -12,6 +12,14 @@ const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtu
 // Load .env file - required for API keys
 require('dotenv').config();
 
+// Ensure all required environment variables are set
+if (!process.env.FOOTBALL_API_KEY) {
+  console.warn('⚠️ FOOTBALL_API_KEY not set from .env');
+}
+if (!process.env.DISCORD_TOKEN) {
+  console.warn('⚠️ DISCORD_TOKEN not set from .env');
+}
+
 const TOKEN = process.env.DISCORD_TOKEN;
 const LIVESCORE_CHANNEL = '694577581298810946';
 const LIVESCORE_UPDATE_INTERVAL = 10 * 60 * 1000; // 10 minutes
