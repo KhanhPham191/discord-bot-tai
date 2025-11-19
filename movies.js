@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-// Movie search function with release year from detail endpoint
+// Movie search function - fetch year from detail endpoint
 async function searchMovies(keyword) {
   try {
     const response = await axios.get('https://phim.nguonc.com/api/films/search', {
@@ -20,13 +20,13 @@ async function searchMovies(keyword) {
           };
         }
       } catch (e) {
-        console.log(`⚠️ Could not fetch detail for ${item.slug}: ${e.message}`);
+        console.log(`⚠️ Could not fetch detail for ${item.slug}`);
       }
       
-      // Fallback if detail fails
+      // Fallback to created year
       return {
         ...item,
-        year: extractYearFromMovie(item)
+        year: item.created ? item.created.split('-')[0] : 'N/A'
       };
     }));
     
@@ -98,35 +98,23 @@ async function getNewMovies(page = 1) {
   }
 }
 
-// Get detailed movie info (with watch source)
+// Get detailed movie info (with watch source and release year from category)
 async function getMovieDetail(slug) {
   try {
     const response = await axios.get(`https://phim.nguonc.com/api/film/${slug}`);
     
     const movie = response.data.movie || {};
     
-    // Extract year from movie - try multiple methods
+    // Extract year from category > "Năm" group
     let year = movie.year;
-    
-    // If year field is null, try to extract from description
-    if (!year && movie.description) {
-      // Find ALL 4-digit numbers that could be years
-      const allYears = movie.description.match(/(\d{4})/g) || [];
-      
-      // Filter for reasonable release years (1980-2099) and get the latest one
-      const reasonableYears = allYears
-        .map(y => parseInt(y))
-        .filter(y => y >= 1980 && y <= new Date().getFullYear() + 1)
-        .sort((a, b) => b - a); // Sort descending
-      
-      if (reasonableYears.length > 0) {
-        year = reasonableYears[0].toString(); // Take the latest/highest year
+    if (!year && movie.category) {
+      // Find the category group with name "Năm"
+      for (const key in movie.category) {
+        if (movie.category[key].group.name === 'Năm' && movie.category[key].list.length > 0) {
+          year = movie.category[key].list[0].name; // Get first year entry
+          break;
+        }
       }
-    }
-    
-    // If still no year, fallback to created date
-    if (!year && movie.created) {
-      year = movie.created.split('-')[0];
     }
     
     return {
