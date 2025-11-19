@@ -2,7 +2,11 @@ const { Client, GatewayIntentBits, PermissionFlagsBits, ActionRowBuilder, String
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-require('dotenv').config();
+
+// Load .env only when running locally (not on Railway)
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY;
@@ -785,8 +789,9 @@ client.on('messageCreate', async (message) => {
   
   // Xử lý lệnh PREFIX
   if (content.startsWith(PREFIX)) {
-    const args = content.slice(PREFIX.length).trim().split(/\s+/);
-    const command = args.shift().toLowerCase();
+    const afterPrefix = content.slice(PREFIX.length).trim();
+    const args = afterPrefix.split(/\s+/);
+    const command = args[0].toLowerCase();
     const isAdmin = message.member?.permissions.has(PermissionFlagsBits.Administrator) || message.author.id === message.guild?.ownerId;
 
     if (command === 'ping') {
@@ -1705,23 +1710,31 @@ client.on('messageCreate', async (message) => {
 
     // Search phim command
     if (command === 'search') {
-      console.log('🔍 Search command triggered with args:', args);
+      console.log('🔍 Search command triggered');
       
-      // Combine args into keyword first
-      const keyword = args.join(' ').trim();
+      // Get remaining text after "search" command (preserves spaces and quotes)
+      const searchText = afterPrefix.slice('search'.length).trim();
       
-      // Check if asking for help
+      // Extract keyword (remove quotes if present, otherwise use as-is)
+      let keyword = searchText;
+      if (searchText.startsWith('"') && searchText.endsWith('"')) {
+        keyword = searchText.slice(1, -1).trim();
+      }
+      
+      console.log('📝 Raw keyword:', keyword); // Debug log
+      
+      // Check if asking for help or no keyword
       if (!keyword || keyword.toLowerCase() === 'help') {
         const helpText = `
 📌 **Hướng Dẫn Lệnh Tìm Kiếm Phim**
 
 **Cú pháp:**
-\`!search <tên phim>\`
+\`!search tên phim\`
 
 **Ví dụ:**
 • \`!search avatar\` - Tìm phim "avatar"
-• \`!search the marvel\` - Tìm phim "the marvel"
 • \`!search mưa đỏ\` - Tìm phim "mưa đỏ"
+• \`!search the marvel\` - Tìm phim "the marvel"
 
 **Tính năng:**
 ✅ Tìm kiếm phim từ API phim.nguonc.com
@@ -1737,8 +1750,6 @@ client.on('messageCreate', async (message) => {
         replied = true;
         return;
       }
-      
-      console.log('📝 Searching for:', keyword);
       
       if (keyword.length < 2) {
         message.reply('❌ Tên phim phải có ít nhất 2 ký tự!\n\n💡 Gõ `!search help` để xem hướng dẫn chi tiết');
