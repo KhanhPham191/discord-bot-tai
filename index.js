@@ -752,10 +752,31 @@ client.on('messageCreate', async (message) => {
       message.reply('⏳ Đang tìm kiếm đội bóng...');
       
       try {
-        // Search in livescoreTeams
-        const foundTeams = config.livescoreTeams.filter(team => 
+        // First try to search in livescoreTeams (local config)
+        let foundTeams = config.livescoreTeams?.filter(team => 
           team.name.toLowerCase().includes(teamName)
-        );
+        ) || [];
+        
+        // If not found in config, try API search
+        if (foundTeams.length === 0) {
+          try {
+            const API_URL = process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4';
+            const API_KEY = process.env.FOOTBALL_API_KEY;
+            
+            const response = await axios.get(`${API_URL}/teams`, {
+              headers: { 'X-Auth-Token': API_KEY }
+            });
+            
+            if (response.data.teams) {
+              foundTeams = response.data.teams.filter(team =>
+                team.name.toLowerCase().includes(teamName) ||
+                team.shortName?.toLowerCase().includes(teamName)
+              ).slice(0, 10);
+            }
+          } catch (apiError) {
+            console.log('⚠️ API search failed, using config only:', apiError.message);
+          }
+        }
         
         if (foundTeams.length === 0) {
           message.reply(`❌ Không tìm thấy đội bóng nào khớp với: **${teamName}**`);
@@ -769,6 +790,10 @@ client.on('messageCreate', async (message) => {
         foundTeams.slice(0, 10).forEach((team, idx) => {
           resultText += `${idx + 1}. **${team.name}**\n`;
           resultText += `   ID: ${team.id}\n`;
+          if (team.shortName) {
+            resultText += `   Tên ngắn: ${team.shortName}\n`;
+          }
+          resultText += `   💡 Dùng \`${PREFIX}fixtures ${team.id}\` để xem lịch thi đấu\n`;
           resultText += `   💡 Dùng \`${PREFIX}track ${team.id}\` để theo dõi\n\n`;
         });
         
@@ -872,10 +897,91 @@ client.on('messageCreate', async (message) => {
       // Set cooldown for this user (30 seconds)
       fixturesCooldown.set(userId, now + FIXTURES_COOLDOWN_MS);
       
+      // If team ID is provided as argument, show fixtures directly
+      if (args.length > 0 && !isNaN(parseInt(args[0]))) {
+        const teamId = parseInt(args[0]);
+        
+        try {
+          const fixtures = await getFixturesWithCL(teamId, 10);
+          
+          if (fixtures.length === 0) {
+            await message.reply(`❌ Không tìm thấy lịch thi đấu cho team ID: **${teamId}**`);
+            replied = true;
+            return;
+          }
+          
+          // Get team name from API or config
+          let teamName = `Team ${teamId}`;
+          try {
+            const teamData = await getTeamById(teamId);
+            if (teamData) {
+              teamName = teamData.name;
+            }
+          } catch (e) {
+            console.log('⚠️ Could not fetch team name:', e.message);
+          }
+          
+          // Create main embed with professional styling (Tailwind-inspired)
+          const embeds = [];
+          const headerEmbed = new EmbedBuilder()
+            .setColor('#1e40af') // Tailwind blue-800
+            .setTitle(`⚽ ${teamName}`)
+            .setDescription(`**Lịch Thi Đấu Sắp Tới**\n${fixtures.length} trận`)
+            .setTimestamp()
+            .setFooter({ text: 'Football Bot | Updated' });
+          
+          embeds.push(headerEmbed);
+          
+          // Create individual embed for each fixture block
+          let currentText = '';
+          let matchCount = 0;
+          
+          fixtures.slice(0, 10).forEach((f, idx) => {
+            const date = new Date(f.utcDate);
+            const dateStr = date.toLocaleString('vi-VN', {
+              weekday: 'short',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
+            const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
+            const competition = f.inChampionsLeague ? '🏆 Champions League' : (f.competition?.name || 'Unknown');
+            
+            const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • ${competition}\n`;
+            
+            currentText += matchStr;
+            matchCount++;
+            
+            // Create new embed every 5 matches to avoid character limit
+            if (matchCount === 5 || idx === fixtures.length - 1) {
+              const fixturesEmbed = new EmbedBuilder()
+                .setColor('#059669') // Tailwind green-600
+                .setDescription(currentText.trim())
+                .setFooter({ text: `Trận ${matchCount === 5 ? (idx - 4) + '-' + (idx + 1) : (idx - matchCount + 2) + '-' + (idx + 1)} của ${fixtures.length}` });
+              
+              embeds.push(fixturesEmbed);
+              currentText = '';
+              matchCount = 0;
+            }
+          });
+          
+          await message.reply({ embeds });
+          replied = true;
+          return;
+        } catch (e) {
+          console.error('❌ Lỗi lấy lịch thi đấu:', e.message);
+          await message.reply('❌ Có lỗi xảy ra khi lấy lịch thi đấu. Vui lòng thử lại!');
+          replied = true;
+          return;
+        }
+      }
+      
       const userTrackedTeams = getUserTrackedTeams(userId);
       
       if (userTrackedTeams.length === 0) {
-        message.reply('❌ Bạn chưa theo dõi team nào. Dùng `!track` để thêm team.');
+        message.reply('❌ Bạn chưa theo dõi team nào.\n\n💡 Cách dùng:\n• `!track` - chọn team để theo dõi\n• `!fixtures <team_id>` - xem lịch của team nào đó\n• `!findteam <tên>` - tìm Team ID');
         replied = true;
         return;
       }
@@ -999,7 +1105,7 @@ client.on('messageCreate', async (message) => {
       const firstArg = args.length > 0 ? args[0].toLowerCase() : '';
       if (firstArg === 'help') {
         const helpText = `
-📌 **Hướng Dẫn Lệnh Phim Mới**
+📌 **Hướng Dẫn Lệnh Phim **
 
 **Cú pháp:**
 \`!newmovies\` hoặc \`!newphim\`

@@ -73,45 +73,52 @@ async function getStandings(competitionId) {
 // Get fixtures for a team
 async function getFixtures(teamId, next = 10) {
   try {
-    // Try to get from team endpoint first
+    // Get from team endpoint first
     let response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
       headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
       params: { 
         status: 'SCHEDULED,LIVE',
-        limit: next
+        limit: next * 2 // Get more to account for filtering
       }
     });
     
     let matches = response.data.matches || [];
     
-    // If no recent matches or they're too far in the future, try competition endpoint
-    if (matches.length === 0 || (matches.length > 0 && new Date(matches[0].utcDate) > new Date(Date.now() + 90 * 24 * 60 * 60 * 1000))) {
-      console.log(`ℹ️ Team endpoint returned future matches, trying competition endpoint...`);
+    if (matches.length === 0) {
+      console.log(`ℹ️ No matches found for team ${teamId}, trying competition endpoint...`);
       
       // Get team info to find their competition
-      const teamRes = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}`, {
-        headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
-      });
-      
-      const activeCompetition = teamRes.data.runningCompetitions?.[0];
-      if (!activeCompetition) {
-        return [];
+      try {
+        const teamRes = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}`, {
+          headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
+        });
+        
+        const activeCompetition = teamRes.data.runningCompetitions?.[0];
+        if (!activeCompetition) {
+          console.log(`ℹ️ No active competition for team ${teamId}`);
+          return [];
+        }
+        
+        // Get competition matches
+        const compRes = await axios.get(`${FOOTBALL_API_URL}/competitions/${activeCompetition.code}/matches`, {
+          headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+          params: { 
+            status: 'SCHEDULED,LIVE',
+            limit: 50
+          }
+        });
+        
+        // Filter for this team only
+        matches = (compRes.data.matches || []).filter(m => 
+          m.homeTeam.id === teamId || m.awayTeam.id === teamId
+        );
+      } catch (teamError) {
+        console.log(`⚠️ Competition endpoint failed:`, teamError.message);
       }
-      
-      // Get competition matches
-      const compRes = await axios.get(`${FOOTBALL_API_URL}/competitions/${activeCompetition.code}/matches?status=SCHEDULED,LIVE`, {
-        headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
-        params: { limit: 50 }
-      });
-      
-      // Filter for this team only
-      matches = (compRes.data.matches || []).filter(m => 
-        m.homeTeam.id === teamId || m.awayTeam.id === teamId
-      );
     }
     
     if (matches.length === 0) {
-      console.log(`ℹ️ Không có trận sắp tới cho team ${teamId}`);
+      console.log(`ℹ️ No upcoming matches for team ${teamId}`);
       return [];
     }
     
@@ -122,7 +129,7 @@ async function getFixtures(teamId, next = 10) {
     
     return sorted.slice(0, next);
   } catch (e) {
-    console.error(`❌ Lỗi lấy lịch thi đấu (team ${teamId}):`, e.response?.data?.message || e.message);
+    console.error(`❌ Error fetching fixtures (team ${teamId}):`, e.response?.data?.message || e.message);
     return [];
   }
 }
