@@ -1567,12 +1567,12 @@ client.on('messageCreate', async (message) => {
         return;
       }
       
-      let currentPage = args.length > 0 ? parseInt(args[0]) : 1;
+      let currentPage = 1;
       
-      if (isNaN(currentPage) || currentPage < 1) {
-        message.reply('❌ Trang phải là số nguyên dương! Ví dụ: `!newmovies 1`\n\n💡 Gõ `!newmovies help` để xem hướng dẫn chi tiết');
-        replied = true;
-        return;
+      // Parse page number if provided
+      if (args.length > 0 && !isNaN(parseInt(args[0]))) {
+        currentPage = parseInt(args[0]);
+        if (currentPage < 1) currentPage = 1;
       }
 
       try {
