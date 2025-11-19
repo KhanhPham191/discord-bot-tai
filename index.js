@@ -1199,16 +1199,30 @@ client.on('messageCreate', async (message) => {
           .setTimestamp()
           .setFooter({ text: 'Movie Search | phim.nguonc.com' });
 
-        // Build movie list
+        // Build movie list with detailed info
         let description = '';
         const movieLinks = {};
         
-        movies.forEach((movie, idx) => {
-          const year = movie.year || 'N/A';
+        for (let idx = 0; idx < movies.length; idx++) {
+          const movie = movies[idx];
           const slug = movie.slug || '';
           const link = slug ? `https://phim.nguonc.com/phim/${slug}` : 'N/A';
           const title = movie.name || movie.title || 'Unknown';
           const englishTitle = movie.original_name || '';
+          
+          // Get detailed movie info for accurate year
+          let year = 'N/A';
+          try {
+            if (slug) {
+              const detail = await getMovieDetail(slug);
+              if (detail && detail.year) {
+                year = detail.year;
+              }
+            }
+          } catch (e) {
+            year = movie.year || 'N/A';
+            console.log(`⚠️ Could not fetch detail for ${slug}: ${e.message}`);
+          }
           
           // Store link for button use
           movieLinks[idx + 1] = link;
@@ -1228,7 +1242,7 @@ client.on('messageCreate', async (message) => {
           if (link !== 'N/A') {
             description += `└─ [Xem phim →](${link})\n`;
           }
-        });
+        }
 
         embed.setDescription(description);
         
