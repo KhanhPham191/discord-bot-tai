@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-// Movie search function with release year
+// Movie search function with release year from detail endpoint
 async function searchMovies(keyword) {
   try {
     const response = await axios.get('https://phim.nguonc.com/api/films/search', {
@@ -9,25 +9,21 @@ async function searchMovies(keyword) {
     
     const items = response.data.items || [];
     
-    // Try to fetch release year from year endpoint for each movie
+    // Fetch release year from detail endpoint for each movie
     const moviesWithYear = await Promise.all(items.map(async (item) => {
       try {
-        // Try to get release year from nam-phat-hanh endpoint
-        const yearResponse = await axios.get(`https://phim.nguonc.com/api/films/nam-phat-hanh/${item.created.split('-')[0]}?page=1`);
-        const yearItems = yearResponse.data.items || [];
-        const found = yearItems.find(m => m.slug === item.slug);
-        
-        if (found) {
+        const detail = await getMovieDetail(item.slug);
+        if (detail && detail.year && detail.year !== 'N/A') {
           return {
             ...item,
-            year: item.created.split('-')[0]
+            year: detail.year
           };
         }
       } catch (e) {
-        // Fallback if year endpoint fails
+        console.log(`⚠️ Could not fetch detail for ${item.slug}: ${e.message}`);
       }
       
-      // Fallback: extract year from other sources
+      // Fallback if detail fails
       return {
         ...item,
         year: extractYearFromMovie(item)
@@ -109,14 +105,35 @@ async function getMovieDetail(slug) {
     
     const movie = response.data.movie || {};
     
-    // Extract year from description if year field is null
+    // Extract year from movie - try multiple methods
     let year = movie.year;
+    
+    // If year field is null, try to extract from description
     if (!year && movie.description) {
-      const yearMatch = movie.description.match(/(\d{4})/);
-      if (yearMatch) year = yearMatch[1];
+      // Look for year patterns in description like "năm 2015", "2015", "bộ phim 2015" etc
+      const patterns = [
+        /năm\s+(\d{4})/i,           // "năm 2015"
+        /phát hành\s+(\d{4})/i,     // "phát hành 2015"
+        /release.*?(\d{4})/i,        // "release 2015"
+        /(\d{4})\s+film/i,           // "2015 film"
+        /^(\d{4})/,                  // Year at start of description
+        /(\d{4})/                    // Any 4-digit number
+      ];
+      
+      for (const pattern of patterns) {
+        const match = movie.description.match(pattern);
+        if (match && match[1]) {
+          const possibleYear = parseInt(match[1]);
+          // Only accept years between 1900 and current year
+          if (possibleYear >= 1900 && possibleYear <= new Date().getFullYear()) {
+            year = possibleYear.toString();
+            break;
+          }
+        }
+      }
     }
     
-    // If still no year, extract from created date
+    // If still no year, fallback to created date
     if (!year && movie.created) {
       year = movie.created.split('-')[0];
     }
