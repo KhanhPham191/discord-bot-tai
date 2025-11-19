@@ -1211,17 +1211,23 @@ client.on('messageCreate', async (message) => {
           const englishTitle = movie.original_name || '';
           const year = movie.year || 'N/A';
           
-          // Fetch detail for watch source
+          // Fetch detail for watch source and episode count
           let watchSource = null;
+          let totalEpisodes = 'N/A';
           try {
             if (slug) {
               const detail = await getMovieDetail(slug);
-              if (detail && detail.watchSource) {
-                watchSource = detail.watchSource;
+              if (detail) {
+                if (detail.watchSource) {
+                  watchSource = detail.watchSource;
+                }
+                if (detail.total_episodes) {
+                  totalEpisodes = detail.total_episodes.toString();
+                }
               }
             }
           } catch (e) {
-            console.log(`⚠️ Could not fetch watch source for ${slug}`);
+            console.log(`⚠️ Could not fetch detail for ${slug}`);
           }
           
           // Store links for button use
@@ -1243,39 +1249,29 @@ client.on('messageCreate', async (message) => {
           
           // Show year if available
           if (year !== 'N/A') {
-            description += `📅 Năm phát hành: ${year}\n`;
+            description += `📅 Năm phát hành: ${year}`;
           }
           
-          // Show watch link if available
-          if (watchSource) {
-            description += `🎬 [Xem phim →](${watchSource})\n`;
-          } else if (link !== 'N/A') {
-            description += `└─ [Xem trang phim →](${link})\n`;
+          // Show episode count
+          if (totalEpisodes !== 'N/A') {
+            description += totalEpisodes !== 'N/A' ? ` | 📺 ${totalEpisodes} tập` : '';
+          }
+          
+          description += '\n';
+          
+          // Show detail link
+          if (link !== 'N/A') {
+            description += `→ [Chi tiết phim](${link})\n`;
           }
         }
 
         embed.setDescription(description);
         
-        // Create buttons for first 3 movies
-        const buttons = [];
-        for (let i = 1; i <= Math.min(3, movies.length); i++) {
-          const movieTitle = movies[i - 1].name.substring(0, 20);
-          buttons.push(
-            new ButtonBuilder()
-              .setCustomId(`movie_select_${i}_${message.author.id}`)
-              .setLabel(`${i}. ${movieTitle}`)
-              .setStyle(1) // Primary style
-          );
-        }
-
-        const row = buttons.length > 0 ? new ActionRowBuilder().addComponents(buttons) : null;
-
         const response = await message.reply({ 
-          embeds: [embed],
-          components: row ? [row] : []
+          embeds: [embed]
         });
 
-        // Collector for movie selection
+        // Collector for movie selection via link (removed buttons)
         const movieCollector = response.createMessageComponentCollector({
           filter: (interaction) => interaction.user.id === message.author.id && interaction.customId.startsWith('movie_select_'),
           time: 5 * 60 * 1000 // 5 minutes
