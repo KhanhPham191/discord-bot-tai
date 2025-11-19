@@ -315,7 +315,7 @@ client.on('messageCreate', async (message) => {
           '💡 **Auto-Reminder**: Bot sẽ nhắc 1h trước mỗi trận của team bạn track',
           '',
           '🎬 Movie Search:',
-          `\`${PREFIX}search <tên phim>\` - tìm phim (hiển thị 10 kết quả)`,
+          `\`${PREFIX}search <tên phim>\` - tìm phim (gõ \`!search help\` để xem chi tiết)`,
           `\`${PREFIX}newmovies [trang]\` - phim mới cập nhật (trang 1 nếu không chỉ định)`
         ].join('\n')
       );
