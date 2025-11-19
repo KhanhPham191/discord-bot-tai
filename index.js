@@ -154,9 +154,6 @@ const client = new Client({
 client.once('ready', () => {
   console.log(`✅ Bot đã đăng nhập với tư cách: ${client.user.tag}`);
   loadConfig();
-  
-  // Start auto-update livescore
-  startLivescoreUpdate(client);
 });
 
 // Handle interactions (select menu, buttons)
