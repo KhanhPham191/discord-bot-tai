@@ -1694,8 +1694,8 @@ client.on('messageCreate', async (message) => {
       
       console.log('📝 Raw keyword:', keyword); // Debug log
       
-      // Check if asking for help or no keyword
-      if (!keyword || keyword.toLowerCase() === 'help') {
+      // Check if no keyword - show help
+      if (!keyword) {
         const helpText = `
 📌 **Hướng Dẫn Lệnh Tìm Kiếm Phim**
 
@@ -1723,7 +1723,7 @@ client.on('messageCreate', async (message) => {
       }
       
       if (keyword.length < 2) {
-        message.reply('❌ Tên phim phải có ít nhất 2 ký tự!\n\n💡 Gõ `!search help` để xem hướng dẫn chi tiết');
+        message.reply('❌ Tên phim phải có ít nhất 2 ký tự!');
         replied = true;
         return;
       }
