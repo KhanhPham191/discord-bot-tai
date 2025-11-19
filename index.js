@@ -1335,6 +1335,14 @@ client.on('messageCreate', async (message) => {
               );
             }
 
+            // Add back button
+            serverButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`back_to_search_${message.author.id}`)
+                .setLabel('⬅️ Quay lại')
+                .setStyle(4) // Danger style (red)
+            );
+
             const serverRow = serverButtons.length > 0 ? new ActionRowBuilder().addComponents(serverButtons) : null;
 
             await interaction.update({
@@ -1346,6 +1354,21 @@ client.on('messageCreate', async (message) => {
             const serverCollector = response.createMessageComponentCollector({
               filter: (inter) => inter.user.id === message.author.id && inter.customId.startsWith('server_select_'),
               time: 5 * 60 * 1000
+            });
+
+            // Collector for back button from movie detail to search
+            const backFromDetailCollector = response.createMessageComponentCollector({
+              filter: (inter) => inter.user.id === message.author.id && inter.customId === `back_to_search_${message.author.id}`,
+              time: 5 * 60 * 1000
+            });
+
+            backFromDetailCollector.on('collect', async (backInteraction) => {
+              await backInteraction.update({
+                embeds: [embed],
+                components: buttonRows.length > 0 ? buttonRows : []
+              });
+              serverCollector.stop();
+              // Don't stop backFromDetailCollector - let it handle back from episodes too
             });
 
             serverCollector.on('collect', async (serverInteraction) => {
@@ -1418,6 +1441,14 @@ client.on('messageCreate', async (message) => {
                   );
                 }
 
+                // Add back button
+                paginationButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`back_to_detail_${serverIndex}_${slug}_${message.author.id}`)
+                    .setLabel('⬅️ Quay lại')
+                    .setStyle(4)
+                );
+
                 return paginationButtons;
               };
 
@@ -1428,8 +1459,23 @@ client.on('messageCreate', async (message) => {
 
               // Collector for pagination
               const pageCollector = response.createMessageComponentCollector({
-                filter: (inter) => inter.user.id === message.author.id && inter.customId.includes(`_${serverIndex}_${slug}_`),
+                filter: (inter) => inter.user.id === message.author.id && inter.customId.includes(`_${serverIndex}_${slug}_`) && !inter.customId.startsWith('back_to_detail_'),
                 time: 5 * 60 * 1000
+              });
+
+              // Collector for back button from episodes to movie detail
+              const backFromEpisodesCollector = response.createMessageComponentCollector({
+                filter: (inter) => inter.user.id === message.author.id && inter.customId === `back_to_detail_${serverIndex}_${slug}_${message.author.id}`,
+                time: 5 * 60 * 1000
+              });
+
+              backFromEpisodesCollector.on('collect', async (backInteraction) => {
+                await backInteraction.update({
+                  embeds: [movieDetail],
+                  components: serverRow ? [serverRow] : []
+                });
+                pageCollector.stop();
+                backFromEpisodesCollector.stop();
               });
 
               pageCollector.on('collect', async (pageInteraction) => {
