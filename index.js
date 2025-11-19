@@ -1727,6 +1727,13 @@ client.on('messageCreate', async (message) => {
                   );
                 }
 
+                newPaginationButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`back_to_detail_${serverIndex}_${slug}_${message.author.id}`)
+                    .setLabel('⬅️ Quay lại')
+                    .setStyle(4)
+                );
+
                 await pageInteraction.update({
                   embeds: [newEmbed],
                   components: newPaginationButtons.length > 0 ? [new ActionRowBuilder().addComponents(newPaginationButtons)] : []
