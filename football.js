@@ -78,7 +78,7 @@ async function getFixtures(teamId, next = 10) {
       headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
       params: { 
         status: 'SCHEDULED,LIVE',
-        limit: next * 2 // Get more to account for filtering
+        limit: 50  // Get enough matches
       }
     });
     
