@@ -9,10 +9,8 @@ const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpiso
 // Import football functions
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
 
-// Load .env only when running locally (not on Railway)
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
+// Load .env file - required for API keys
+require('dotenv').config();
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const LIVESCORE_CHANNEL = '694577581298810946';
@@ -739,6 +737,47 @@ client.on('messageCreate', async (message) => {
       scoreText += `🏆 Giải đấu: ${competition}`;
       
       message.reply(scoreText);
+      replied = true;
+      return;
+    }
+
+    if (command === 'findteam') {
+      if (args.length === 0) {
+        message.reply(`Cách dùng: \`${PREFIX}findteam <tên đội>\`\n\nVí dụ: \`${PREFIX}findteam Chelsea\``);
+        replied = true;
+        return;
+      }
+      
+      const teamName = args.join(' ').toLowerCase();
+      message.reply('⏳ Đang tìm kiếm đội bóng...');
+      
+      try {
+        // Search in livescoreTeams
+        const foundTeams = config.livescoreTeams.filter(team => 
+          team.name.toLowerCase().includes(teamName)
+        );
+        
+        if (foundTeams.length === 0) {
+          message.reply(`❌ Không tìm thấy đội bóng nào khớp với: **${teamName}**`);
+          replied = true;
+          return;
+        }
+        
+        let resultText = `🔍 **Kết quả tìm kiếm: "${teamName}"**\n`;
+        resultText += `═══════════════════════════════════\n\n`;
+        
+        foundTeams.slice(0, 10).forEach((team, idx) => {
+          resultText += `${idx + 1}. **${team.name}**\n`;
+          resultText += `   ID: ${team.id}\n`;
+          resultText += `   💡 Dùng \`${PREFIX}track ${team.id}\` để theo dõi\n\n`;
+        });
+        
+        resultText += `═══════════════════════════════════`;
+        message.reply(resultText);
+      } catch (e) {
+        console.error('❌ Lỗi tìm kiếm đội bóng:', e.message);
+        message.reply('❌ Có lỗi xảy ra khi tìm kiếm đội bóng. Vui lòng thử lại!');
+      }
       replied = true;
       return;
     }
