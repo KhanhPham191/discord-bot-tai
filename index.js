@@ -1196,8 +1196,7 @@ client.on('messageCreate', async (message) => {
           .setColor('#e50914') // Netflix red
           .setTitle(`🎬 Kết Quả Tìm Kiếm: "${keyword}"`)
           .setDescription(`Tìm thấy **${movies.length}** phim`)
-          .setTimestamp()
-          .setFooter({ text: 'Movie Search | phim.nguonc.com' });
+          .setTimestamp();
 
         // Build movie list with detailed info
         let description = '';
