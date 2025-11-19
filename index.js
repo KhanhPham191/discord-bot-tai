@@ -1221,9 +1221,9 @@ client.on('messageCreate', async (message) => {
           if (englishTitle && englishTitle !== title) {
             titleDisplay += ` (${englishTitle})`;
           }
-          titleDisplay += ` (${year})`;
           
           description += `\n${titleDisplay}\n`;
+          description += `📅 Năm phát hành: ${year}\n`;
           
           if (link !== 'N/A') {
             description += `└─ [Xem phim →](${link})\n`;

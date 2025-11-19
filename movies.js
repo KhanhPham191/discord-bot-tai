@@ -22,15 +22,25 @@ async function searchMovies(keyword) {
 
 // Extract year from movie data
 function extractYearFromMovie(movie) {
-  // Try to extract year from description or use year from created date
+  // First try to get year field directly
+  if (movie.year) {
+    return movie.year;
+  }
+  
+  // Try to extract year from description
   if (movie.description) {
     const yearMatch = movie.description.match(/(\d{4})/);
     if (yearMatch) return yearMatch[1];
   }
   
-  // Fallback: extract year from created date
+  // Try to extract from created date
   if (movie.created) {
     return movie.created.split('-')[0];
+  }
+  
+  // Try to extract from modified date
+  if (movie.modified) {
+    return movie.modified.split('-')[0];
   }
   
   return 'N/A';
