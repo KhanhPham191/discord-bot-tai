@@ -749,12 +749,15 @@ client.on('messageCreate', async (message) => {
       }
       
       const teamName = args.slice(1).join(' ').toLowerCase();
+      console.log('🔍 findteam search:', { args, teamName, argsLength: args.length });
       
       try {
         // Search in livescoreTeams from config
         const foundTeams = (config.livescoreTeams || []).filter(team => 
           team.name.toLowerCase().includes(teamName)
         );
+        
+        console.log('📋 Found teams:', foundTeams.length, foundTeams.map(t => t.name));
         
         if (foundTeams.length === 0) {
           message.reply(`❌ Không tìm thấy đội bóng: **${teamName}**\n\n💡 **Danh sách đội hỗ trợ (Premier League):**\n${(config.livescoreTeams || []).slice(0, 10).map((t, i) => `${i + 1}. ${t.name}`).join('\n')}`);
@@ -875,8 +878,8 @@ client.on('messageCreate', async (message) => {
       fixturesCooldown.set(userId, now + FIXTURES_COOLDOWN_MS);
       
       // If team ID is provided as argument, show fixtures directly
-      if (args.length > 0 && !isNaN(parseInt(args[0]))) {
-        const teamId = parseInt(args[0]);
+      if (args.length > 1 && !isNaN(parseInt(args[1]))) {
+        const teamId = parseInt(args[1]);
         
         try {
           const fixtures = await getFixturesWithCL(teamId, 10);
