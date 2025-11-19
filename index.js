@@ -1607,8 +1607,11 @@ client.on('messageCreate', async (message) => {
             // Truncate long titles
             const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
             
+            // Calculate running number: (page-1)*10 + idx + 1
+            const runningNumber = (page - 1) * 10 + idx + 1;
+            
             // Build the title with English name if available
-            let titleDisplay = `**${idx + 1}. ${displayTitle}**`;
+            let titleDisplay = `**${runningNumber}. ${displayTitle}**`;
             if (englishTitle && englishTitle !== title) {
               titleDisplay += ` (${englishTitle})`;
             }
