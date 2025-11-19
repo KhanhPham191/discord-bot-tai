@@ -1417,6 +1417,7 @@ client.on('messageCreate', async (message) => {
           // Fetch detail for watch source and episode count
           let watchSource = null;
           let totalEpisodes = 'N/A';
+          let category = 'N/A';
           try {
             if (slug) {
               const detail = await getMovieDetail(slug);
@@ -1426,6 +1427,13 @@ client.on('messageCreate', async (message) => {
                 }
                 if (detail.total_episodes) {
                   totalEpisodes = detail.total_episodes.toString();
+                }
+                // Extract category from detail
+                if (detail.category && detail.category[1]) {
+                  const categoryList = detail.category[1].list;
+                  if (categoryList && categoryList.length > 0) {
+                    category = categoryList[0].name;
+                  }
                 }
               }
             }
@@ -1455,9 +1463,14 @@ client.on('messageCreate', async (message) => {
             description += `📅 Năm phát hành: ${year}`;
           }
           
+          // Show category if available
+          if (category !== 'N/A') {
+            description += category !== 'N/A' ? ` | 📺 ${category}` : '';
+          }
+          
           // Show episode count
           if (totalEpisodes !== 'N/A') {
-            description += totalEpisodes !== 'N/A' ? ` | 📺 ${totalEpisodes} tập` : '';
+            description += totalEpisodes !== 'N/A' ? ` | 🎬 ${totalEpisodes} tập` : '';
           }
           
           description += '\n';
