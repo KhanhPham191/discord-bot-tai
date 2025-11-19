@@ -966,16 +966,17 @@ client.on('messageCreate', async (message) => {
 \`!newmovies\` hoặc \`!newphim\`
 
 **Ví dụ:**
-• \`!newmovies\` - Hiển thị phim mới (trang 1 mặc định)
-• \`!newmovies 2\` - Chuyển sang trang 2
-• \`!newmovies 3\` - Chuyển sang trang 3
+• \`!newmovies\` - Hiển thị 10 phim mới nhất
+• Click button để xem chi tiết phim
+• Click server để xem danh sách tập
 
 **Tính năng:**
-✅ Mặc định trang 1 khi không nhập số
-✅ Hiển thị 10 phim mới nhất trên mỗi trang
+✅ Hiển thị 10 phim mới nhất
 ✅ Hiển thị tên Việt + tên Anh + năm phát hành
-✅ Nút điều hướng: ⬅️ Trước | Sau ➡️
-✅ Link xem phim trực tiếp
+✅ Click button để xem chi tiết (năm, chất lượng, ngôn ngữ, số tập)
+✅ Chọn server để xem danh sách tập
+✅ Phân trang tập (10 tập/trang)
+✅ Nút quay lại để điều hướng
 
 **Lệnh khác:**
 • \`!search <tên phim>\` - Tìm phim theo từ khóa
