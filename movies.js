@@ -117,6 +117,15 @@ async function getMovieDetail(slug) {
       }
     }
     
+    // Extract watch source from first episode
+    let watchSource = null;
+    if (movie.episodes && movie.episodes.length > 0) {
+      const firstServer = movie.episodes[0];
+      if (firstServer.items && firstServer.items.length > 0) {
+        watchSource = firstServer.items[0].embed; // Get first episode embed link
+      }
+    }
+    
     return {
       name: movie.name,
       original_name: movie.original_name,
@@ -132,6 +141,7 @@ async function getMovieDetail(slug) {
       casts: movie.casts,
       total_episodes: movie.total_episodes,
       current_episode: movie.current_episode,
+      watchSource: watchSource,
       episodes: movie.episodes || [] // Array of episodes with watch sources
     };
   } catch (error) {

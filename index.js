@@ -1202,6 +1202,7 @@ client.on('messageCreate', async (message) => {
         // Build movie list with detailed info
         let description = '';
         const movieLinks = {};
+        const watchSources = {};
         
         for (let idx = 0; idx < movies.length; idx++) {
           const movie = movies[idx];
@@ -1211,8 +1212,24 @@ client.on('messageCreate', async (message) => {
           const englishTitle = movie.original_name || '';
           const year = movie.year || 'N/A';
           
-          // Store link for button use
+          // Fetch detail for watch source
+          let watchSource = null;
+          try {
+            if (slug) {
+              const detail = await getMovieDetail(slug);
+              if (detail && detail.watchSource) {
+                watchSource = detail.watchSource;
+              }
+            }
+          } catch (e) {
+            console.log(`⚠️ Could not fetch watch source for ${slug}`);
+          }
+          
+          // Store links for button use
           movieLinks[idx + 1] = link;
+          if (watchSource) {
+            watchSources[idx + 1] = watchSource;
+          }
           
           // Truncate long titles
           const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
@@ -1230,8 +1247,11 @@ client.on('messageCreate', async (message) => {
             description += `📅 Năm phát hành: ${year}\n`;
           }
           
-          if (link !== 'N/A') {
-            description += `└─ [Xem phim →](${link})\n`;
+          // Show watch link if available
+          if (watchSource) {
+            description += `🎬 [Xem phim →](${watchSource})\n`;
+          } else if (link !== 'N/A') {
+            description += `└─ [Xem trang phim →](${link})\n`;
           }
         }
 
