@@ -273,12 +273,12 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'echo') {
-      if (args.length === 0) {
+      if (args.length === 1) {
         message.reply(`Ví dụ: \`${PREFIX}echo xin chào\``);
         replied = true;
         return;
       }
-      message.reply(args.join(' '));
+      message.reply(args.slice(1).join(' '));
       replied = true;
       return;
     }
@@ -703,14 +703,14 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'livescore') {
-      if (args.length === 0) {
+      if (args.length === 1) {
         message.reply(`Cách dùng: \`${PREFIX}livescore <team_id>\``);
         replied = true;
         return;
       }
       
       message.reply('⏳ Đang lấy dữ liệu...');
-      const teamId = args[0];
+      const teamId = args[1];
       const score = await getLiveScore(teamId);
       
       if (!score) {
@@ -742,13 +742,13 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'findteam') {
-      if (args.length === 0) {
+      if (args.length === 1) {
         message.reply(`Cách dùng: \`${PREFIX}findteam <tên đội>\`\n\nVí dụ: \`${PREFIX}findteam chelsea\` hoặc \`${PREFIX}findteam man united\``);
         replied = true;
         return;
       }
       
-      const teamName = args.join(' ').toLowerCase();
+      const teamName = args.slice(1).join(' ').toLowerCase();
       
       try {
         // Search in livescoreTeams from config
@@ -796,7 +796,7 @@ client.on('messageCreate', async (message) => {
         'EC': 'Champions League'
       };
       
-      if (args.length === 0) {
+      if (args.length === 1) {
         let compList = `📊 **DANH SÁCH GIẢI ĐẤU**\n`;
         compList += `═══════════════════════════════════\n\n`;
         
@@ -812,7 +812,7 @@ client.on('messageCreate', async (message) => {
         return;
       }
       
-      const compCode = args[0].toUpperCase();
+      const compCode = args[1].toUpperCase();
       if (!supportedComps[compCode]) {
         message.reply(`❌ Không tìm thấy giải đấu! Dùng \`${PREFIX}standings\` để xem danh sách.`);
         replied = true;
