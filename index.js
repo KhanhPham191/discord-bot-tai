@@ -1210,20 +1210,6 @@ client.on('messageCreate', async (message) => {
           const title = movie.name || movie.title || 'Unknown';
           const englishTitle = movie.original_name || '';
           
-          // Get detailed movie info for accurate year
-          let year = 'N/A';
-          try {
-            if (slug) {
-              const detail = await getMovieDetail(slug);
-              if (detail && detail.year) {
-                year = detail.year;
-              }
-            }
-          } catch (e) {
-            year = movie.year || 'N/A';
-            console.log(`⚠️ Could not fetch detail for ${slug}: ${e.message}`);
-          }
-          
           // Store link for button use
           movieLinks[idx + 1] = link;
           
@@ -1237,7 +1223,6 @@ client.on('messageCreate', async (message) => {
           }
           
           description += `\n${titleDisplay}\n`;
-          description += `📅 Năm phát hành: ${year}\n`;
           
           if (link !== 'N/A') {
             description += `└─ [Xem phim →](${link})\n`;
