@@ -743,43 +743,21 @@ client.on('messageCreate', async (message) => {
 
     if (command === 'findteam') {
       if (args.length === 0) {
-        message.reply(`Cách dùng: \`${PREFIX}findteam <tên đội>\`\n\nVí dụ: \`${PREFIX}findteam Chelsea\``);
+        message.reply(`Cách dùng: \`${PREFIX}findteam <tên đội>\`\n\nVí dụ: \`${PREFIX}findteam chelsea\` hoặc \`${PREFIX}findteam man united\``);
         replied = true;
         return;
       }
       
       const teamName = args.join(' ').toLowerCase();
-      message.reply('⏳ Đang tìm kiếm đội bóng...');
       
       try {
-        // First try to search in livescoreTeams (local config)
-        let foundTeams = config.livescoreTeams?.filter(team => 
+        // Search in livescoreTeams from config
+        const foundTeams = (config.livescoreTeams || []).filter(team => 
           team.name.toLowerCase().includes(teamName)
-        ) || [];
-        
-        // If not found in config, try API search
-        if (foundTeams.length === 0) {
-          try {
-            const API_URL = process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4';
-            const API_KEY = process.env.FOOTBALL_API_KEY;
-            
-            const response = await axios.get(`${API_URL}/teams`, {
-              headers: { 'X-Auth-Token': API_KEY }
-            });
-            
-            if (response.data.teams) {
-              foundTeams = response.data.teams.filter(team =>
-                team.name.toLowerCase().includes(teamName) ||
-                team.shortName?.toLowerCase().includes(teamName)
-              ).slice(0, 10);
-            }
-          } catch (apiError) {
-            console.log('⚠️ API search failed, using config only:', apiError.message);
-          }
-        }
+        );
         
         if (foundTeams.length === 0) {
-          message.reply(`❌ Không tìm thấy đội bóng nào khớp với: **${teamName}**`);
+          message.reply(`❌ Không tìm thấy đội bóng: **${teamName}**\n\n💡 **Danh sách đội hỗ trợ (Premier League):**\n${(config.livescoreTeams || []).slice(0, 10).map((t, i) => `${i + 1}. ${t.name}`).join('\n')}`);
           replied = true;
           return;
         }
@@ -787,21 +765,20 @@ client.on('messageCreate', async (message) => {
         let resultText = `🔍 **Kết quả tìm kiếm: "${teamName}"**\n`;
         resultText += `═══════════════════════════════════\n\n`;
         
-        foundTeams.slice(0, 10).forEach((team, idx) => {
+        foundTeams.forEach((team, idx) => {
           resultText += `${idx + 1}. **${team.name}**\n`;
-          resultText += `   ID: ${team.id}\n`;
-          if (team.shortName) {
-            resultText += `   Tên ngắn: ${team.shortName}\n`;
-          }
-          resultText += `   💡 Dùng \`${PREFIX}fixtures ${team.id}\` để xem lịch thi đấu\n`;
-          resultText += `   💡 Dùng \`${PREFIX}track ${team.id}\` để theo dõi\n\n`;
+          resultText += `   📍 ID: **${team.id}**\n`;
+          resultText += `   ⚽ \`${PREFIX}fixtures ${team.id}\` - xem lịch thi đấu\n`;
+          resultText += `   ❤️ \`${PREFIX}track ${team.id}\` - theo dõi đội\n\n`;
         });
         
-        resultText += `═══════════════════════════════════`;
+        resultText += `═══════════════════════════════════\n`;
+        resultText += `💡 **Copy Team ID rồi dùng các lệnh ở trên**`;
+        
         message.reply(resultText);
       } catch (e) {
         console.error('❌ Lỗi tìm kiếm đội bóng:', e.message);
-        message.reply('❌ Có lỗi xảy ra khi tìm kiếm đội bóng. Vui lòng thử lại!');
+        message.reply('❌ Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại!');
       }
       replied = true;
       return;
