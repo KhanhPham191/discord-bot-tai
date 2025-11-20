@@ -1122,7 +1122,9 @@ client.on('interactionCreate', async (interaction) => {
             const parts = buttonInteraction.customId.split('_');
             const movieNum = parseInt(parts[2]);
             const returnCacheId = parseInt(parts[4]);
-            console.log(`📍 [BUTTON CLICK] User: ${userId}, MovieNum: ${movieNum}, CacheID: ${returnCacheId}, CustomID: ${buttonInteraction.customId}`);
+            console.log(`📍 [BUTTON CLICK] CustomID: ${buttonInteraction.customId}`);
+            console.log(`📍 [BUTTON PARTS] parts.length=${parts.length}, parts=${JSON.stringify(parts)}`);
+            console.log(`📍 [BUTTON CLICK] User: ${userId}, MovieNum: ${movieNum}, CacheID: ${returnCacheId}`);
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
 
@@ -1827,8 +1829,10 @@ client.on('interactionCreate', async (interaction) => {
       
       // Back from servers to movie list (search)
       if (customId.startsWith('back_to_search_')) {
-        const cacheId = parseInt(customId.replace('back_to_search_', ''));
-        console.log(`⬅️ [BACK BUTTON] User: ${userId}, CacheID: ${cacheId}, CustomID: ${customId}`);
+        const afterPrefix = customId.replace('back_to_search_', '');
+        const cacheId = parseInt(afterPrefix);
+        console.log(`⬅️ [BACK BUTTON] CustomID: ${customId}`);
+        console.log(`⬅️ [BACK PARSE] afterPrefix: ${afterPrefix}, cacheId: ${cacheId}`);
         
         await interaction.deferUpdate();
         
