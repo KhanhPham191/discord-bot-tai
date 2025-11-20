@@ -348,16 +348,24 @@ client.once('ready', async () => {
   // Setup auto-checker for movie updates
   setInterval(async () => {
     try {
+      const now = new Date().toLocaleString('vi-VN');
+      console.log(`🔄 [${now}] Checking for movie updates...`);
+      
       // Check if movie update feature is enabled and channel is configured
       if (!config.movieUpdate?.enabled || !config.movieUpdate?.channelId) {
+        console.log(`⚠️ Movie update not configured. Enabled: ${config.movieUpdate?.enabled}, Channel: ${config.movieUpdate?.channelId}`);
         return;
       }
+
+      console.log(`✅ Movie update enabled. Fetching channel ${config.movieUpdate.channelId}...`);
 
       const channel = await client.channels.fetch(config.movieUpdate.channelId).catch(() => null);
       if (!channel) {
         console.error('❌ Could not fetch movie update channel');
         return;
       }
+
+      console.log(`✅ Channel fetched successfully. Getting new movies...`);
 
       // Get new movies with timeout
       const newMovies = await Promise.race([
@@ -368,15 +376,21 @@ client.once('ready', async () => {
         return [];
       });
       
+      console.log(`📊 Found ${newMovies.length} new movies from API`);
+      
       if (newMovies.length === 0) {
+        console.log('ℹ️ No new movies to process');
         return;
       }
 
       for (const movie of newMovies) {
         // Check if already notified
         if (notifiedMovies.has(movie.slug)) {
+          console.log(`⏭️ Movie already notified: ${movie.name} (${movie.slug})`);
           continue;
         }
+
+        console.log(`🎬 Processing new movie: ${movie.name} (${movie.slug})`);
 
         // Mark as notified
         notifiedMovies.add(movie.slug);
@@ -389,7 +403,10 @@ client.once('ready', async () => {
             new Promise((_, reject) => setTimeout(() => reject(new Error('Detail API timeout')), 10000))
           ]).catch(() => null);
           
-          if (!detail) continue;
+          if (!detail) {
+            console.log(`⚠️ Could not get detail for movie: ${movie.slug}`);
+            continue;
+          }
 
           const movieEmbed = new EmbedBuilder()
             .setColor('#ef4444')
@@ -404,7 +421,7 @@ client.once('ready', async () => {
               { name: '📺 Tập phim', value: `${detail.current_episode || 0}/${detail.total_episodes || '?'}`, inline: true },
               { name: '📋 Mô tả', value: (detail.description || 'Không có mô tả').substring(0, 300) + '...' }
             )
-            .setFooter({ text: `Slug: ${movie.slug}` })
+            .setFooter({ text: `Thông báo phim mới sẽ được update` })
             .setTimestamp();
 
           await channel.send({ 

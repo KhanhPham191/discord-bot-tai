@@ -213,5 +213,9 @@
       65
     ]
   },
-  "allowedUsers": []
+  "allowedUsers": [],
+  "movieUpdate": {
+    "channelId": "743938937172525067",
+    "enabled": true
+  }
 }
