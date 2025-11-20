@@ -1114,7 +1114,7 @@ client.on('interactionCreate', async (interaction) => {
               // Add back button
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_search_${movies.length}_${searchQuery.replace(/\s+/g, '_')}_${userId}`)
+                  .setCustomId(`back_to_search_${Buffer.from(searchQuery).toString('base64')}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -1301,7 +1301,7 @@ client.on('interactionCreate', async (interaction) => {
               // Add back button
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_newmovies_${userId}`)
+                  .setCustomId(`back_to_newmovies`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -1776,15 +1776,7 @@ client.on('interactionCreate', async (interaction) => {
       
       // Back from servers to movie list (search)
       if (customId.startsWith('back_to_search_')) {
-        const parts = customId.split('_');
-        const movieCount = parseInt(parts[3]);
-        const searchQueryBase64 = parts[4];
-        const interactionUserId = parts[5];
-        
-        if (userId !== interactionUserId) {
-          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng button này!', flags: 64 });
-          return;
-        }
+        const searchQueryBase64 = customId.replace('back_to_search_', '');
         
         await interaction.deferUpdate();
         
@@ -1891,8 +1883,10 @@ client.on('interactionCreate', async (interaction) => {
       }
       
       // Back from servers to movie list (newmovies)
-      if (customId.startsWith('back_to_newmovies_')) {
+      if (customId.startsWith('back_to_newmovies')) {
         await interaction.deferUpdate();
+        // For newmovies, we'll just show a placeholder since we don't cache the movies
+        // User can run /newmovies again if needed
         return;
       }
     } catch (error) {
