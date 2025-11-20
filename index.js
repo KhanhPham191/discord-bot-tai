@@ -10,7 +10,7 @@ const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpiso
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
 
 // Import game functions
-const { handleWeaponSearch, handleNPCSearch, handleBossSearch, handleSkillSearch, handleItemSearch, handleGameStats, handleWeaponSelect, handleNPCSelect, handleBossSelect, handleSkillSelect, handleItemSelect, showAllWeapons, showAllNPCs, showAllBosses, showAllSkills, showAllItems } = require('./game');
+const { handleWeaponSearch, handleNPCSearch, handleBossSearch, handleSkillSearch, handleItemSearch, handleGameStats, handleWeaponSelect, handleNPCSelect, handleBossSelect, handleSkillSelect, handleItemSelect, showAllWeapons, showAllNPCs, showAllBosses, showAllSkills, showAllItems, handleGameCommand } = require('./game');
 const { createSeedData } = require('./game-scraper');
 
 // Load .env file - required for API keys
@@ -328,71 +328,14 @@ async function registerSlashCommands() {
           .setDescription('Bật/tắt tính năng thông báo phim update')
           .setRequired(false)),
 
-    // Game commands
+    // Game commands - Single unified command
     new SlashCommandBuilder()
-      .setName('weapon')
-      .setDescription('🎮 Tìm kiếm vũ khí trong Where Winds Meet')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên vũ khí cần tìm')
-          .setRequired(true)),
-    
-    new SlashCommandBuilder()
-      .setName('npc')
-      .setDescription('🎮 Tìm kiếm nhân vật trong Where Winds Meet')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên nhân vật cần tìm')
-          .setRequired(true)),
-    
-    new SlashCommandBuilder()
-      .setName('boss')
-      .setDescription('🎮 Tìm kiếm boss trong Where Winds Meet')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên boss cần tìm')
-          .setRequired(true)),
-    
-    new SlashCommandBuilder()
-      .setName('skill')
-      .setDescription('🎮 Tìm kiếm kỹ năng trong Where Winds Meet')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên kỹ năng cần tìm')
-          .setRequired(true)),
-    
-    new SlashCommandBuilder()
-      .setName('item')
-      .setDescription('🎮 Tìm kiếm vật phẩm trong Where Winds Meet')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên vật phẩm cần tìm')
-          .setRequired(true)),
+      .setName('game')
+      .setDescription('🎮 Chơi Where Winds Meet - Chọn item từ dropdown'),
     
     new SlashCommandBuilder()
       .setName('gamestats')
-      .setDescription('🎮 Xem thống kê database Where Winds Meet'),
-
-    // Game dropdown commands
-    new SlashCommandBuilder()
-      .setName('weapons')
-      .setDescription('🎮 Chọn vũ khí từ danh sách (dropdown UI)'),
-    
-    new SlashCommandBuilder()
-      .setName('npcs')
-      .setDescription('🎮 Chọn nhân vật từ danh sách (dropdown UI)'),
-    
-    new SlashCommandBuilder()
-      .setName('bosses')
-      .setDescription('🎮 Chọn boss từ danh sách (dropdown UI)'),
-    
-    new SlashCommandBuilder()
-      .setName('skills')
-      .setDescription('🎮 Chọn kỹ năng từ danh sách (dropdown UI)'),
-    
-    new SlashCommandBuilder()
-      .setName('items')
-      .setDescription('🎮 Chọn vật phẩm từ danh sách (dropdown UI)')
+      .setDescription('🎮 Xem thống kê database Where Winds Meet')
   ];
 
   try {
@@ -1653,60 +1596,14 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
 
-      // Game commands for Where Winds Meet
-      if (command === 'weapon') {
-        await handleWeaponSearch(interaction);
-        return;
-      }
-
-      if (command === 'npc') {
-        await handleNPCSearch(interaction);
-        return;
-      }
-
-      if (command === 'boss') {
-        await handleBossSearch(interaction);
-        return;
-      }
-
-      if (command === 'skill') {
-        await handleSkillSearch(interaction);
-        return;
-      }
-
-      if (command === 'item') {
-        await handleItemSearch(interaction);
+      // Game command - unified single command
+      if (command === 'game') {
+        await handleGameCommand(interaction);
         return;
       }
 
       if (command === 'gamestats') {
         await handleGameStats(interaction);
-        return;
-      }
-
-      // Game dropdown UI commands
-      if (command === 'weapons') {
-        await showAllWeapons(interaction);
-        return;
-      }
-
-      if (command === 'npcs') {
-        await showAllNPCs(interaction);
-        return;
-      }
-
-      if (command === 'bosses') {
-        await showAllBosses(interaction);
-        return;
-      }
-
-      if (command === 'skills') {
-        await showAllSkills(interaction);
-        return;
-      }
-
-      if (command === 'items') {
-        await showAllItems(interaction);
         return;
       }
     } catch (error) {
@@ -1721,6 +1618,13 @@ client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu() && !interaction.isButton()) return;
   
   if (interaction.isStringSelectMenu()) {
+    // Game type selection
+    if (interaction.customId === 'game_type_select') {
+      const { handleGameTypeSelect } = require('./game');
+      await handleGameTypeSelect(interaction);
+      return;
+    }
+
     if (interaction.customId === 'track_team_select') {
       const userId = interaction.user.id;
       const teamId = parseInt(interaction.values[0]);
