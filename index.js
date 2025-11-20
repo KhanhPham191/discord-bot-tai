@@ -1061,7 +1061,88 @@ client.on('interactionCreate', async (interaction) => {
           
           const response = await interaction.editReply({ 
             embeds: [embed],
-            components: buttonRows.length > 0 ? buttonRows : []
+            components: buttonRows.length > 0 ? buttonRows : [],
+            fetchReply: true
+          });
+          
+          // Create collector for movie selection buttons
+          const movieCollector = response.createMessageComponentCollector({
+            filter: (btn) => btn.user.id === userId && btn.customId.startsWith('search_detail_'),
+            time: 5 * 60 * 1000 // 5 minutes
+          });
+
+          movieCollector.on('collect', async (buttonInteraction) => {
+            const movieNum = parseInt(buttonInteraction.customId.split('_')[2]);
+            const selectedMovie = movies[movieNum - 1];
+            const slug = selectedMovie.slug;
+
+            try {
+              const detail = await getMovieDetail(slug);
+              
+              if (!detail) {
+                await buttonInteraction.reply({ content: '❌ Không thể lấy thông tin phim', flags: 64 });
+                return;
+              }
+
+              // Show movie detail with server selection buttons
+              const movieDetail = new EmbedBuilder()
+                .setColor('#e50914')
+                .setTitle(`🎬 ${detail.name}`)
+                .setThumbnail(detail.thumb_url)
+                .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
+                .addFields(
+                  { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
+                  { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
+                  { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
+                  { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
+                  { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+                )
+                .setTimestamp()
+                .setFooter({ text: 'Movie Detail' });
+
+              // Create server selection buttons
+              const serverButtons = [];
+              for (let i = 0; i < detail.episodes.length; i++) {
+                serverButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`server_select_${i}_${slug}_${userId}`)
+                    .setLabel(detail.episodes[i].server_name.substring(0, 20))
+                    .setStyle(2) // Secondary style
+                );
+              }
+
+              // Add back button
+              serverButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`back_to_search_${userId}`)
+                  .setLabel('⬅️ Quay lại')
+                  .setStyle(4) // Danger style (red)
+              );
+
+              const serverRow = serverButtons.length > 0 ? new ActionRowBuilder().addComponents(serverButtons) : null;
+
+              await buttonInteraction.update({
+                embeds: [movieDetail],
+                components: serverRow ? [serverRow] : []
+              });
+            } catch (error) {
+              console.error('❌ Lỗi khi chọn phim:', error.message);
+              await buttonInteraction.reply({ content: '❌ Có lỗi xảy ra. Vui lòng thử lại!', flags: 64 });
+            }
+          });
+
+          movieCollector.on('end', () => {
+            // Disable buttons after collection ends
+            const disabledRows = buttonRows.map(row => {
+              const newRow = new ActionRowBuilder();
+              row.components.forEach(btn => {
+                newRow.addComponents(
+                  ButtonBuilder.from(btn).setDisabled(true)
+                );
+              });
+              return newRow;
+            });
+            response.edit({ components: disabledRows }).catch(() => {});
           });
         } catch (error) {
           console.error('❌ Lỗi tìm kiếm phim:', error.message);
@@ -1167,7 +1248,88 @@ client.on('interactionCreate', async (interaction) => {
 
           const response = await interaction.editReply({ 
             embeds: [embed],
-            components: buttonRows.length > 0 ? buttonRows : []
+            components: buttonRows.length > 0 ? buttonRows : [],
+            fetchReply: true
+          });
+          
+          // Create collector for movie selection buttons
+          const movieCollector = response.createMessageComponentCollector({
+            filter: (btn) => btn.user.id === userId && btn.customId.startsWith('newmovies_detail_'),
+            time: 5 * 60 * 1000 // 5 minutes
+          });
+
+          movieCollector.on('collect', async (buttonInteraction) => {
+            const movieNum = parseInt(buttonInteraction.customId.split('_')[2]);
+            const selectedMovie = movies[movieNum - 1];
+            const slug = selectedMovie.slug;
+
+            try {
+              const detail = await getMovieDetail(slug);
+              
+              if (!detail) {
+                await buttonInteraction.reply({ content: '❌ Không thể lấy thông tin phim', flags: 64 });
+                return;
+              }
+
+              // Show movie detail with server selection buttons
+              const movieDetail = new EmbedBuilder()
+                .setColor('#e50914')
+                .setTitle(`🎬 ${detail.name}`)
+                .setThumbnail(detail.thumb_url)
+                .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
+                .addFields(
+                  { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
+                  { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
+                  { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
+                  { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
+                  { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+                )
+                .setTimestamp()
+                .setFooter({ text: 'Movie Detail' });
+
+              // Create server selection buttons
+              const serverButtons = [];
+              for (let i = 0; i < detail.episodes.length; i++) {
+                serverButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`server_select_${i}_${slug}_${userId}`)
+                    .setLabel(detail.episodes[i].server_name.substring(0, 20))
+                    .setStyle(2) // Secondary style
+                );
+              }
+
+              // Add back button
+              serverButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`back_to_newmovies_${userId}`)
+                  .setLabel('⬅️ Quay lại')
+                  .setStyle(4) // Danger style (red)
+              );
+
+              const serverRow = serverButtons.length > 0 ? new ActionRowBuilder().addComponents(serverButtons) : null;
+
+              await buttonInteraction.update({
+                embeds: [movieDetail],
+                components: serverRow ? [serverRow] : []
+              });
+            } catch (error) {
+              console.error('❌ Lỗi khi chọn phim:', error.message);
+              await buttonInteraction.reply({ content: '❌ Có lỗi xảy ra. Vui lòng thử lại!', flags: 64 });
+            }
+          });
+
+          movieCollector.on('end', () => {
+            // Disable buttons after collection ends
+            const disabledRows = buttonRows.map(row => {
+              const newRow = new ActionRowBuilder();
+              row.components.forEach(btn => {
+                newRow.addComponents(
+                  ButtonBuilder.from(btn).setDisabled(true)
+                );
+              });
+              return newRow;
+            });
+            response.edit({ components: disabledRows }).catch(() => {});
           });
         } catch (error) {
           console.error('❌ Lỗi lấy phim mới:', error.message);
@@ -1322,6 +1484,138 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.editReply('❌ Có lỗi xảy ra khi lấy lịch thi đấu. Vui lòng thử lại!');
       }
       return;
+    }
+  }
+  
+  // Handle button clicks for movies and other features
+  if (interaction.isButton()) {
+    const customId = interaction.customId;
+    const userId = interaction.user.id;
+    
+    try {
+      // Server selection buttons for movies
+      if (customId.startsWith('server_select_')) {
+        const parts = customId.split('_');
+        const serverIndex = parseInt(parts[2]);
+        const slug = parts[3];
+        const interactionUserId = parts[4];
+        
+        if (userId !== interactionUserId) {
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng button này!', flags: 64 });
+          return;
+        }
+        
+        // Defer the reply since we'll be making API calls
+        await interaction.deferReply({ flags: 64 });
+        
+        try {
+          let currentEpisodePage = 1;
+          
+          const createEpisodesEmbed = async (page) => {
+            const result = await getEpisodes(slug, page, serverIndex);
+            
+            if (!result.episodes || result.episodes.length === 0) {
+              return null;
+            }
+
+            const episodeEmbed = new EmbedBuilder()
+              .setColor('#e50914')
+              .setTitle(`🎬 ${result.movieName}`)
+              .setDescription(`📺 Server: **${result.serverName}**`)
+              .setTimestamp()
+              .setFooter({ text: `Trang ${result.currentPage}/${result.totalPages} | Tổng ${result.totalEpisodes} tập` });
+
+            let episodeList = '';
+            for (const episode of result.episodes) {
+              const episodeNum = episode.name;
+              episodeList += `**Tập ${episodeNum}**: [Xem →](${episode.embed})\n`;
+            }
+
+            episodeEmbed.addFields({ name: 'Danh sách tập', value: episodeList || 'Không có tập' });
+            return { embed: episodeEmbed, result };
+          };
+
+          const initialData = await createEpisodesEmbed(1);
+          
+          if (!initialData) {
+            await interaction.editReply({
+              content: `❌ Không tìm thấy tập phim`,
+            });
+            return;
+          }
+
+          const { result: epResult } = initialData;
+
+          // Create pagination buttons
+          const createPaginationButtons = (currentPage) => {
+            const paginationButtons = [];
+            
+            if (currentPage > 1) {
+              paginationButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`ep_prev_${serverIndex}_${slug}_${userId}`)
+                  .setLabel('⬅️ Trang trước')
+                  .setStyle(1)
+              );
+            }
+
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`ep_page_${serverIndex}_${slug}_${userId}`)
+                .setLabel(`${currentPage}/${epResult.totalPages}`)
+                .setStyle(2)
+                .setDisabled(true)
+            );
+
+            if (currentPage < epResult.totalPages) {
+              paginationButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`ep_next_${serverIndex}_${slug}_${userId}`)
+                  .setLabel('Trang sau ➡️')
+                  .setStyle(1)
+              );
+            }
+
+            // Add back button
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`back_to_servers_${slug}_${userId}`)
+                .setLabel('⬅️ Quay lại')
+                .setStyle(4)
+            );
+
+            return paginationButtons;
+          };
+
+          const epResponse = await interaction.editReply({
+            embeds: [initialData.embed],
+            components: [new ActionRowBuilder().addComponents(createPaginationButtons(1))]
+          });
+        } catch (err) {
+          console.error('Error showing episodes:', err);
+          await interaction.editReply('❌ Lỗi khi tải tập phim');
+        }
+        return;
+      }
+      
+      // Pagination for episodes
+      if (customId.startsWith('ep_prev_') || customId.startsWith('ep_next_')) {
+        // For now, just acknowledge to prevent timeout
+        await interaction.deferUpdate().catch(() => {});
+        return;
+      }
+      
+      // Back buttons
+      if (customId.startsWith('back_to_')) {
+        // For now, just acknowledge to prevent timeout
+        await interaction.deferUpdate().catch(() => {});
+        return;
+      }
+    } catch (error) {
+      console.error('❌ Lỗi xử lý button:', error);
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: '❌ Có lỗi xảy ra', flags: 64 }).catch(() => {});
+      }
     }
   }
 });
