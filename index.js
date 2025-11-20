@@ -1547,10 +1547,10 @@ client.on('interactionCreate', async (interaction) => {
           const { result: epResult } = initialData;
 
           // Create pagination buttons
-          const createPaginationButtons = (currentPage) => {
+          const createPaginationButtons = (page) => {
             const paginationButtons = [];
             
-            if (currentPage > 1) {
+            if (page > 1) {
               paginationButtons.push(
                 new ButtonBuilder()
                   .setCustomId(`ep_prev_${serverIndex}_${slug}_${userId}`)
@@ -1562,12 +1562,12 @@ client.on('interactionCreate', async (interaction) => {
             paginationButtons.push(
               new ButtonBuilder()
                 .setCustomId(`ep_page_${serverIndex}_${slug}_${userId}`)
-                .setLabel(`${currentPage}/${epResult.totalPages}`)
+                .setLabel(`${page}/${epResult.totalPages}`)
                 .setStyle(2)
                 .setDisabled(true)
             );
 
-            if (currentPage < epResult.totalPages) {
+            if (page < epResult.totalPages) {
               paginationButtons.push(
                 new ButtonBuilder()
                   .setCustomId(`ep_next_${serverIndex}_${slug}_${userId}`)
@@ -1587,9 +1587,10 @@ client.on('interactionCreate', async (interaction) => {
             return paginationButtons;
           };
 
-          const epResponse = await interaction.editReply({
+          await interaction.editReply({
             embeds: [initialData.embed],
-            components: [new ActionRowBuilder().addComponents(createPaginationButtons(1))]
+            components: [new ActionRowBuilder().addComponents(createPaginationButtons(1))],
+            fetchReply: true
           });
         } catch (err) {
           console.error('Error showing episodes:', err);
@@ -1598,17 +1599,185 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
       
-      // Pagination for episodes
-      if (customId.startsWith('ep_prev_') || customId.startsWith('ep_next_')) {
-        // For now, just acknowledge to prevent timeout
-        await interaction.deferUpdate().catch(() => {});
+      // Pagination for episodes - go to previous page
+      if (customId.startsWith('ep_prev_')) {
+        const parts = customId.split('_');
+        const serverIndex = parseInt(parts[2]);
+        const slug = parts[3];
+        const interactionUserId = parts[4];
+        
+        if (userId !== interactionUserId) {
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng button này!', flags: 64 });
+          return;
+        }
+        
+        await interaction.deferUpdate();
+        
+        try {
+          const currentPage = parseInt(interaction.message.components[0].components.find(c => c.customId.includes('ep_page_'))?.label?.split('/')[0] || 1);
+          const newPage = currentPage - 1;
+          
+          const result = await getEpisodes(slug, newPage, serverIndex);
+          if (!result || !result.episodes || result.episodes.length === 0) {
+            return;
+          }
+          
+          const episodeEmbed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 ${result.movieName}`)
+            .setDescription(`📺 Server: **${result.serverName}**`)
+            .setTimestamp()
+            .setFooter({ text: `Trang ${result.currentPage}/${result.totalPages} | Tổng ${result.totalEpisodes} tập` });
+
+          let episodeList = '';
+          for (const episode of result.episodes) {
+            const episodeNum = episode.name;
+            episodeList += `**Tập ${episodeNum}**: [Xem →](${episode.embed})\n`;
+          }
+          episodeEmbed.addFields({ name: 'Danh sách tập', value: episodeList || 'Không có tập' });
+          
+          // Create new pagination buttons
+          const newButtons = [];
+          if (newPage > 1) {
+            newButtons.push(new ButtonBuilder().setCustomId(`ep_prev_${serverIndex}_${slug}_${userId}`).setLabel('⬅️ Trang trước').setStyle(1));
+          }
+          newButtons.push(new ButtonBuilder().setCustomId(`ep_page_${serverIndex}_${slug}_${userId}`).setLabel(`${newPage}/${result.totalPages}`).setStyle(2).setDisabled(true));
+          if (newPage < result.totalPages) {
+            newButtons.push(new ButtonBuilder().setCustomId(`ep_next_${serverIndex}_${slug}_${userId}`).setLabel('Trang sau ➡️').setStyle(1));
+          }
+          newButtons.push(new ButtonBuilder().setCustomId(`back_to_servers_${slug}_${userId}`).setLabel('⬅️ Quay lại').setStyle(4));
+          
+          await interaction.editReply({ embeds: [episodeEmbed], components: [new ActionRowBuilder().addComponents(newButtons)] });
+        } catch (err) {
+          console.error('Error pagination:', err);
+        }
         return;
       }
       
-      // Back buttons
-      if (customId.startsWith('back_to_')) {
-        // For now, just acknowledge to prevent timeout
-        await interaction.deferUpdate().catch(() => {});
+      // Pagination for episodes - go to next page
+      if (customId.startsWith('ep_next_')) {
+        const parts = customId.split('_');
+        const serverIndex = parseInt(parts[2]);
+        const slug = parts[3];
+        const interactionUserId = parts[4];
+        
+        if (userId !== interactionUserId) {
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng button này!', flags: 64 });
+          return;
+        }
+        
+        await interaction.deferUpdate();
+        
+        try {
+          const currentPage = parseInt(interaction.message.components[0].components.find(c => c.customId.includes('ep_page_'))?.label?.split('/')[0] || 1);
+          const newPage = currentPage + 1;
+          
+          const result = await getEpisodes(slug, newPage, serverIndex);
+          if (!result || !result.episodes || result.episodes.length === 0) {
+            return;
+          }
+          
+          const episodeEmbed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 ${result.movieName}`)
+            .setDescription(`📺 Server: **${result.serverName}**`)
+            .setTimestamp()
+            .setFooter({ text: `Trang ${result.currentPage}/${result.totalPages} | Tổng ${result.totalEpisodes} tập` });
+
+          let episodeList = '';
+          for (const episode of result.episodes) {
+            const episodeNum = episode.name;
+            episodeList += `**Tập ${episodeNum}**: [Xem →](${episode.embed})\n`;
+          }
+          episodeEmbed.addFields({ name: 'Danh sách tập', value: episodeList || 'Không có tập' });
+          
+          // Create new pagination buttons
+          const newButtons = [];
+          if (newPage > 1) {
+            newButtons.push(new ButtonBuilder().setCustomId(`ep_prev_${serverIndex}_${slug}_${userId}`).setLabel('⬅️ Trang trước').setStyle(1));
+          }
+          newButtons.push(new ButtonBuilder().setCustomId(`ep_page_${serverIndex}_${slug}_${userId}`).setLabel(`${newPage}/${result.totalPages}`).setStyle(2).setDisabled(true));
+          if (newPage < result.totalPages) {
+            newButtons.push(new ButtonBuilder().setCustomId(`ep_next_${serverIndex}_${slug}_${userId}`).setLabel('Trang sau ➡️').setStyle(1));
+          }
+          newButtons.push(new ButtonBuilder().setCustomId(`back_to_servers_${slug}_${userId}`).setLabel('⬅️ Quay lại').setStyle(4));
+          
+          await interaction.editReply({ embeds: [episodeEmbed], components: [new ActionRowBuilder().addComponents(newButtons)] });
+        } catch (err) {
+          console.error('Error pagination:', err);
+        }
+        return;
+      }
+      
+      // Back from episodes to servers - this needs the movie detail embed
+      if (customId.startsWith('back_to_servers_')) {
+        const parts = customId.split('_');
+        const slug = parts[3];
+        const interactionUserId = parts[4];
+        
+        if (userId !== interactionUserId) {
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng button này!', flags: 64 });
+          return;
+        }
+        
+        await interaction.deferUpdate();
+        
+        try {
+          const detail = await getMovieDetail(slug);
+          if (!detail) {
+            return;
+          }
+          
+          const movieDetail = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 ${detail.name}`)
+            .setThumbnail(detail.thumb_url)
+            .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
+            .addFields(
+              { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
+              { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
+              { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
+              { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
+              { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Movie Detail' });
+
+          // Create server selection buttons
+          const serverButtons = [];
+          for (let i = 0; i < detail.episodes.length; i++) {
+            serverButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`server_select_${i}_${slug}_${userId}`)
+                .setLabel(detail.episodes[i].server_name.substring(0, 20))
+                .setStyle(2)
+            );
+          }
+
+          // Add back button to go back to movie list
+          serverButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`back_to_search_${userId}`)
+              .setLabel('⬅️ Quay lại')
+              .setStyle(4)
+          );
+
+          const serverRow = serverButtons.length > 0 ? new ActionRowBuilder().addComponents(serverButtons) : null;
+          
+          await interaction.editReply({
+            embeds: [movieDetail],
+            components: serverRow ? [serverRow] : []
+          });
+        } catch (err) {
+          console.error('Error back to servers:', err);
+        }
+        return;
+      }
+      
+      // Back from servers to movie list
+      if (customId.startsWith('back_to_search_') || customId.startsWith('back_to_newmovies_')) {
+        // Just acknowledge - the message will remain with disabled buttons
+        await interaction.deferUpdate();
         return;
       }
     } catch (error) {
