@@ -28,6 +28,9 @@ let AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
 
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 
+// Cache for search embeds and components (for back button)
+const searchCache = new Map(); // messageId -> { embed, components, movies }
+
 // Cooldown tracking for commands (per-user rate limiting)
 const dashboardCooldown = new Map();  // Per-user cooldown for !dashboard
 const fixturesCooldown = new Map();   // Per-user cooldown for !fixtures selector
@@ -1065,6 +1068,15 @@ client.on('interactionCreate', async (interaction) => {
             fetchReply: true
           });
           
+          // Cache this search result for back button
+          searchCache.set(response.id, {
+            embed,
+            components: buttonRows,
+            movies,
+            searchQuery,
+            type: 'search'
+          });
+          
           // Create collector for movie selection buttons
           const movieCollector = response.createMessageComponentCollector({
             filter: (btn) => btn.user.id === userId && btn.customId.startsWith('search_detail_'),
@@ -1111,10 +1123,10 @@ client.on('interactionCreate', async (interaction) => {
                 );
               }
 
-              // Add back button
+              // Add back button - use messageId from original search response
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_search_${Buffer.from(searchQuery).toString('base64')}`)
+                  .setCustomId(`back_to_search_${response.id}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -1776,106 +1788,41 @@ client.on('interactionCreate', async (interaction) => {
       
       // Back from servers to movie list (search)
       if (customId.startsWith('back_to_search_')) {
-        const searchQueryBase64 = customId.replace('back_to_search_', '');
+        const messageId = customId.replace('back_to_search_', '');
         
         await interaction.deferUpdate();
         
         try {
-          // Decode search query
-          const searchQuery = Buffer.from(searchQueryBase64, 'base64').toString('utf-8');
+          // Try to get from cache first
+          const cached = searchCache.get(messageId);
           
-          // Re-fetch search results
-          const results = await searchMovies(searchQuery);
-          
-          if (!results || results.length === 0) {
-            return;
-          }
-          
-          const movies = results.slice(0, 10);
-          
-          const embed = new EmbedBuilder()
-            .setColor('#e50914')
-            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}"`)
-            .setDescription(`Tìm thấy **${movies.length}** phim`)
-            .setTimestamp();
-          
-          let description = '';
-          for (let idx = 0; idx < movies.length; idx++) {
-            const movie = movies[idx];
-            const slug = movie.slug || '';
-            const title = movie.name || movie.title || 'Unknown';
-            const englishTitle = movie.original_name || '';
-            const year = movie.year || 'N/A';
-            
-            let totalEpisodes = 'N/A';
-            let category = 'N/A';
-            try {
-              if (slug) {
-                const detail = await getMovieDetail(slug);
-                if (detail) {
-                  if (detail.total_episodes) {
-                    totalEpisodes = detail.total_episodes.toString();
-                  }
-                  if (detail.category && detail.category[1]) {
-                    const categoryList = detail.category[1].list;
-                    if (categoryList && categoryList.length > 0) {
-                      category = categoryList[0].name;
-                    }
-                  }
-                }
+          if (cached && cached.type === 'search') {
+            // Recreate buttons with current userId
+            const newButtonRows = [];
+            for (let i = 1; i <= Math.min(10, cached.movies.length); i++) {
+              if ((i - 1) % 5 === 0) {
+                newButtonRows.push(new ActionRowBuilder());
               }
-            } catch (e) {
-              console.log(`⚠️ Could not fetch detail for ${slug}`);
+              const movieTitle = cached.movies[i - 1].name.substring(0, 15);
+              newButtonRows[Math.floor((i - 1) / 5)].addComponents(
+                new ButtonBuilder()
+                  .setCustomId(`search_detail_${i}_${userId}`)
+                  .setLabel(`${i}. ${movieTitle}`)
+                  .setStyle(1)
+              );
             }
             
-            const movieNum = idx + 1;
-            let titleDisplay = `**${movieNum}. ${title}**`;
-            if (englishTitle && englishTitle !== title) {
-              titleDisplay += ` (${englishTitle})`;
-            }
-            
-            description += `${titleDisplay}\n`;
-            
-            let infoLine = '';
-            if (year !== 'N/A') {
-              infoLine += `📅 ${year}`;
-            }
-            if (category !== 'N/A') {
-              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
-            }
-            if (totalEpisodes !== 'N/A') {
-              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
-            }
-            
-            if (infoLine) {
-              description += infoLine + '\n';
-            }
-            
-            description += '\n';
+            await interaction.editReply({
+              embeds: [cached.embed],
+              components: newButtonRows.length > 0 ? newButtonRows : []
+            });
+          } else {
+            // Fallback: just acknowledge
+            await interaction.editReply({
+              content: '⚠️ Cache expired, vui lòng chạy lại /search',
+              components: []
+            });
           }
-          
-          embed.setDescription(description);
-          
-          const buttons = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
-            const movieTitle = movies[i - 1].name.substring(0, 15);
-            buttons.push(
-              new ButtonBuilder()
-                .setCustomId(`search_detail_${i}_${userId}`)
-                .setLabel(`${i}. ${movieTitle}`)
-                .setStyle(1)
-            );
-          }
-          
-          const buttonRows = [];
-          for (let i = 0; i < buttons.length; i += 5) {
-            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-          }
-          
-          await interaction.editReply({
-            embeds: [embed],
-            components: buttonRows.length > 0 ? buttonRows : []
-          });
         } catch (err) {
           console.error('Error back to search:', err);
         }
