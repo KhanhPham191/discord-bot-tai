@@ -1091,6 +1091,7 @@ client.on('interactionCreate', async (interaction) => {
             cacheId,
             timestamp: Date.now()
           });
+          console.log(`✅ [SEARCH CACHE] User ${userId} - CacheID: ${cacheId}, Movies: ${movies.length}, Query: ${searchQuery}`);
           
           // Store cache ID in each button so we can retrieve it later
           const updatedButtonRows = [];
@@ -1121,6 +1122,7 @@ client.on('interactionCreate', async (interaction) => {
             const parts = buttonInteraction.customId.split('_');
             const movieNum = parseInt(parts[2]);
             const returnCacheId = parseInt(parts[4]);
+            console.log(`📍 [BUTTON CLICK] User: ${userId}, MovieNum: ${movieNum}, CacheID: ${returnCacheId}, CustomID: ${buttonInteraction.customId}`);
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
 
@@ -1826,14 +1828,17 @@ client.on('interactionCreate', async (interaction) => {
       // Back from servers to movie list (search)
       if (customId.startsWith('back_to_search_')) {
         const cacheId = parseInt(customId.replace('back_to_search_', ''));
+        console.log(`⬅️ [BACK BUTTON] User: ${userId}, CacheID: ${cacheId}, CustomID: ${customId}`);
         
         await interaction.deferUpdate();
         
         try {
           // Try to get from cache using userId as key
           const cached = searchCache.get(userId);
+          console.log(`📦 [CACHE CHECK] User: ${userId}, Found: ${!!cached}, CacheID Match: ${cached?.cacheId === cacheId}, StoredCacheID: ${cached?.cacheId}`);
           
           if (cached && cached.type === 'search' && cached.cacheId === cacheId) {
+            console.log(`✅ [CACHE HIT] Restoring ${cached.movies.length} movies`);
             // Recreate buttons with current userId and cacheId
             const newButtonRows = [];
             for (let i = 1; i <= Math.min(10, cached.movies.length); i++) {
@@ -1853,8 +1858,10 @@ client.on('interactionCreate', async (interaction) => {
               embeds: [cached.embed],
               components: newButtonRows.length > 0 ? newButtonRows : []
             });
+            console.log(`✅ [BACK SUCCESS] Message updated with ${cached.movies.length} movies`);
           } else {
             // Cache expired or not found - do nothing (no error message)
+            console.log(`⚠️ [CACHE MISS] Cache not found or cacheId mismatch for user ${userId}`);
             // Just keep the current message
           }
         } catch (err) {
