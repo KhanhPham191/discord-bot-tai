@@ -23,6 +23,8 @@ if (!process.env.DISCORD_TOKEN) {
 const TOKEN = process.env.DISCORD_TOKEN;
 const LIVESCORE_CHANNEL = '694577581298810946';
 const LIVESCORE_UPDATE_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const MOVIE_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes
+const MOVIE_UPDATE_CHANNEL = '743938937172525067';
 const PREFIX = '!';
 let AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
 
@@ -32,6 +34,10 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 const searchCache = new Map(); // userId -> { embed, components, movies, searchQuery, cacheId, timestamp }
 let cacheIdCounter = 0;
 const CACHE_TTL = 60 * 1000; // 60 seconds
+
+// Movie update tracking - store slugs of movies already notified
+const notifiedMovies = new Set(); // Set to track movie slugs already notified
+const NOTIFIED_MOVIES_FILE = path.join(__dirname, 'notified-movies.json');
 
 // Clean up expired cache entries
 setInterval(() => {
@@ -72,6 +78,29 @@ function loadConfig() {
 function saveConfig() {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
   console.log('✅ Config đã được lưu vào config.json');
+}
+
+// Load notified movies from file
+function loadNotifiedMovies() {
+  console.log('📥 Loading notified movies...');
+  if (fs.existsSync(NOTIFIED_MOVIES_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(NOTIFIED_MOVIES_FILE, 'utf8'));
+      notifiedMovies.clear();
+      data.forEach(slug => notifiedMovies.add(slug));
+      console.log(`✅ Loaded ${notifiedMovies.size} notified movies`);
+    } catch (e) {
+      console.error('Lỗi load notified movies:', e);
+    }
+  } else {
+    console.log('📝 No notified movies file yet. Will create on first update.');
+  }
+}
+
+// Save notified movies to file
+function saveNotifiedMovies() {
+  const data = Array.from(notifiedMovies);
+  fs.writeFileSync(NOTIFIED_MOVIES_FILE, JSON.stringify(data, null, 2));
 }
 
 // Create tracked teams dashboard UI
@@ -281,7 +310,19 @@ async function registerSlashCommands() {
       .addStringOption(option =>
         option.setName('slug')
           .setDescription('Slug của phim')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('set-movie-update-channel')
+      .setDescription('Thiết lập channel để nhận thông báo phim update')
+      .addChannelOption(option =>
+        option.setName('channel')
+          .setDescription('Channel để gửi thông báo phim mới')
           .setRequired(true))
+      .addBooleanOption(option =>
+        option.setName('enabled')
+          .setDescription('Bật/tắt tính năng thông báo phim update')
+          .setRequired(false))
   ];
 
   try {
@@ -299,10 +340,87 @@ async function registerSlashCommands() {
 client.once('ready', async () => {
   console.log(`✅ Bot đã đăng nhập với tư cách: ${client.user.tag}`);
   loadConfig();
+  loadNotifiedMovies();
   
   // Register slash commands
   await registerSlashCommands();
 
+  // Setup auto-checker for movie updates
+  setInterval(async () => {
+    try {
+      // Check if movie update feature is enabled and channel is configured
+      if (!config.movieUpdate?.enabled || !config.movieUpdate?.channelId) {
+        return;
+      }
+
+      const channel = await client.channels.fetch(config.movieUpdate.channelId).catch(() => null);
+      if (!channel) {
+        console.error('❌ Could not fetch movie update channel');
+        return;
+      }
+
+      // Get new movies with timeout
+      const newMovies = await Promise.race([
+        getNewMovies(1),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Movie API timeout')), 15000))
+      ]).catch(err => {
+        console.error('⚠️ Error fetching new movies:', err.message);
+        return [];
+      });
+      
+      if (newMovies.length === 0) {
+        return;
+      }
+
+      for (const movie of newMovies) {
+        // Check if already notified
+        if (notifiedMovies.has(movie.slug)) {
+          continue;
+        }
+
+        // Mark as notified
+        notifiedMovies.add(movie.slug);
+        saveNotifiedMovies();
+
+        // Get full movie detail for embed with timeout
+        try {
+          const detail = await Promise.race([
+            getMovieDetail(movie.slug),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Detail API timeout')), 10000))
+          ]).catch(() => null);
+          
+          if (!detail) continue;
+
+          const movieEmbed = new EmbedBuilder()
+            .setColor('#ef4444')
+            .setTitle(`🎬 ${detail.name}`)
+            .setDescription(detail.original_name ? `*${detail.original_name}*` : '')
+            .setThumbnail(detail.poster_url || detail.thumb_url)
+            .addFields(
+              { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
+              { name: '⭐ Chất lượng', value: detail.quality || 'N/A', inline: true },
+              { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
+              { name: '⏱️ Thời lượng', value: detail.time || 'N/A', inline: true },
+              { name: '📺 Tập phim', value: `${detail.current_episode || 0}/${detail.total_episodes || '?'}`, inline: true },
+              { name: '📋 Mô tả', value: (detail.description || 'Không có mô tả').substring(0, 300) + '...' }
+            )
+            .setFooter({ text: `Slug: ${movie.slug}` })
+            .setTimestamp();
+
+          await channel.send({ 
+            content: `🆕 **Phim mới được cập nhật!**`,
+            embeds: [movieEmbed] 
+          });
+
+          console.log(`✅ Sent notification for movie: ${detail.name}`);
+        } catch (e) {
+          console.error(`⚠️ Error getting detail for ${movie.slug}:`, e.message);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error in movie update checker:', error.message);
+    }
+  }, MOVIE_UPDATE_INTERVAL);
   
   // Setup auto-reminder for upcoming matches (1 hour before)
   setInterval(async () => {
@@ -420,7 +538,8 @@ client.on('interactionCreate', async (interaction) => {
             '',
             '🎬 Movie Search:',
             '`/search <tên phim>` - tìm phim (gõ `help` để xem chi tiết)',
-            '`/newmovies [trang]` - phim mới cập nhật (trang 1 nếu không chỉ định)'
+            '`/newmovies [trang]` - phim mới cập nhật (trang 1 nếu không chỉ định)',
+            '`/set-movie-update-channel <channel> [enabled]` - thiết lập kênh nhận thông báo phim mới'
           ].join('\n')
         );
         return;
@@ -1122,9 +1241,6 @@ client.on('interactionCreate', async (interaction) => {
             const parts = buttonInteraction.customId.split('_');
             const movieNum = parseInt(parts[2]);
             const returnCacheId = parseInt(parts[4]);
-            console.log(`📍 [BUTTON CLICK] CustomID: ${buttonInteraction.customId}`);
-            console.log(`📍 [BUTTON PARTS] parts.length=${parts.length}, parts=${JSON.stringify(parts)}`);
-            console.log(`📍 [BUTTON CLICK] User: ${userId}, MovieNum: ${movieNum}, CacheID: ${returnCacheId}`);
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
 
@@ -1404,6 +1520,41 @@ client.on('interactionCreate', async (interaction) => {
           await interaction.editReply('❌ Có lỗi xảy ra khi lấy phim mới. Vui lòng thử lại!');
         }
         
+        return;
+      }
+
+      if (command === 'set-movie-update-channel') {
+        const channel = interaction.options.getChannel('channel');
+        const enabled = interaction.options.getBoolean('enabled') ?? true;
+
+        // Initialize movieUpdate config if doesn't exist
+        if (!config.movieUpdate) {
+          config.movieUpdate = {
+            channelId: null,
+            enabled: false
+          };
+        }
+
+        // Update config
+        config.movieUpdate.channelId = channel.id;
+        config.movieUpdate.enabled = enabled;
+        saveConfig();
+
+        // Update the global constant (for immediate effect)
+        // We'll add a check in the auto-update interval
+
+        const statusEmbed = new EmbedBuilder()
+          .setColor(enabled ? '#10b981' : '#ef4444')
+          .setTitle('⚙️ Thiết lập kênh thông báo phim update')
+          .addFields(
+            { name: '📺 Kênh được chọn', value: `${channel} (${channel.id})`, inline: false },
+            { name: '🔄 Trạng thái', value: enabled ? '✅ Đã bật' : '❌ Tắt', inline: false }
+          )
+          .setFooter({ text: 'Bot sẽ gửi thông báo phim mới vào kênh này mỗi 30 phút' })
+          .setTimestamp();
+
+        await interaction.reply({ embeds: [statusEmbed] });
+        console.log(`✅ Movie update channel set to: ${channel.name} (${channel.id}), Enabled: ${enabled}`);
         return;
       }
     } catch (error) {
@@ -1848,18 +1999,14 @@ client.on('interactionCreate', async (interaction) => {
       if (customId.startsWith('back_to_search_')) {
         const afterPrefix = customId.replace('back_to_search_', '');
         const cacheId = parseInt(afterPrefix);
-        console.log(`⬅️ [BACK BUTTON] CustomID: ${customId}`);
-        console.log(`⬅️ [BACK PARSE] afterPrefix: ${afterPrefix}, cacheId: ${cacheId}`);
         
         await interaction.deferUpdate();
         
         try {
           // Try to get from cache using userId as key
           const cached = searchCache.get(userId);
-          console.log(`📦 [CACHE CHECK] User: ${userId}, Found: ${!!cached}, CacheID Match: ${cached?.cacheId === cacheId}, StoredCacheID: ${cached?.cacheId}`);
           
           if (cached && cached.type === 'search' && cached.cacheId === cacheId) {
-            console.log(`✅ [CACHE HIT] Restoring ${cached.movies.length} movies`);
             // Recreate buttons with current userId and cacheId
             const newButtonRows = [];
             for (let i = 1; i <= Math.min(10, cached.movies.length); i++) {
@@ -2028,9 +2175,6 @@ client.on('messageCreate', async (message) => {
   const lower = content.toLowerCase();
   let replied = false;
   
-  // DEBUG: Log mỗi message
-  console.log(`📨 [${message.author.username}] ${content}`);
-
   // Phát hiện từ chửi - bot trả lời bằng lời khôn ngoan/hóm hỉnh
   // Không dùng \b vì nó không làm việc với tiếng Việt
   try {
@@ -3476,8 +3620,6 @@ client.on('messageCreate', async (message) => {
       if (searchText.startsWith('"') && searchText.endsWith('"')) {
         keyword = searchText.slice(1, -1).trim();
       }
-      
-      console.log('📝 Raw keyword:', keyword); // Debug log
       
       // Check if no keyword - show help
       if (!keyword) {
