@@ -1282,12 +1282,25 @@ client.on('interactionCreate', async (interaction) => {
 
           embed.setDescription(description);
           
+          // Add cache for newmovies (similar to search)
+          const newmoviesCacheId = ++cacheIdCounter;
+          searchCache.set(`newmovies_${userId}`, {
+            embed,
+            components: buttonRows,
+            movies,
+            searchQuery: 'newmovies',
+            type: 'newmovies',
+            cacheId: newmoviesCacheId,
+            timestamp: Date.now()
+          });
+          console.log(`✅ [NEWMOVIES CACHE] User ${userId} - CacheID: ${newmoviesCacheId}, Movies: ${movies.length}`);
+          
           const buttons = [];
           for (let i = 1; i <= Math.min(10, movies.length); i++) {
             const movieTitle = movies[i - 1].name.substring(0, 15);
             buttons.push(
               new ButtonBuilder()
-                .setCustomId(`newmovies_detail_${i}_${userId}`)
+                .setCustomId(`newmovies_detail_${i}_${userId}_${newmoviesCacheId}`)
                 .setLabel(`${i}. ${movieTitle}`)
                 .setStyle(1)
             );
@@ -1311,9 +1324,12 @@ client.on('interactionCreate', async (interaction) => {
           });
 
           movieCollector.on('collect', async (buttonInteraction) => {
-            const movieNum = parseInt(buttonInteraction.customId.split('_')[2]);
+            const parts = buttonInteraction.customId.split('_');
+            const movieNum = parseInt(parts[2]);
+            const returnCacheId = parseInt(parts[4]);
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
+            console.log(`📍 [NEWMOVIES CLICK] MovieNum: ${movieNum}, CacheID: ${returnCacheId}`);
 
             try {
               const detail = await getMovieDetail(slug);
@@ -1350,10 +1366,10 @@ client.on('interactionCreate', async (interaction) => {
                 );
               }
 
-              // Add back button
+              // Add back button with cacheId
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_newmovies`)
+                  .setCustomId(`back_to_newmovies_${returnCacheId}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -1875,10 +1891,45 @@ client.on('interactionCreate', async (interaction) => {
       }
       
       // Back from servers to movie list (newmovies)
-      if (customId.startsWith('back_to_newmovies')) {
+      if (customId.startsWith('back_to_newmovies_')) {
+        const cacheId = parseInt(customId.replace('back_to_newmovies_', ''));
+        console.log(`⬅️ [BACK NEWMOVIES] User: ${userId}, CacheID: ${cacheId}`);
+        
         await interaction.deferUpdate();
-        // For newmovies, we'll just show a placeholder since we don't cache the movies
-        // User can run /newmovies again if needed
+        
+        try {
+          // Try to get from cache using "newmovies_${userId}" as key
+          const cached = searchCache.get(`newmovies_${userId}`);
+          console.log(`📦 [NEWMOVIES CACHE CHECK] Found: ${!!cached}, CacheID Match: ${cached?.cacheId === cacheId}, StoredCacheID: ${cached?.cacheId}`);
+          
+          if (cached && cached.type === 'newmovies' && cached.cacheId === cacheId) {
+            console.log(`✅ [NEWMOVIES CACHE HIT] Restoring ${cached.movies.length} movies`);
+            // Recreate buttons with current userId and cacheId
+            const newButtonRows = [];
+            for (let i = 1; i <= Math.min(10, cached.movies.length); i++) {
+              if ((i - 1) % 5 === 0) {
+                newButtonRows.push(new ActionRowBuilder());
+              }
+              const movieTitle = cached.movies[i - 1].name.substring(0, 15);
+              newButtonRows[Math.floor((i - 1) / 5)].addComponents(
+                new ButtonBuilder()
+                  .setCustomId(`newmovies_detail_${i}_${userId}_${cacheId}`)
+                  .setLabel(`${i}. ${movieTitle}`)
+                  .setStyle(1)
+              );
+            }
+            
+            await interaction.editReply({
+              embeds: [cached.embed],
+              components: newButtonRows.length > 0 ? newButtonRows : []
+            });
+            console.log(`✅ [NEWMOVIES BACK SUCCESS] Message updated`);
+          } else {
+            console.log(`⚠️ [NEWMOVIES CACHE MISS] Cache not found or cacheId mismatch`);
+          }
+        } catch (err) {
+          console.error('Error back to newmovies:', err);
+        }
         return;
       }
     } catch (error) {
