@@ -1114,7 +1114,7 @@ client.on('interactionCreate', async (interaction) => {
               // Add back button
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_search_${userId}`)
+                  .setCustomId(`back_to_search_${movies.length}_${searchQuery.replace(/\s+/g, '_')}_${userId}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -1774,9 +1774,124 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
       
-      // Back from servers to movie list
-      if (customId.startsWith('back_to_search_') || customId.startsWith('back_to_newmovies_')) {
-        // Just acknowledge - the message will remain with disabled buttons
+      // Back from servers to movie list (search)
+      if (customId.startsWith('back_to_search_')) {
+        const parts = customId.split('_');
+        const movieCount = parseInt(parts[3]);
+        const searchQueryBase64 = parts[4];
+        const interactionUserId = parts[5];
+        
+        if (userId !== interactionUserId) {
+          await interaction.reply({ content: '❌ Bạn không có quyền sử dụng button này!', flags: 64 });
+          return;
+        }
+        
+        await interaction.deferUpdate();
+        
+        try {
+          // Decode search query
+          const searchQuery = Buffer.from(searchQueryBase64, 'base64').toString('utf-8');
+          
+          // Re-fetch search results
+          const results = await searchMovies(searchQuery);
+          
+          if (!results || results.length === 0) {
+            return;
+          }
+          
+          const movies = results.slice(0, 10);
+          
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}"`)
+            .setDescription(`Tìm thấy **${movies.length}** phim`)
+            .setTimestamp();
+          
+          let description = '';
+          for (let idx = 0; idx < movies.length; idx++) {
+            const movie = movies[idx];
+            const slug = movie.slug || '';
+            const title = movie.name || movie.title || 'Unknown';
+            const englishTitle = movie.original_name || '';
+            const year = movie.year || 'N/A';
+            
+            let totalEpisodes = 'N/A';
+            let category = 'N/A';
+            try {
+              if (slug) {
+                const detail = await getMovieDetail(slug);
+                if (detail) {
+                  if (detail.total_episodes) {
+                    totalEpisodes = detail.total_episodes.toString();
+                  }
+                  if (detail.category && detail.category[1]) {
+                    const categoryList = detail.category[1].list;
+                    if (categoryList && categoryList.length > 0) {
+                      category = categoryList[0].name;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.log(`⚠️ Could not fetch detail for ${slug}`);
+            }
+            
+            const movieNum = idx + 1;
+            let titleDisplay = `**${movieNum}. ${title}**`;
+            if (englishTitle && englishTitle !== title) {
+              titleDisplay += ` (${englishTitle})`;
+            }
+            
+            description += `${titleDisplay}\n`;
+            
+            let infoLine = '';
+            if (year !== 'N/A') {
+              infoLine += `📅 ${year}`;
+            }
+            if (category !== 'N/A') {
+              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
+            }
+            if (totalEpisodes !== 'N/A') {
+              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+            }
+            
+            if (infoLine) {
+              description += infoLine + '\n';
+            }
+            
+            description += '\n';
+          }
+          
+          embed.setDescription(description);
+          
+          const buttons = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_detail_${i}_${userId}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+          
+          const buttonRows = [];
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          
+          await interaction.editReply({
+            embeds: [embed],
+            components: buttonRows.length > 0 ? buttonRows : []
+          });
+        } catch (err) {
+          console.error('Error back to search:', err);
+        }
+        return;
+      }
+      
+      // Back from servers to movie list (newmovies)
+      if (customId.startsWith('back_to_newmovies_')) {
         await interaction.deferUpdate();
         return;
       }
