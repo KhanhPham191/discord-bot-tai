@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { 
   searchWeapons, 
   searchNPCs, 
@@ -314,9 +314,14 @@ async function handleItemSelect(interaction) {
   });
 }
 
-// Create weapon dropdown menu
-function createWeaponSelectMenu() {
-  const weapons = getAllWeapons().slice(0, 25);
+const ITEMS_PER_PAGE = 25;
+
+// Create weapon dropdown menu with pagination
+function createWeaponSelectMenu(page = 0) {
+  const allWeapons = getAllWeapons();
+  const start = page * ITEMS_PER_PAGE;
+  const weapons = allWeapons.slice(start, start + ITEMS_PER_PAGE);
+  
   const options = weapons.map(w => ({
     label: w.name.substring(0, 100),
     value: w.id.toString(),
@@ -326,15 +331,18 @@ function createWeaponSelectMenu() {
   return new ActionRowBuilder()
     .addComponents(
       new StringSelectMenuBuilder()
-        .setCustomId('game_weapon_select')
+        .setCustomId(`game_weapon_select_${page}`)
         .setPlaceholder('Chọn một vũ khí...')
         .addOptions(options)
     );
 }
 
-// Create NPC dropdown menu
-function createNPCSelectMenu() {
-  const npcs = getAllNPCs().slice(0, 25);
+// Create NPC dropdown menu with pagination
+function createNPCSelectMenu(page = 0) {
+  const allNPCs = getAllNPCs();
+  const start = page * ITEMS_PER_PAGE;
+  const npcs = allNPCs.slice(start, start + ITEMS_PER_PAGE);
+  
   const options = npcs.map(n => ({
     label: n.name.substring(0, 100),
     value: n.id.toString(),
@@ -344,15 +352,18 @@ function createNPCSelectMenu() {
   return new ActionRowBuilder()
     .addComponents(
       new StringSelectMenuBuilder()
-        .setCustomId('game_npc_select')
+        .setCustomId(`game_npc_select_${page}`)
         .setPlaceholder('Chọn một nhân vật...')
         .addOptions(options)
     );
 }
 
-// Create boss dropdown menu
-function createBossSelectMenu() {
-  const bosses = getAllBosses().slice(0, 25);
+// Create boss dropdown menu with pagination
+function createBossSelectMenu(page = 0) {
+  const allBosses = getAllBosses();
+  const start = page * ITEMS_PER_PAGE;
+  const bosses = allBosses.slice(start, start + ITEMS_PER_PAGE);
+  
   const options = bosses.map(b => ({
     label: b.name.substring(0, 100),
     value: b.id.toString(),
@@ -362,15 +373,18 @@ function createBossSelectMenu() {
   return new ActionRowBuilder()
     .addComponents(
       new StringSelectMenuBuilder()
-        .setCustomId('game_boss_select')
+        .setCustomId(`game_boss_select_${page}`)
         .setPlaceholder('Chọn một boss...')
         .addOptions(options)
     );
 }
 
-// Create skill dropdown menu
-function createSkillSelectMenu() {
-  const skills = getAllSkills().slice(0, 25);
+// Create skill dropdown menu with pagination
+function createSkillSelectMenu(page = 0) {
+  const allSkills = getAllSkills();
+  const start = page * ITEMS_PER_PAGE;
+  const skills = allSkills.slice(start, start + ITEMS_PER_PAGE);
+  
   const options = skills.map(s => ({
     label: s.name.substring(0, 100),
     value: s.id.toString(),
@@ -380,15 +394,18 @@ function createSkillSelectMenu() {
   return new ActionRowBuilder()
     .addComponents(
       new StringSelectMenuBuilder()
-        .setCustomId('game_skill_select')
+        .setCustomId(`game_skill_select_${page}`)
         .setPlaceholder('Chọn một kỹ năng...')
         .addOptions(options)
     );
 }
 
-// Create item dropdown menu
-function createItemSelectMenu() {
-  const items = getAllItems().slice(0, 25);
+// Create item dropdown menu with pagination
+function createItemSelectMenu(page = 0) {
+  const allItems = getAllItems();
+  const start = page * ITEMS_PER_PAGE;
+  const items = allItems.slice(start, start + ITEMS_PER_PAGE);
+  
   const options = items.map(i => ({
     label: i.name.substring(0, 100),
     value: i.id.toString(),
@@ -398,85 +415,192 @@ function createItemSelectMenu() {
   return new ActionRowBuilder()
     .addComponents(
       new StringSelectMenuBuilder()
-        .setCustomId('game_item_select')
+        .setCustomId(`game_item_select_${page}`)
         .setPlaceholder('Chọn một vật phẩm...')
         .addOptions(options)
     );
 }
 
-// Show all weapons with dropdown
-async function showAllWeapons(interaction) {
+// Create pagination buttons
+function createPaginationButtons(type, page, maxPage) {
+  return new ActionRowBuilder()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId(`game_page_prev_${type}_${page}`)
+        .setLabel('⬅️ Trước')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(page === 0),
+      new ButtonBuilder()
+        .setCustomId(`game_page_info_${type}_${page}`)
+        .setLabel(`Trang ${page + 1}/${maxPage + 1}`)
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(true),
+      new ButtonBuilder()
+        .setCustomId(`game_page_next_${type}_${page}`)
+        .setLabel('Tiếp ➡️')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(page === maxPage)
+    );
+}
+
+// Show all weapons with dropdown and pagination
+async function showAllWeapons(interaction, page = 0) {
+  const allWeapons = getAllWeapons();
+  const maxPage = Math.ceil(allWeapons.length / ITEMS_PER_PAGE) - 1;
+  const start = page * ITEMS_PER_PAGE;
+  const end = Math.min(start + ITEMS_PER_PAGE, allWeapons.length);
+
   const embed = new EmbedBuilder()
     .setColor(0x00AE86)
     .setTitle('⚔️ Tất cả Vũ Khí')
-    .setDescription(`Có ${getAllWeapons().length} vũ khí trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
-    .setFooter({ text: 'Where Winds Meet Game Database' });
+    .setDescription(`Có ${allWeapons.length} vũ khí trong cơ sở dữ liệu.\n\nHiển thị: ${start + 1}-${end}`)
+    .setFooter({ text: `Trang ${page + 1}/${maxPage + 1}` });
 
-  return interaction.reply({
-    embeds: [embed],
-    components: [createWeaponSelectMenu()],
-    ephemeral: false
-  });
+  const components = [createWeaponSelectMenu(page)];
+  if (maxPage > 0) {
+    components.push(createPaginationButtons('weapons', page, maxPage));
+  }
+
+  if (interaction.replied) {
+    return interaction.editReply({
+      embeds: [embed],
+      components
+    });
+  } else {
+    return interaction.reply({
+      embeds: [embed],
+      components,
+      ephemeral: false
+    });
+  }
 }
 
-// Show all NPCs with dropdown
-async function showAllNPCs(interaction) {
+// Show all NPCs with dropdown and pagination
+async function showAllNPCs(interaction, page = 0) {
+  const allNPCs = getAllNPCs();
+  const maxPage = Math.ceil(allNPCs.length / ITEMS_PER_PAGE) - 1;
+  const start = page * ITEMS_PER_PAGE;
+  const end = Math.min(start + ITEMS_PER_PAGE, allNPCs.length);
+
   const embed = new EmbedBuilder()
     .setColor(0x0099FF)
     .setTitle('👤 Tất cả Nhân Vật')
-    .setDescription(`Có ${getAllNPCs().length} nhân vật trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
-    .setFooter({ text: 'Where Winds Meet Game Database' });
+    .setDescription(`Có ${allNPCs.length} nhân vật trong cơ sở dữ liệu.\n\nHiển thị: ${start + 1}-${end}`)
+    .setFooter({ text: `Trang ${page + 1}/${maxPage + 1}` });
 
-  return interaction.reply({
-    embeds: [embed],
-    components: [createNPCSelectMenu()],
-    ephemeral: false
-  });
+  const components = [createNPCSelectMenu(page)];
+  if (maxPage > 0) {
+    components.push(createPaginationButtons('npcs', page, maxPage));
+  }
+
+  if (interaction.replied) {
+    return interaction.editReply({
+      embeds: [embed],
+      components
+    });
+  } else {
+    return interaction.reply({
+      embeds: [embed],
+      components,
+      ephemeral: false
+    });
+  }
 }
 
-// Show all bosses with dropdown
-async function showAllBosses(interaction) {
+// Show all bosses with dropdown and pagination
+async function showAllBosses(interaction, page = 0) {
+  const allBosses = getAllBosses();
+  const maxPage = Math.ceil(allBosses.length / ITEMS_PER_PAGE) - 1;
+  const start = page * ITEMS_PER_PAGE;
+  const end = Math.min(start + ITEMS_PER_PAGE, allBosses.length);
+
   const embed = new EmbedBuilder()
     .setColor(0xFF0000)
     .setTitle('👹 Tất cả Boss')
-    .setDescription(`Có ${getAllBosses().length} boss trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
-    .setFooter({ text: 'Where Winds Meet Game Database' });
+    .setDescription(`Có ${allBosses.length} boss trong cơ sở dữ liệu.\n\nHiển thị: ${start + 1}-${end}`)
+    .setFooter({ text: `Trang ${page + 1}/${maxPage + 1}` });
 
-  return interaction.reply({
-    embeds: [embed],
-    components: [createBossSelectMenu()],
-    ephemeral: false
-  });
+  const components = [createBossSelectMenu(page)];
+  if (maxPage > 0) {
+    components.push(createPaginationButtons('bosses', page, maxPage));
+  }
+
+  if (interaction.replied) {
+    return interaction.editReply({
+      embeds: [embed],
+      components
+    });
+  } else {
+    return interaction.reply({
+      embeds: [embed],
+      components,
+      ephemeral: false
+    });
+  }
 }
 
-// Show all skills with dropdown
-async function showAllSkills(interaction) {
+// Show all skills with dropdown and pagination
+async function showAllSkills(interaction, page = 0) {
+  const allSkills = getAllSkills();
+  const maxPage = Math.ceil(allSkills.length / ITEMS_PER_PAGE) - 1;
+  const start = page * ITEMS_PER_PAGE;
+  const end = Math.min(start + ITEMS_PER_PAGE, allSkills.length);
+
   const embed = new EmbedBuilder()
     .setColor(0xFFFF00)
     .setTitle('✨ Tất cả Kỹ Năng')
-    .setDescription(`Có ${getAllSkills().length} kỹ năng trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
-    .setFooter({ text: 'Where Winds Meet Game Database' });
+    .setDescription(`Có ${allSkills.length} kỹ năng trong cơ sở dữ liệu.\n\nHiển thị: ${start + 1}-${end}`)
+    .setFooter({ text: `Trang ${page + 1}/${maxPage + 1}` });
 
-  return interaction.reply({
-    embeds: [embed],
-    components: [createSkillSelectMenu()],
-    ephemeral: false
-  });
+  const components = [createSkillSelectMenu(page)];
+  if (maxPage > 0) {
+    components.push(createPaginationButtons('skills', page, maxPage));
+  }
+
+  if (interaction.replied) {
+    return interaction.editReply({
+      embeds: [embed],
+      components
+    });
+  } else {
+    return interaction.reply({
+      embeds: [embed],
+      components,
+      ephemeral: false
+    });
+  }
 }
 
-// Show all items with dropdown
-async function showAllItems(interaction) {
+// Show all items with dropdown and pagination
+async function showAllItems(interaction, page = 0) {
+  const allItems = getAllItems();
+  const maxPage = Math.ceil(allItems.length / ITEMS_PER_PAGE) - 1;
+  const start = page * ITEMS_PER_PAGE;
+  const end = Math.min(start + ITEMS_PER_PAGE, allItems.length);
+
   const embed = new EmbedBuilder()
     .setColor(0xFF69B4)
     .setTitle('📦 Tất cả Vật Phẩm')
-    .setDescription(`Có ${getAllItems().length} vật phẩm trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
-    .setFooter({ text: 'Where Winds Meet Game Database' });
+    .setDescription(`Có ${allItems.length} vật phẩm trong cơ sở dữ liệu.\n\nHiển thị: ${start + 1}-${end}`)
+    .setFooter({ text: `Trang ${page + 1}/${maxPage + 1}` });
 
-  return interaction.reply({
-    embeds: [embed],
-    components: [createItemSelectMenu()],
-    ephemeral: false
-  });
+  const components = [createItemSelectMenu(page)];
+  if (maxPage > 0) {
+    components.push(createPaginationButtons('items', page, maxPage));
+  }
+
+  if (interaction.replied) {
+    return interaction.editReply({
+      embeds: [embed],
+      components
+    });
+  } else {
+    return interaction.reply({
+      embeds: [embed],
+      components,
+      ephemeral: false
+    });
+  }
 }
 
 module.exports = {

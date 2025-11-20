@@ -1857,28 +1857,28 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    // Game select menu handlers
-    if (interaction.customId === 'game_weapon_select') {
+    // Game select menu handlers with pagination support
+    if (interaction.customId.startsWith('game_weapon_select_')) {
       await handleWeaponSelect(interaction);
       return;
     }
 
-    if (interaction.customId === 'game_npc_select') {
+    if (interaction.customId.startsWith('game_npc_select_')) {
       await handleNPCSelect(interaction);
       return;
     }
 
-    if (interaction.customId === 'game_boss_select') {
+    if (interaction.customId.startsWith('game_boss_select_')) {
       await handleBossSelect(interaction);
       return;
     }
 
-    if (interaction.customId === 'game_skill_select') {
+    if (interaction.customId.startsWith('game_skill_select_')) {
       await handleSkillSelect(interaction);
       return;
     }
 
-    if (interaction.customId === 'game_item_select') {
+    if (interaction.customId.startsWith('game_item_select_')) {
       await handleItemSelect(interaction);
       return;
     }
@@ -2329,6 +2329,37 @@ client.on('interactionCreate', async (interaction) => {
           }
         } catch (err) {
           console.error('Error back to newmovies:', err);
+        }
+        return;
+      }
+
+      // Game pagination buttons
+      if (customId.startsWith('game_page_')) {
+        const parts = customId.split('_');
+        const action = parts[2]; // prev, next, or info
+        const type = parts[3]; // weapons, npcs, bosses, skills, items
+        const currentPage = parseInt(parts[4]);
+
+        let nextPage = currentPage;
+        if (action === 'next') nextPage = currentPage + 1;
+        if (action === 'prev') nextPage = currentPage - 1;
+
+        await interaction.deferUpdate();
+
+        try {
+          if (type === 'weapons') {
+            await showAllWeapons(interaction, nextPage);
+          } else if (type === 'npcs') {
+            await showAllNPCs(interaction, nextPage);
+          } else if (type === 'bosses') {
+            await showAllBosses(interaction, nextPage);
+          } else if (type === 'skills') {
+            await showAllSkills(interaction, nextPage);
+          } else if (type === 'items') {
+            await showAllItems(interaction, nextPage);
+          }
+        } catch (err) {
+          console.error('❌ Lỗi pagination game:', err);
         }
         return;
       }
