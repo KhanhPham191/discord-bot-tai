@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Whirlwind Strike",
+    "type": "Attack",
+    "damageType": "Physical",
+    "cooldown": 5,
+    "description": "Spin rapidly to hit all nearby enemies."
+  },
+  {
+    "id": 2,
+    "name": "Parry",
+    "type": "Defense",
+    "damageType": "None",
+    "cooldown": 2,
+    "description": "Block incoming attacks to reduce damage."
+  },
+  {
+    "id": 3,
+    "name": "Chi Burst",
+    "type": "Magic",
+    "damageType": "Energy",
+    "cooldown": 8,
+    "description": "Release a burst of chi energy to damage enemies."
+  }
+]

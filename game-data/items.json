@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Health Potion",
+    "type": "Consumable",
+    "effect": "Restore 50 HP",
+    "rarity": "Common"
+  },
+  {
+    "id": 2,
+    "name": "Mana Elixir",
+    "type": "Consumable",
+    "effect": "Restore 100 Mana",
+    "rarity": "Uncommon"
+  },
+  {
+    "id": 3,
+    "name": "Celestial Stone",
+    "type": "Crafting",
+    "effect": "Use for crafting rare items",
+    "rarity": "Rare"
+  }
+]

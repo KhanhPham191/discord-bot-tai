@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Old Master Chen",
+    "role": "Combat Trainer",
+    "location": "Kaifeng",
+    "description": "A wise old warrior who teaches martial arts."
+  },
+  {
+    "id": 2,
+    "name": "Merchant Lin",
+    "role": "Merchant",
+    "location": "Market District",
+    "description": "A merchant who sells rare items and equipment."
+  },
+  {
+    "id": 3,
+    "name": "Liu Wei",
+    "role": "Quest Giver",
+    "location": "Pagoda",
+    "description": "A mysterious figure who offers interesting quests."
+  }
+]

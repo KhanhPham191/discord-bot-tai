@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "name": "Shadow Phantom",
+    "level": 25,
+    "health": 500,
+    "location": "Dark Forest",
+    "rewards": "Ancient Relic, 5000 Gold"
+  },
+  {
+    "id": 2,
+    "name": "Dragon of the East",
+    "level": 35,
+    "health": 800,
+    "location": "Mountain Peak",
+    "rewards": "Dragon Scale, 10000 Gold"
+  }
+]

@@ -9,6 +9,10 @@ const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpiso
 // Import football functions
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
 
+// Import game functions
+const { handleWeaponSearch, handleNPCSearch, handleBossSearch, handleSkillSearch, handleItemSearch, handleGameStats } = require('./game');
+const { createSeedData } = require('./game-scraper');
+
 // Load .env file - required for API keys
 require('dotenv').config();
 
@@ -322,7 +326,52 @@ async function registerSlashCommands() {
       .addBooleanOption(option =>
         option.setName('enabled')
           .setDescription('Bật/tắt tính năng thông báo phim update')
-          .setRequired(false))
+          .setRequired(false)),
+
+    // Game commands
+    new SlashCommandBuilder()
+      .setName('weapon')
+      .setDescription('🎮 Tìm kiếm vũ khí trong Where Winds Meet')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên vũ khí cần tìm')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('npc')
+      .setDescription('🎮 Tìm kiếm nhân vật trong Where Winds Meet')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên nhân vật cần tìm')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('boss')
+      .setDescription('🎮 Tìm kiếm boss trong Where Winds Meet')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên boss cần tìm')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('skill')
+      .setDescription('🎮 Tìm kiếm kỹ năng trong Where Winds Meet')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên kỹ năng cần tìm')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('item')
+      .setDescription('🎮 Tìm kiếm vật phẩm trong Where Winds Meet')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên vật phẩm cần tìm')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('gamestats')
+      .setDescription('🎮 Xem thống kê database Where Winds Meet')
   ];
 
   try {
@@ -556,7 +605,15 @@ client.on('interactionCreate', async (interaction) => {
             '🎬 Movie Search:',
             '`/search <tên phim>` - tìm phim (gõ `help` để xem chi tiết)',
             '`/newmovies [trang]` - phim mới cập nhật (trang 1 nếu không chỉ định)',
-            '`/set-movie-update-channel <channel> [enabled]` - thiết lập kênh nhận thông báo phim mới'
+            '`/set-movie-update-channel <channel> [enabled]` - thiết lập kênh nhận thông báo phim mới',
+            '',
+            '🎮 Where Winds Meet Game:',
+            '`/weapon <tên>` - tìm vũ khí',
+            '`/npc <tên>` - tìm nhân vật',
+            '`/boss <tên>` - tìm boss',
+            '`/skill <tên>` - tìm kỹ năng',
+            '`/item <tên>` - tìm vật phẩm',
+            '`/gamestats` - xem thống kê database game'
           ].join('\n')
         );
         return;
@@ -1572,6 +1629,37 @@ client.on('interactionCreate', async (interaction) => {
 
         await interaction.reply({ embeds: [statusEmbed] });
         console.log(`✅ Movie update channel set to: ${channel.name} (${channel.id}), Enabled: ${enabled}`);
+        return;
+      }
+
+      // Game commands for Where Winds Meet
+      if (command === 'weapon') {
+        await handleWeaponSearch(interaction);
+        return;
+      }
+
+      if (command === 'npc') {
+        await handleNPCSearch(interaction);
+        return;
+      }
+
+      if (command === 'boss') {
+        await handleBossSearch(interaction);
+        return;
+      }
+
+      if (command === 'skill') {
+        await handleSkillSearch(interaction);
+        return;
+      }
+
+      if (command === 'item') {
+        await handleItemSearch(interaction);
+        return;
+      }
+
+      if (command === 'gamestats') {
+        await handleGameStats(interaction);
         return;
       }
     } catch (error) {

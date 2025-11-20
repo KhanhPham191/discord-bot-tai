@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "name": "Iron Sword",
+    "type": "Sword",
+    "damage": 15,
+    "rarity": "Common",
+    "description": "A basic iron sword suitable for beginners."
+  },
+  {
+    "id": 2,
+    "name": "Jade Spear",
+    "type": "Spear",
+    "damage": 18,
+    "rarity": "Uncommon",
+    "description": "A spear carved from jade, highly valued in combat."
+  },
+  {
+    "id": 3,
+    "name": "Celestial Saber",
+    "type": "Saber",
+    "damage": 25,
+    "rarity": "Rare",
+    "description": "A legendary saber infused with celestial energy."
+  },
+  {
+    "id": 4,
+    "name": "Wind Fan",
+    "type": "Fan",
+    "damage": 12,
+    "rarity": "Common",
+    "description": "A traditional fan weapon used in martial arts."
+  }
+]
