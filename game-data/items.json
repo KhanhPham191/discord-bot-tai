@@ -1,23 +1,1052 @@
 [
   {
     "id": 1,
-    "name": "Health Potion",
-    "type": "Consumable",
-    "effect": "Restore 50 HP",
+    "name": "Item 1",
+    "type": "Crafting",
+    "effect": "Effect 1",
     "rarity": "Common"
   },
   {
     "id": 2,
-    "name": "Mana Elixir",
-    "type": "Consumable",
-    "effect": "Restore 100 Mana",
-    "rarity": "Uncommon"
+    "name": "Item 2",
+    "type": "Equipment",
+    "effect": "Effect 2",
+    "rarity": "Common"
   },
   {
     "id": 3,
-    "name": "Celestial Stone",
+    "name": "Item 3",
+    "type": "Consumable",
+    "effect": "Effect 3",
+    "rarity": "Common"
+  },
+  {
+    "id": 4,
+    "name": "Item 4",
     "type": "Crafting",
-    "effect": "Use for crafting rare items",
+    "effect": "Effect 4",
+    "rarity": "Common"
+  },
+  {
+    "id": 5,
+    "name": "Item 5",
+    "type": "Equipment",
+    "effect": "Effect 5",
+    "rarity": "Common"
+  },
+  {
+    "id": 6,
+    "name": "Item 6",
+    "type": "Consumable",
+    "effect": "Effect 6",
+    "rarity": "Common"
+  },
+  {
+    "id": 7,
+    "name": "Item 7",
+    "type": "Crafting",
+    "effect": "Effect 7",
+    "rarity": "Common"
+  },
+  {
+    "id": 8,
+    "name": "Item 8",
+    "type": "Equipment",
+    "effect": "Effect 8",
+    "rarity": "Common"
+  },
+  {
+    "id": 9,
+    "name": "Item 9",
+    "type": "Consumable",
+    "effect": "Effect 9",
+    "rarity": "Common"
+  },
+  {
+    "id": 10,
+    "name": "Item 10",
+    "type": "Crafting",
+    "effect": "Effect 10",
+    "rarity": "Common"
+  },
+  {
+    "id": 11,
+    "name": "Item 11",
+    "type": "Equipment",
+    "effect": "Effect 11",
+    "rarity": "Common"
+  },
+  {
+    "id": 12,
+    "name": "Item 12",
+    "type": "Consumable",
+    "effect": "Effect 12",
+    "rarity": "Common"
+  },
+  {
+    "id": 13,
+    "name": "Item 13",
+    "type": "Crafting",
+    "effect": "Effect 13",
+    "rarity": "Common"
+  },
+  {
+    "id": 14,
+    "name": "Item 14",
+    "type": "Equipment",
+    "effect": "Effect 14",
+    "rarity": "Common"
+  },
+  {
+    "id": 15,
+    "name": "Item 15",
+    "type": "Consumable",
+    "effect": "Effect 15",
+    "rarity": "Common"
+  },
+  {
+    "id": 16,
+    "name": "Item 16",
+    "type": "Crafting",
+    "effect": "Effect 16",
+    "rarity": "Common"
+  },
+  {
+    "id": 17,
+    "name": "Item 17",
+    "type": "Equipment",
+    "effect": "Effect 17",
+    "rarity": "Common"
+  },
+  {
+    "id": 18,
+    "name": "Item 18",
+    "type": "Consumable",
+    "effect": "Effect 18",
+    "rarity": "Common"
+  },
+  {
+    "id": 19,
+    "name": "Item 19",
+    "type": "Crafting",
+    "effect": "Effect 19",
+    "rarity": "Common"
+  },
+  {
+    "id": 20,
+    "name": "Item 20",
+    "type": "Equipment",
+    "effect": "Effect 20",
+    "rarity": "Common"
+  },
+  {
+    "id": 21,
+    "name": "Item 21",
+    "type": "Consumable",
+    "effect": "Effect 21",
+    "rarity": "Common"
+  },
+  {
+    "id": 22,
+    "name": "Item 22",
+    "type": "Crafting",
+    "effect": "Effect 22",
+    "rarity": "Common"
+  },
+  {
+    "id": 23,
+    "name": "Item 23",
+    "type": "Equipment",
+    "effect": "Effect 23",
+    "rarity": "Common"
+  },
+  {
+    "id": 24,
+    "name": "Item 24",
+    "type": "Consumable",
+    "effect": "Effect 24",
+    "rarity": "Common"
+  },
+  {
+    "id": 25,
+    "name": "Item 25",
+    "type": "Crafting",
+    "effect": "Effect 25",
+    "rarity": "Common"
+  },
+  {
+    "id": 26,
+    "name": "Item 26",
+    "type": "Equipment",
+    "effect": "Effect 26",
+    "rarity": "Common"
+  },
+  {
+    "id": 27,
+    "name": "Item 27",
+    "type": "Consumable",
+    "effect": "Effect 27",
+    "rarity": "Common"
+  },
+  {
+    "id": 28,
+    "name": "Item 28",
+    "type": "Crafting",
+    "effect": "Effect 28",
+    "rarity": "Common"
+  },
+  {
+    "id": 29,
+    "name": "Item 29",
+    "type": "Equipment",
+    "effect": "Effect 29",
+    "rarity": "Common"
+  },
+  {
+    "id": 30,
+    "name": "Item 30",
+    "type": "Consumable",
+    "effect": "Effect 30",
+    "rarity": "Common"
+  },
+  {
+    "id": 31,
+    "name": "Item 31",
+    "type": "Crafting",
+    "effect": "Effect 31",
+    "rarity": "Common"
+  },
+  {
+    "id": 32,
+    "name": "Item 32",
+    "type": "Equipment",
+    "effect": "Effect 32",
+    "rarity": "Common"
+  },
+  {
+    "id": 33,
+    "name": "Item 33",
+    "type": "Consumable",
+    "effect": "Effect 33",
+    "rarity": "Common"
+  },
+  {
+    "id": 34,
+    "name": "Item 34",
+    "type": "Crafting",
+    "effect": "Effect 34",
+    "rarity": "Common"
+  },
+  {
+    "id": 35,
+    "name": "Item 35",
+    "type": "Equipment",
+    "effect": "Effect 35",
+    "rarity": "Common"
+  },
+  {
+    "id": 36,
+    "name": "Item 36",
+    "type": "Consumable",
+    "effect": "Effect 36",
+    "rarity": "Common"
+  },
+  {
+    "id": 37,
+    "name": "Item 37",
+    "type": "Crafting",
+    "effect": "Effect 37",
+    "rarity": "Common"
+  },
+  {
+    "id": 38,
+    "name": "Item 38",
+    "type": "Equipment",
+    "effect": "Effect 38",
+    "rarity": "Common"
+  },
+  {
+    "id": 39,
+    "name": "Item 39",
+    "type": "Consumable",
+    "effect": "Effect 39",
+    "rarity": "Common"
+  },
+  {
+    "id": 40,
+    "name": "Item 40",
+    "type": "Crafting",
+    "effect": "Effect 40",
+    "rarity": "Common"
+  },
+  {
+    "id": 41,
+    "name": "Item 41",
+    "type": "Equipment",
+    "effect": "Effect 41",
+    "rarity": "Common"
+  },
+  {
+    "id": 42,
+    "name": "Item 42",
+    "type": "Consumable",
+    "effect": "Effect 42",
+    "rarity": "Common"
+  },
+  {
+    "id": 43,
+    "name": "Item 43",
+    "type": "Crafting",
+    "effect": "Effect 43",
+    "rarity": "Common"
+  },
+  {
+    "id": 44,
+    "name": "Item 44",
+    "type": "Equipment",
+    "effect": "Effect 44",
+    "rarity": "Common"
+  },
+  {
+    "id": 45,
+    "name": "Item 45",
+    "type": "Consumable",
+    "effect": "Effect 45",
+    "rarity": "Common"
+  },
+  {
+    "id": 46,
+    "name": "Item 46",
+    "type": "Crafting",
+    "effect": "Effect 46",
+    "rarity": "Common"
+  },
+  {
+    "id": 47,
+    "name": "Item 47",
+    "type": "Equipment",
+    "effect": "Effect 47",
+    "rarity": "Common"
+  },
+  {
+    "id": 48,
+    "name": "Item 48",
+    "type": "Consumable",
+    "effect": "Effect 48",
+    "rarity": "Common"
+  },
+  {
+    "id": 49,
+    "name": "Item 49",
+    "type": "Crafting",
+    "effect": "Effect 49",
+    "rarity": "Common"
+  },
+  {
+    "id": 50,
+    "name": "Item 50",
+    "type": "Equipment",
+    "effect": "Effect 50",
     "rarity": "Rare"
+  },
+  {
+    "id": 51,
+    "name": "Item 51",
+    "type": "Consumable",
+    "effect": "Effect 51",
+    "rarity": "Rare"
+  },
+  {
+    "id": 52,
+    "name": "Item 52",
+    "type": "Crafting",
+    "effect": "Effect 52",
+    "rarity": "Rare"
+  },
+  {
+    "id": 53,
+    "name": "Item 53",
+    "type": "Equipment",
+    "effect": "Effect 53",
+    "rarity": "Rare"
+  },
+  {
+    "id": 54,
+    "name": "Item 54",
+    "type": "Consumable",
+    "effect": "Effect 54",
+    "rarity": "Rare"
+  },
+  {
+    "id": 55,
+    "name": "Item 55",
+    "type": "Crafting",
+    "effect": "Effect 55",
+    "rarity": "Rare"
+  },
+  {
+    "id": 56,
+    "name": "Item 56",
+    "type": "Equipment",
+    "effect": "Effect 56",
+    "rarity": "Rare"
+  },
+  {
+    "id": 57,
+    "name": "Item 57",
+    "type": "Consumable",
+    "effect": "Effect 57",
+    "rarity": "Rare"
+  },
+  {
+    "id": 58,
+    "name": "Item 58",
+    "type": "Crafting",
+    "effect": "Effect 58",
+    "rarity": "Rare"
+  },
+  {
+    "id": 59,
+    "name": "Item 59",
+    "type": "Equipment",
+    "effect": "Effect 59",
+    "rarity": "Rare"
+  },
+  {
+    "id": 60,
+    "name": "Item 60",
+    "type": "Consumable",
+    "effect": "Effect 60",
+    "rarity": "Rare"
+  },
+  {
+    "id": 61,
+    "name": "Item 61",
+    "type": "Crafting",
+    "effect": "Effect 61",
+    "rarity": "Rare"
+  },
+  {
+    "id": 62,
+    "name": "Item 62",
+    "type": "Equipment",
+    "effect": "Effect 62",
+    "rarity": "Rare"
+  },
+  {
+    "id": 63,
+    "name": "Item 63",
+    "type": "Consumable",
+    "effect": "Effect 63",
+    "rarity": "Rare"
+  },
+  {
+    "id": 64,
+    "name": "Item 64",
+    "type": "Crafting",
+    "effect": "Effect 64",
+    "rarity": "Rare"
+  },
+  {
+    "id": 65,
+    "name": "Item 65",
+    "type": "Equipment",
+    "effect": "Effect 65",
+    "rarity": "Rare"
+  },
+  {
+    "id": 66,
+    "name": "Item 66",
+    "type": "Consumable",
+    "effect": "Effect 66",
+    "rarity": "Rare"
+  },
+  {
+    "id": 67,
+    "name": "Item 67",
+    "type": "Crafting",
+    "effect": "Effect 67",
+    "rarity": "Rare"
+  },
+  {
+    "id": 68,
+    "name": "Item 68",
+    "type": "Equipment",
+    "effect": "Effect 68",
+    "rarity": "Rare"
+  },
+  {
+    "id": 69,
+    "name": "Item 69",
+    "type": "Consumable",
+    "effect": "Effect 69",
+    "rarity": "Rare"
+  },
+  {
+    "id": 70,
+    "name": "Item 70",
+    "type": "Crafting",
+    "effect": "Effect 70",
+    "rarity": "Rare"
+  },
+  {
+    "id": 71,
+    "name": "Item 71",
+    "type": "Equipment",
+    "effect": "Effect 71",
+    "rarity": "Rare"
+  },
+  {
+    "id": 72,
+    "name": "Item 72",
+    "type": "Consumable",
+    "effect": "Effect 72",
+    "rarity": "Rare"
+  },
+  {
+    "id": 73,
+    "name": "Item 73",
+    "type": "Crafting",
+    "effect": "Effect 73",
+    "rarity": "Rare"
+  },
+  {
+    "id": 74,
+    "name": "Item 74",
+    "type": "Equipment",
+    "effect": "Effect 74",
+    "rarity": "Rare"
+  },
+  {
+    "id": 75,
+    "name": "Item 75",
+    "type": "Consumable",
+    "effect": "Effect 75",
+    "rarity": "Rare"
+  },
+  {
+    "id": 76,
+    "name": "Item 76",
+    "type": "Crafting",
+    "effect": "Effect 76",
+    "rarity": "Rare"
+  },
+  {
+    "id": 77,
+    "name": "Item 77",
+    "type": "Equipment",
+    "effect": "Effect 77",
+    "rarity": "Rare"
+  },
+  {
+    "id": 78,
+    "name": "Item 78",
+    "type": "Consumable",
+    "effect": "Effect 78",
+    "rarity": "Rare"
+  },
+  {
+    "id": 79,
+    "name": "Item 79",
+    "type": "Crafting",
+    "effect": "Effect 79",
+    "rarity": "Rare"
+  },
+  {
+    "id": 80,
+    "name": "Item 80",
+    "type": "Equipment",
+    "effect": "Effect 80",
+    "rarity": "Rare"
+  },
+  {
+    "id": 81,
+    "name": "Item 81",
+    "type": "Consumable",
+    "effect": "Effect 81",
+    "rarity": "Rare"
+  },
+  {
+    "id": 82,
+    "name": "Item 82",
+    "type": "Crafting",
+    "effect": "Effect 82",
+    "rarity": "Rare"
+  },
+  {
+    "id": 83,
+    "name": "Item 83",
+    "type": "Equipment",
+    "effect": "Effect 83",
+    "rarity": "Rare"
+  },
+  {
+    "id": 84,
+    "name": "Item 84",
+    "type": "Consumable",
+    "effect": "Effect 84",
+    "rarity": "Rare"
+  },
+  {
+    "id": 85,
+    "name": "Item 85",
+    "type": "Crafting",
+    "effect": "Effect 85",
+    "rarity": "Rare"
+  },
+  {
+    "id": 86,
+    "name": "Item 86",
+    "type": "Equipment",
+    "effect": "Effect 86",
+    "rarity": "Rare"
+  },
+  {
+    "id": 87,
+    "name": "Item 87",
+    "type": "Consumable",
+    "effect": "Effect 87",
+    "rarity": "Rare"
+  },
+  {
+    "id": 88,
+    "name": "Item 88",
+    "type": "Crafting",
+    "effect": "Effect 88",
+    "rarity": "Rare"
+  },
+  {
+    "id": 89,
+    "name": "Item 89",
+    "type": "Equipment",
+    "effect": "Effect 89",
+    "rarity": "Rare"
+  },
+  {
+    "id": 90,
+    "name": "Item 90",
+    "type": "Consumable",
+    "effect": "Effect 90",
+    "rarity": "Rare"
+  },
+  {
+    "id": 91,
+    "name": "Item 91",
+    "type": "Crafting",
+    "effect": "Effect 91",
+    "rarity": "Rare"
+  },
+  {
+    "id": 92,
+    "name": "Item 92",
+    "type": "Equipment",
+    "effect": "Effect 92",
+    "rarity": "Rare"
+  },
+  {
+    "id": 93,
+    "name": "Item 93",
+    "type": "Consumable",
+    "effect": "Effect 93",
+    "rarity": "Rare"
+  },
+  {
+    "id": 94,
+    "name": "Item 94",
+    "type": "Crafting",
+    "effect": "Effect 94",
+    "rarity": "Rare"
+  },
+  {
+    "id": 95,
+    "name": "Item 95",
+    "type": "Equipment",
+    "effect": "Effect 95",
+    "rarity": "Rare"
+  },
+  {
+    "id": 96,
+    "name": "Item 96",
+    "type": "Consumable",
+    "effect": "Effect 96",
+    "rarity": "Rare"
+  },
+  {
+    "id": 97,
+    "name": "Item 97",
+    "type": "Crafting",
+    "effect": "Effect 97",
+    "rarity": "Rare"
+  },
+  {
+    "id": 98,
+    "name": "Item 98",
+    "type": "Equipment",
+    "effect": "Effect 98",
+    "rarity": "Rare"
+  },
+  {
+    "id": 99,
+    "name": "Item 99",
+    "type": "Consumable",
+    "effect": "Effect 99",
+    "rarity": "Rare"
+  },
+  {
+    "id": 100,
+    "name": "Item 100",
+    "type": "Crafting",
+    "effect": "Effect 100",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 101,
+    "name": "Item 101",
+    "type": "Equipment",
+    "effect": "Effect 101",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 102,
+    "name": "Item 102",
+    "type": "Consumable",
+    "effect": "Effect 102",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 103,
+    "name": "Item 103",
+    "type": "Crafting",
+    "effect": "Effect 103",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 104,
+    "name": "Item 104",
+    "type": "Equipment",
+    "effect": "Effect 104",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 105,
+    "name": "Item 105",
+    "type": "Consumable",
+    "effect": "Effect 105",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 106,
+    "name": "Item 106",
+    "type": "Crafting",
+    "effect": "Effect 106",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 107,
+    "name": "Item 107",
+    "type": "Equipment",
+    "effect": "Effect 107",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 108,
+    "name": "Item 108",
+    "type": "Consumable",
+    "effect": "Effect 108",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 109,
+    "name": "Item 109",
+    "type": "Crafting",
+    "effect": "Effect 109",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 110,
+    "name": "Item 110",
+    "type": "Equipment",
+    "effect": "Effect 110",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 111,
+    "name": "Item 111",
+    "type": "Consumable",
+    "effect": "Effect 111",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 112,
+    "name": "Item 112",
+    "type": "Crafting",
+    "effect": "Effect 112",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 113,
+    "name": "Item 113",
+    "type": "Equipment",
+    "effect": "Effect 113",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 114,
+    "name": "Item 114",
+    "type": "Consumable",
+    "effect": "Effect 114",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 115,
+    "name": "Item 115",
+    "type": "Crafting",
+    "effect": "Effect 115",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 116,
+    "name": "Item 116",
+    "type": "Equipment",
+    "effect": "Effect 116",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 117,
+    "name": "Item 117",
+    "type": "Consumable",
+    "effect": "Effect 117",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 118,
+    "name": "Item 118",
+    "type": "Crafting",
+    "effect": "Effect 118",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 119,
+    "name": "Item 119",
+    "type": "Equipment",
+    "effect": "Effect 119",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 120,
+    "name": "Item 120",
+    "type": "Consumable",
+    "effect": "Effect 120",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 121,
+    "name": "Item 121",
+    "type": "Crafting",
+    "effect": "Effect 121",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 122,
+    "name": "Item 122",
+    "type": "Equipment",
+    "effect": "Effect 122",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 123,
+    "name": "Item 123",
+    "type": "Consumable",
+    "effect": "Effect 123",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 124,
+    "name": "Item 124",
+    "type": "Crafting",
+    "effect": "Effect 124",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 125,
+    "name": "Item 125",
+    "type": "Equipment",
+    "effect": "Effect 125",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 126,
+    "name": "Item 126",
+    "type": "Consumable",
+    "effect": "Effect 126",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 127,
+    "name": "Item 127",
+    "type": "Crafting",
+    "effect": "Effect 127",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 128,
+    "name": "Item 128",
+    "type": "Equipment",
+    "effect": "Effect 128",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 129,
+    "name": "Item 129",
+    "type": "Consumable",
+    "effect": "Effect 129",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 130,
+    "name": "Item 130",
+    "type": "Crafting",
+    "effect": "Effect 130",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 131,
+    "name": "Item 131",
+    "type": "Equipment",
+    "effect": "Effect 131",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 132,
+    "name": "Item 132",
+    "type": "Consumable",
+    "effect": "Effect 132",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 133,
+    "name": "Item 133",
+    "type": "Crafting",
+    "effect": "Effect 133",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 134,
+    "name": "Item 134",
+    "type": "Equipment",
+    "effect": "Effect 134",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 135,
+    "name": "Item 135",
+    "type": "Consumable",
+    "effect": "Effect 135",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 136,
+    "name": "Item 136",
+    "type": "Crafting",
+    "effect": "Effect 136",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 137,
+    "name": "Item 137",
+    "type": "Equipment",
+    "effect": "Effect 137",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 138,
+    "name": "Item 138",
+    "type": "Consumable",
+    "effect": "Effect 138",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 139,
+    "name": "Item 139",
+    "type": "Crafting",
+    "effect": "Effect 139",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 140,
+    "name": "Item 140",
+    "type": "Equipment",
+    "effect": "Effect 140",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 141,
+    "name": "Item 141",
+    "type": "Consumable",
+    "effect": "Effect 141",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 142,
+    "name": "Item 142",
+    "type": "Crafting",
+    "effect": "Effect 142",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 143,
+    "name": "Item 143",
+    "type": "Equipment",
+    "effect": "Effect 143",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 144,
+    "name": "Item 144",
+    "type": "Consumable",
+    "effect": "Effect 144",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 145,
+    "name": "Item 145",
+    "type": "Crafting",
+    "effect": "Effect 145",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 146,
+    "name": "Item 146",
+    "type": "Equipment",
+    "effect": "Effect 146",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 147,
+    "name": "Item 147",
+    "type": "Consumable",
+    "effect": "Effect 147",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 148,
+    "name": "Item 148",
+    "type": "Crafting",
+    "effect": "Effect 148",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 149,
+    "name": "Item 149",
+    "type": "Equipment",
+    "effect": "Effect 149",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 150,
+    "name": "Item 150",
+    "type": "Consumable",
+    "effect": "Effect 150",
+    "rarity": "Common"
   }
 ]

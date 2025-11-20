@@ -1,18 +1,802 @@
 [
   {
     "id": 1,
-    "name": "Shadow Phantom",
-    "level": 25,
-    "health": 500,
-    "location": "Dark Forest",
-    "rewards": "Ancient Relic, 5000 Gold"
+    "name": "King Boss 1",
+    "level": 55,
+    "health": 611,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 17439 Gold"
   },
   {
     "id": 2,
-    "name": "Dragon of the East",
-    "level": 35,
-    "health": 800,
+    "name": "Emperor Boss 2",
+    "level": 49,
+    "health": 846,
+    "location": "Temple",
+    "rewards": "Treasure, 15258 Gold"
+  },
+  {
+    "id": 3,
+    "name": "Dragon Boss 3",
+    "level": 53,
+    "health": 721,
+    "location": "Volcano",
+    "rewards": "Treasure, 15155 Gold"
+  },
+  {
+    "id": 4,
+    "name": "Guardian Boss 4",
+    "level": 24,
+    "health": 774,
+    "location": "Cave",
+    "rewards": "Treasure, 11060 Gold"
+  },
+  {
+    "id": 5,
+    "name": "Lord Boss 5",
+    "level": 44,
+    "health": 1404,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 17251 Gold"
+  },
+  {
+    "id": 6,
+    "name": "King Boss 6",
+    "level": 59,
+    "health": 1333,
     "location": "Mountain Peak",
-    "rewards": "Dragon Scale, 10000 Gold"
+    "rewards": "Treasure, 5035 Gold"
+  },
+  {
+    "id": 7,
+    "name": "Emperor Boss 7",
+    "level": 37,
+    "health": 1727,
+    "location": "Temple",
+    "rewards": "Treasure, 12220 Gold"
+  },
+  {
+    "id": 8,
+    "name": "Dragon Boss 8",
+    "level": 42,
+    "health": 1787,
+    "location": "Volcano",
+    "rewards": "Treasure, 18152 Gold"
+  },
+  {
+    "id": 9,
+    "name": "Guardian Boss 9",
+    "level": 26,
+    "health": 1618,
+    "location": "Cave",
+    "rewards": "Treasure, 11001 Gold"
+  },
+  {
+    "id": 10,
+    "name": "Lord Boss 10",
+    "level": 42,
+    "health": 1332,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 8268 Gold"
+  },
+  {
+    "id": 11,
+    "name": "King Boss 11",
+    "level": 31,
+    "health": 1039,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 5663 Gold"
+  },
+  {
+    "id": 12,
+    "name": "Emperor Boss 12",
+    "level": 36,
+    "health": 1830,
+    "location": "Temple",
+    "rewards": "Treasure, 7755 Gold"
+  },
+  {
+    "id": 13,
+    "name": "Dragon Boss 13",
+    "level": 28,
+    "health": 1775,
+    "location": "Volcano",
+    "rewards": "Treasure, 6971 Gold"
+  },
+  {
+    "id": 14,
+    "name": "Guardian Boss 14",
+    "level": 25,
+    "health": 589,
+    "location": "Cave",
+    "rewards": "Treasure, 13315 Gold"
+  },
+  {
+    "id": 15,
+    "name": "Lord Boss 15",
+    "level": 26,
+    "health": 1894,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 10867 Gold"
+  },
+  {
+    "id": 16,
+    "name": "King Boss 16",
+    "level": 24,
+    "health": 1788,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 6962 Gold"
+  },
+  {
+    "id": 17,
+    "name": "Emperor Boss 17",
+    "level": 57,
+    "health": 1863,
+    "location": "Temple",
+    "rewards": "Treasure, 11182 Gold"
+  },
+  {
+    "id": 18,
+    "name": "Dragon Boss 18",
+    "level": 28,
+    "health": 1805,
+    "location": "Volcano",
+    "rewards": "Treasure, 17442 Gold"
+  },
+  {
+    "id": 19,
+    "name": "Guardian Boss 19",
+    "level": 27,
+    "health": 611,
+    "location": "Cave",
+    "rewards": "Treasure, 15277 Gold"
+  },
+  {
+    "id": 20,
+    "name": "Lord Boss 20",
+    "level": 57,
+    "health": 906,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 12359 Gold"
+  },
+  {
+    "id": 21,
+    "name": "King Boss 21",
+    "level": 28,
+    "health": 572,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 12724 Gold"
+  },
+  {
+    "id": 22,
+    "name": "Emperor Boss 22",
+    "level": 29,
+    "health": 1402,
+    "location": "Temple",
+    "rewards": "Treasure, 6321 Gold"
+  },
+  {
+    "id": 23,
+    "name": "Dragon Boss 23",
+    "level": 38,
+    "health": 587,
+    "location": "Volcano",
+    "rewards": "Treasure, 14309 Gold"
+  },
+  {
+    "id": 24,
+    "name": "Guardian Boss 24",
+    "level": 40,
+    "health": 732,
+    "location": "Cave",
+    "rewards": "Treasure, 11251 Gold"
+  },
+  {
+    "id": 25,
+    "name": "Lord Boss 25",
+    "level": 55,
+    "health": 1162,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 8218 Gold"
+  },
+  {
+    "id": 26,
+    "name": "King Boss 26",
+    "level": 31,
+    "health": 610,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 16081 Gold"
+  },
+  {
+    "id": 27,
+    "name": "Emperor Boss 27",
+    "level": 56,
+    "health": 711,
+    "location": "Temple",
+    "rewards": "Treasure, 6088 Gold"
+  },
+  {
+    "id": 28,
+    "name": "Dragon Boss 28",
+    "level": 50,
+    "health": 1460,
+    "location": "Volcano",
+    "rewards": "Treasure, 13894 Gold"
+  },
+  {
+    "id": 29,
+    "name": "Guardian Boss 29",
+    "level": 46,
+    "health": 897,
+    "location": "Cave",
+    "rewards": "Treasure, 18465 Gold"
+  },
+  {
+    "id": 30,
+    "name": "Lord Boss 30",
+    "level": 53,
+    "health": 1347,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 19275 Gold"
+  },
+  {
+    "id": 31,
+    "name": "King Boss 31",
+    "level": 43,
+    "health": 1193,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 12378 Gold"
+  },
+  {
+    "id": 32,
+    "name": "Emperor Boss 32",
+    "level": 46,
+    "health": 1750,
+    "location": "Temple",
+    "rewards": "Treasure, 12843 Gold"
+  },
+  {
+    "id": 33,
+    "name": "Dragon Boss 33",
+    "level": 33,
+    "health": 768,
+    "location": "Volcano",
+    "rewards": "Treasure, 11486 Gold"
+  },
+  {
+    "id": 34,
+    "name": "Guardian Boss 34",
+    "level": 30,
+    "health": 1418,
+    "location": "Cave",
+    "rewards": "Treasure, 13921 Gold"
+  },
+  {
+    "id": 35,
+    "name": "Lord Boss 35",
+    "level": 47,
+    "health": 521,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 8797 Gold"
+  },
+  {
+    "id": 36,
+    "name": "King Boss 36",
+    "level": 37,
+    "health": 1127,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 17437 Gold"
+  },
+  {
+    "id": 37,
+    "name": "Emperor Boss 37",
+    "level": 42,
+    "health": 962,
+    "location": "Temple",
+    "rewards": "Treasure, 9474 Gold"
+  },
+  {
+    "id": 38,
+    "name": "Dragon Boss 38",
+    "level": 45,
+    "health": 1847,
+    "location": "Volcano",
+    "rewards": "Treasure, 17480 Gold"
+  },
+  {
+    "id": 39,
+    "name": "Guardian Boss 39",
+    "level": 55,
+    "health": 1376,
+    "location": "Cave",
+    "rewards": "Treasure, 19483 Gold"
+  },
+  {
+    "id": 40,
+    "name": "Lord Boss 40",
+    "level": 23,
+    "health": 1494,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 16177 Gold"
+  },
+  {
+    "id": 41,
+    "name": "King Boss 41",
+    "level": 40,
+    "health": 1359,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 8768 Gold"
+  },
+  {
+    "id": 42,
+    "name": "Emperor Boss 42",
+    "level": 56,
+    "health": 846,
+    "location": "Temple",
+    "rewards": "Treasure, 8609 Gold"
+  },
+  {
+    "id": 43,
+    "name": "Dragon Boss 43",
+    "level": 52,
+    "health": 980,
+    "location": "Volcano",
+    "rewards": "Treasure, 5417 Gold"
+  },
+  {
+    "id": 44,
+    "name": "Guardian Boss 44",
+    "level": 58,
+    "health": 928,
+    "location": "Cave",
+    "rewards": "Treasure, 14833 Gold"
+  },
+  {
+    "id": 45,
+    "name": "Lord Boss 45",
+    "level": 31,
+    "health": 1230,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 13344 Gold"
+  },
+  {
+    "id": 46,
+    "name": "King Boss 46",
+    "level": 28,
+    "health": 1409,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 19355 Gold"
+  },
+  {
+    "id": 47,
+    "name": "Emperor Boss 47",
+    "level": 56,
+    "health": 1216,
+    "location": "Temple",
+    "rewards": "Treasure, 13329 Gold"
+  },
+  {
+    "id": 48,
+    "name": "Dragon Boss 48",
+    "level": 54,
+    "health": 1242,
+    "location": "Volcano",
+    "rewards": "Treasure, 16041 Gold"
+  },
+  {
+    "id": 49,
+    "name": "Guardian Boss 49",
+    "level": 58,
+    "health": 1062,
+    "location": "Cave",
+    "rewards": "Treasure, 7297 Gold"
+  },
+  {
+    "id": 50,
+    "name": "Lord Boss 50",
+    "level": 34,
+    "health": 746,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 12651 Gold"
+  },
+  {
+    "id": 51,
+    "name": "King Boss 51",
+    "level": 22,
+    "health": 1596,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 10424 Gold"
+  },
+  {
+    "id": 52,
+    "name": "Emperor Boss 52",
+    "level": 50,
+    "health": 1923,
+    "location": "Temple",
+    "rewards": "Treasure, 17553 Gold"
+  },
+  {
+    "id": 53,
+    "name": "Dragon Boss 53",
+    "level": 24,
+    "health": 1184,
+    "location": "Volcano",
+    "rewards": "Treasure, 9047 Gold"
+  },
+  {
+    "id": 54,
+    "name": "Guardian Boss 54",
+    "level": 44,
+    "health": 1440,
+    "location": "Cave",
+    "rewards": "Treasure, 19458 Gold"
+  },
+  {
+    "id": 55,
+    "name": "Lord Boss 55",
+    "level": 29,
+    "health": 787,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 18149 Gold"
+  },
+  {
+    "id": 56,
+    "name": "King Boss 56",
+    "level": 44,
+    "health": 1623,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 7357 Gold"
+  },
+  {
+    "id": 57,
+    "name": "Emperor Boss 57",
+    "level": 24,
+    "health": 1556,
+    "location": "Temple",
+    "rewards": "Treasure, 19237 Gold"
+  },
+  {
+    "id": 58,
+    "name": "Dragon Boss 58",
+    "level": 45,
+    "health": 1522,
+    "location": "Volcano",
+    "rewards": "Treasure, 5711 Gold"
+  },
+  {
+    "id": 59,
+    "name": "Guardian Boss 59",
+    "level": 35,
+    "health": 1387,
+    "location": "Cave",
+    "rewards": "Treasure, 17526 Gold"
+  },
+  {
+    "id": 60,
+    "name": "Lord Boss 60",
+    "level": 28,
+    "health": 1395,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 13472 Gold"
+  },
+  {
+    "id": 61,
+    "name": "King Boss 61",
+    "level": 59,
+    "health": 1670,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 18621 Gold"
+  },
+  {
+    "id": 62,
+    "name": "Emperor Boss 62",
+    "level": 50,
+    "health": 777,
+    "location": "Temple",
+    "rewards": "Treasure, 9067 Gold"
+  },
+  {
+    "id": 63,
+    "name": "Dragon Boss 63",
+    "level": 50,
+    "health": 868,
+    "location": "Volcano",
+    "rewards": "Treasure, 18365 Gold"
+  },
+  {
+    "id": 64,
+    "name": "Guardian Boss 64",
+    "level": 51,
+    "health": 1217,
+    "location": "Cave",
+    "rewards": "Treasure, 16375 Gold"
+  },
+  {
+    "id": 65,
+    "name": "Lord Boss 65",
+    "level": 50,
+    "health": 820,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 14185 Gold"
+  },
+  {
+    "id": 66,
+    "name": "King Boss 66",
+    "level": 57,
+    "health": 1189,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 10558 Gold"
+  },
+  {
+    "id": 67,
+    "name": "Emperor Boss 67",
+    "level": 33,
+    "health": 751,
+    "location": "Temple",
+    "rewards": "Treasure, 8432 Gold"
+  },
+  {
+    "id": 68,
+    "name": "Dragon Boss 68",
+    "level": 40,
+    "health": 1608,
+    "location": "Volcano",
+    "rewards": "Treasure, 5208 Gold"
+  },
+  {
+    "id": 69,
+    "name": "Guardian Boss 69",
+    "level": 24,
+    "health": 1054,
+    "location": "Cave",
+    "rewards": "Treasure, 11835 Gold"
+  },
+  {
+    "id": 70,
+    "name": "Lord Boss 70",
+    "level": 21,
+    "health": 544,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 12038 Gold"
+  },
+  {
+    "id": 71,
+    "name": "King Boss 71",
+    "level": 57,
+    "health": 1658,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 12328 Gold"
+  },
+  {
+    "id": 72,
+    "name": "Emperor Boss 72",
+    "level": 55,
+    "health": 652,
+    "location": "Temple",
+    "rewards": "Treasure, 17354 Gold"
+  },
+  {
+    "id": 73,
+    "name": "Dragon Boss 73",
+    "level": 39,
+    "health": 1722,
+    "location": "Volcano",
+    "rewards": "Treasure, 18560 Gold"
+  },
+  {
+    "id": 74,
+    "name": "Guardian Boss 74",
+    "level": 30,
+    "health": 1440,
+    "location": "Cave",
+    "rewards": "Treasure, 7544 Gold"
+  },
+  {
+    "id": 75,
+    "name": "Lord Boss 75",
+    "level": 41,
+    "health": 987,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 18806 Gold"
+  },
+  {
+    "id": 76,
+    "name": "King Boss 76",
+    "level": 52,
+    "health": 1502,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 13771 Gold"
+  },
+  {
+    "id": 77,
+    "name": "Emperor Boss 77",
+    "level": 31,
+    "health": 859,
+    "location": "Temple",
+    "rewards": "Treasure, 9617 Gold"
+  },
+  {
+    "id": 78,
+    "name": "Dragon Boss 78",
+    "level": 40,
+    "health": 1323,
+    "location": "Volcano",
+    "rewards": "Treasure, 8912 Gold"
+  },
+  {
+    "id": 79,
+    "name": "Guardian Boss 79",
+    "level": 28,
+    "health": 1309,
+    "location": "Cave",
+    "rewards": "Treasure, 14221 Gold"
+  },
+  {
+    "id": 80,
+    "name": "Lord Boss 80",
+    "level": 56,
+    "health": 1702,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 6802 Gold"
+  },
+  {
+    "id": 81,
+    "name": "King Boss 81",
+    "level": 22,
+    "health": 1637,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 15780 Gold"
+  },
+  {
+    "id": 82,
+    "name": "Emperor Boss 82",
+    "level": 22,
+    "health": 1874,
+    "location": "Temple",
+    "rewards": "Treasure, 14515 Gold"
+  },
+  {
+    "id": 83,
+    "name": "Dragon Boss 83",
+    "level": 25,
+    "health": 547,
+    "location": "Volcano",
+    "rewards": "Treasure, 5826 Gold"
+  },
+  {
+    "id": 84,
+    "name": "Guardian Boss 84",
+    "level": 38,
+    "health": 793,
+    "location": "Cave",
+    "rewards": "Treasure, 9823 Gold"
+  },
+  {
+    "id": 85,
+    "name": "Lord Boss 85",
+    "level": 46,
+    "health": 1105,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 16039 Gold"
+  },
+  {
+    "id": 86,
+    "name": "King Boss 86",
+    "level": 42,
+    "health": 1461,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 8905 Gold"
+  },
+  {
+    "id": 87,
+    "name": "Emperor Boss 87",
+    "level": 25,
+    "health": 1396,
+    "location": "Temple",
+    "rewards": "Treasure, 16595 Gold"
+  },
+  {
+    "id": 88,
+    "name": "Dragon Boss 88",
+    "level": 48,
+    "health": 887,
+    "location": "Volcano",
+    "rewards": "Treasure, 17433 Gold"
+  },
+  {
+    "id": 89,
+    "name": "Guardian Boss 89",
+    "level": 33,
+    "health": 1411,
+    "location": "Cave",
+    "rewards": "Treasure, 8577 Gold"
+  },
+  {
+    "id": 90,
+    "name": "Lord Boss 90",
+    "level": 37,
+    "health": 1081,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 6795 Gold"
+  },
+  {
+    "id": 91,
+    "name": "King Boss 91",
+    "level": 55,
+    "health": 550,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 16562 Gold"
+  },
+  {
+    "id": 92,
+    "name": "Emperor Boss 92",
+    "level": 39,
+    "health": 1556,
+    "location": "Temple",
+    "rewards": "Treasure, 6825 Gold"
+  },
+  {
+    "id": 93,
+    "name": "Dragon Boss 93",
+    "level": 30,
+    "health": 1951,
+    "location": "Volcano",
+    "rewards": "Treasure, 5871 Gold"
+  },
+  {
+    "id": 94,
+    "name": "Guardian Boss 94",
+    "level": 56,
+    "health": 519,
+    "location": "Cave",
+    "rewards": "Treasure, 14270 Gold"
+  },
+  {
+    "id": 95,
+    "name": "Lord Boss 95",
+    "level": 52,
+    "health": 1039,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 17650 Gold"
+  },
+  {
+    "id": 96,
+    "name": "King Boss 96",
+    "level": 54,
+    "health": 999,
+    "location": "Mountain Peak",
+    "rewards": "Treasure, 7031 Gold"
+  },
+  {
+    "id": 97,
+    "name": "Emperor Boss 97",
+    "level": 36,
+    "health": 1618,
+    "location": "Temple",
+    "rewards": "Treasure, 16853 Gold"
+  },
+  {
+    "id": 98,
+    "name": "Dragon Boss 98",
+    "level": 52,
+    "health": 913,
+    "location": "Volcano",
+    "rewards": "Treasure, 14213 Gold"
+  },
+  {
+    "id": 99,
+    "name": "Guardian Boss 99",
+    "level": 42,
+    "health": 535,
+    "location": "Cave",
+    "rewards": "Treasure, 16194 Gold"
+  },
+  {
+    "id": 100,
+    "name": "Lord Boss 100",
+    "level": 39,
+    "health": 625,
+    "location": "Dark Forest",
+    "rewards": "Treasure, 13509 Gold"
   }
 ]
