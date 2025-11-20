@@ -1185,11 +1185,143 @@ client.on('interactionCreate', async (interaction) => {
   }
   
   // Original interaction handlers for select menus and buttons
-  if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu()) return;
+  if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu() && !interaction.isButton()) return;
   
   if (interaction.isStringSelectMenu()) {
     if (interaction.customId === 'track_team_select') {
-      // This is handled in the track command collector
+      const userId = interaction.user.id;
+      const teamId = parseInt(interaction.values[0]);
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      
+      if (!team) {
+        await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+        return;
+      }
+      
+      // Add team to user's tracked list
+      addUserTrackedTeam(userId, teamId);
+      saveConfig();
+      
+      // Send public notification
+      try {
+        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đã theo dõi **${team.name}**`);
+        setTimeout(() => {
+          publicMsg.delete().catch(() => {});
+        }, 5000);
+      } catch (e) {
+        console.error('Error sending public track message:', e.message);
+      }
+      
+      // Reply to interaction (ephemeral)
+      await interaction.reply({ content: `✅ Đang theo dõi **${team.name}**!`, flags: 64 }).catch(() => {});
+      return;
+    }
+    
+    if (interaction.customId === 'untrack_team_select') {
+      const userId = interaction.user.id;
+      const teamId = parseInt(interaction.values[0]);
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      
+      if (!team) {
+        await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+        return;
+      }
+      
+      const currentUserTeams = getUserTrackedTeams(userId);
+      if (!currentUserTeams.includes(teamId)) {
+        await interaction.reply({ content: `⚠️ Bạn không theo dõi **${team.name}**!`, flags: 64 });
+        return;
+      }
+      
+      // Remove team from user's tracked list
+      removeUserTrackedTeam(userId, teamId);
+      saveConfig();
+      
+      // Send public notification
+      try {
+        const publicMsg = await interaction.channel.send(`❌ **${interaction.user.username}** đã hủy theo dõi **${team.name}**`);
+        setTimeout(() => {
+          publicMsg.delete().catch(() => {});
+        }, 5000);
+      } catch (e) {
+        console.error('Error sending public untrack message:', e.message);
+      }
+      
+      // Reply to interaction (ephemeral)
+      await interaction.reply({ content: `✅ Đã hủy theo dõi **${team.name}**!`, flags: 64 }).catch(() => {});
+      return;
+    }
+    
+    if (interaction.customId === 'fixtures_team_select') {
+      const userId = interaction.user.id;
+      const teamId = parseInt(interaction.values[0]);
+      
+      await interaction.deferReply();
+      
+      try {
+        const fixtures = await getFixturesWithCL(teamId, 10);
+        
+        if (fixtures.length === 0) {
+          await interaction.editReply('❌ Không tìm thấy lịch thi đấu!');
+          return;
+        }
+        
+        // Get team name
+        const team = config.livescoreTeams.find(t => t.id === teamId);
+        const teamName = team?.name || `Team ${teamId}`;
+        
+        // Create main embed with professional styling (Tailwind-inspired)
+        const embeds = [];
+        const headerEmbed = new EmbedBuilder()
+          .setColor('#1e40af') // Tailwind blue-800
+          .setTitle(`⚽ ${teamName}`)
+          .setDescription(`**Lịch Thi Đấu Sắp Tới**\n${fixtures.length} trận`)
+          .setTimestamp()
+          .setFooter({ text: 'Football Bot | Updated' });
+        
+        embeds.push(headerEmbed);
+        
+        // Create individual embed for each fixture block
+        let currentText = '';
+        let matchCount = 0;
+        
+        fixtures.slice(0, 10).forEach((f, idx) => {
+          const date = new Date(f.utcDate);
+          const dateStr = date.toLocaleString('vi-VN', {
+            weekday: 'short',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
+          const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
+          const competition = f.inChampionsLeague ? '🏆 Champions League' : (f.competition?.name || 'Unknown');
+          
+          const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • ${competition}\n`;
+          
+          currentText += matchStr;
+          matchCount++;
+          
+          // Create new embed every 5 matches to avoid character limit
+          if (matchCount === 5 || idx === fixtures.length - 1) {
+            const fixturesEmbed = new EmbedBuilder()
+              .setColor('#059669') // Tailwind green-600
+              .setDescription(currentText.trim())
+              .setFooter({ text: `Trận ${matchCount === 5 ? (idx - 4) + '-' + (idx + 1) : (idx - matchCount + 2) + '-' + (idx + 1)} của ${fixtures.length}` });
+            
+            embeds.push(fixturesEmbed);
+            currentText = '';
+            matchCount = 0;
+          }
+        });
+        
+        await interaction.editReply({ embeds });
+      } catch (e) {
+        console.error('❌ Lỗi lấy lịch thi đấu:', e.message);
+        await interaction.editReply('❌ Có lỗi xảy ra khi lấy lịch thi đấu. Vui lòng thử lại!');
+      }
+      return;
     }
   }
 });
