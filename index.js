@@ -1880,6 +1880,80 @@ client.on('interactionCreate', async (interaction) => {
               components: newButtonRows.length > 0 ? newButtonRows : []
             });
             console.log(`✅ [BACK SUCCESS] Message updated with ${cached.movies.length} movies`);
+            
+            // Create NEW collector for the restored buttons
+            const message = await interaction.fetchReply();
+            const movies = cached.movies;
+            const searchQuery = cached.searchQuery;
+            
+            const movieCollector = message.createMessageComponentCollector({
+              filter: (btn) => btn.user.id === userId && btn.customId.startsWith('search_detail_'),
+              time: 5 * 60 * 1000 // 5 minutes
+            });
+
+            movieCollector.on('collect', async (buttonInteraction) => {
+              const parts = buttonInteraction.customId.split('_');
+              const movieNum = parseInt(parts[2]);
+              const returnCacheId = parseInt(parts[4]);
+              console.log(`📍 [BUTTON CLICK] User: ${userId}, MovieNum: ${movieNum}, CacheID: ${returnCacheId}, CustomID: ${buttonInteraction.customId}`);
+              
+              const selectedMovie = movies[movieNum - 1];
+              const slug = selectedMovie.slug;
+
+              try {
+                const detail = await getMovieDetail(slug);
+                
+                if (!detail) {
+                  await buttonInteraction.reply({ content: '❌ Không thể lấy thông tin phim', flags: 64 });
+                  return;
+                }
+
+                // Show movie detail with server selection buttons
+                const movieDetail = new EmbedBuilder()
+                  .setColor('#e50914')
+                  .setTitle(`🎬 ${detail.name}`)
+                  .setThumbnail(detail.thumb_url)
+                  .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
+                  .addFields(
+                    { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
+                    { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
+                    { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
+                    { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
+                    { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+                  )
+                  .setTimestamp()
+                  .setFooter({ text: 'Movie Detail' });
+
+                // Create server selection buttons
+                const serverButtons = [];
+                for (let i = 0; i < detail.episodes.length; i++) {
+                  serverButtons.push(
+                    new ButtonBuilder()
+                      .setCustomId(`server_select_${i}_${slug}_${userId}_${returnCacheId}`)
+                      .setLabel(detail.episodes[i].server_name.substring(0, 20))
+                      .setStyle(2) // Secondary style
+                  );
+                }
+
+                // Add back button - use cacheId from original search response
+                serverButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`back_to_search_${returnCacheId}`)
+                    .setLabel('⬅️ Quay lại')
+                    .setStyle(4) // Danger style (red)
+                );
+
+                const serverRow = serverButtons.length > 0 ? new ActionRowBuilder().addComponents(serverButtons) : null;
+
+                await buttonInteraction.update({
+                  embeds: [movieDetail],
+                  components: serverRow ? [serverRow] : []
+                });
+              } catch (error) {
+                console.error('❌ Lỗi khi chọn phim:', error.message);
+                await buttonInteraction.reply({ content: '❌ Có lỗi xảy ra. Vui lòng thử lại!', flags: 64 });
+              }
+            });
           } else {
             // Cache expired or not found - do nothing (no error message)
             console.log(`⚠️ [CACHE MISS] Cache not found or cacheId mismatch for user ${userId}`);
