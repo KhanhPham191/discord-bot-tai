@@ -29,7 +29,19 @@ let AUTO_REPLY_CHANNELS = ['713109490878120026', '694577581298810940'];
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 
 // Cache for search embeds and components (for back button)
-const searchCache = new Map(); // messageId -> { embed, components, movies }
+const searchCache = new Map(); // userId -> { embed, components, movies, searchQuery, cacheId, timestamp }
+let cacheIdCounter = 0;
+const CACHE_TTL = 60 * 1000; // 60 seconds
+
+// Clean up expired cache entries
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of searchCache.entries()) {
+    if (now - value.timestamp > CACHE_TTL) {
+      searchCache.delete(key);
+    }
+  }
+}, 30 * 1000); // Check every 30 seconds
 
 // Cooldown tracking for commands (per-user rate limiting)
 const dashboardCooldown = new Map();  // Per-user cooldown for !dashboard
@@ -1068,13 +1080,35 @@ client.on('interactionCreate', async (interaction) => {
             fetchReply: true
           });
           
-          // Cache this search result for back button
-          searchCache.set(response.id, {
+          // Cache this search result for back button - use userId as key
+          const cacheId = ++cacheIdCounter;
+          searchCache.set(userId, {
             embed,
             components: buttonRows,
             movies,
             searchQuery,
-            type: 'search'
+            type: 'search',
+            cacheId,
+            timestamp: Date.now()
+          });
+          
+          // Store cache ID in each button so we can retrieve it later
+          const updatedButtonRows = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            if ((i - 1) % 5 === 0) {
+              updatedButtonRows.push(new ActionRowBuilder());
+            }
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            updatedButtonRows[Math.floor((i - 1) / 5)].addComponents(
+              new ButtonBuilder()
+                .setCustomId(`search_detail_${i}_${userId}_${cacheId}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+          
+          await interaction.editReply({
+            components: updatedButtonRows.length > 0 ? updatedButtonRows : []
           });
           
           // Create collector for movie selection buttons
@@ -1084,7 +1118,9 @@ client.on('interactionCreate', async (interaction) => {
           });
 
           movieCollector.on('collect', async (buttonInteraction) => {
-            const movieNum = parseInt(buttonInteraction.customId.split('_')[2]);
+            const parts = buttonInteraction.customId.split('_');
+            const movieNum = parseInt(parts[2]);
+            const returnCacheId = parseInt(parts[4]);
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
 
@@ -1117,16 +1153,16 @@ client.on('interactionCreate', async (interaction) => {
               for (let i = 0; i < detail.episodes.length; i++) {
                 serverButtons.push(
                   new ButtonBuilder()
-                    .setCustomId(`server_select_${i}_${slug}_${userId}`)
+                    .setCustomId(`server_select_${i}_${slug}_${userId}_${returnCacheId}`)
                     .setLabel(detail.episodes[i].server_name.substring(0, 20))
                     .setStyle(2) // Secondary style
                 );
               }
 
-              // Add back button - use messageId from original search response
+              // Add back button - use cacheId from original search response
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_search_${response.id}`)
+                  .setCustomId(`back_to_search_${returnCacheId}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -1511,6 +1547,7 @@ client.on('interactionCreate', async (interaction) => {
         const serverIndex = parseInt(parts[2]);
         const slug = parts[3];
         const interactionUserId = parts[4];
+        const cacheId = parts[5] ? parseInt(parts[5]) : null;
         
         if (userId !== interactionUserId) {
           await interaction.reply({ content: '❌ Bạn không có quyền sử dụng button này!', flags: 64 });
@@ -1565,7 +1602,7 @@ client.on('interactionCreate', async (interaction) => {
             if (page > 1) {
               paginationButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`ep_prev_${serverIndex}_${slug}_${userId}`)
+                  .setCustomId(`ep_prev_${serverIndex}_${slug}_${userId}${cacheId ? `_${cacheId}` : ''}`)
                   .setLabel('⬅️ Trang trước')
                   .setStyle(1)
               );
@@ -1582,7 +1619,7 @@ client.on('interactionCreate', async (interaction) => {
             if (page < epResult.totalPages) {
               paginationButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`ep_next_${serverIndex}_${slug}_${userId}`)
+                  .setCustomId(`ep_next_${serverIndex}_${slug}_${userId}${cacheId ? `_${cacheId}` : ''}`)
                   .setLabel('Trang sau ➡️')
                   .setStyle(1)
               );
@@ -1591,7 +1628,7 @@ client.on('interactionCreate', async (interaction) => {
             // Add back button
             paginationButtons.push(
               new ButtonBuilder()
-                .setCustomId(`back_to_servers_${slug}_${userId}`)
+                .setCustomId(`back_to_servers_${slug}_${userId}${cacheId ? `_${cacheId}` : ''}`)
                 .setLabel('⬅️ Quay lại')
                 .setStyle(4)
             );
@@ -1788,16 +1825,16 @@ client.on('interactionCreate', async (interaction) => {
       
       // Back from servers to movie list (search)
       if (customId.startsWith('back_to_search_')) {
-        const messageId = customId.replace('back_to_search_', '');
+        const cacheId = parseInt(customId.replace('back_to_search_', ''));
         
         await interaction.deferUpdate();
         
         try {
-          // Try to get from cache first
-          const cached = searchCache.get(messageId);
+          // Try to get from cache using userId as key
+          const cached = searchCache.get(userId);
           
-          if (cached && cached.type === 'search') {
-            // Recreate buttons with current userId
+          if (cached && cached.type === 'search' && cached.cacheId === cacheId) {
+            // Recreate buttons with current userId and cacheId
             const newButtonRows = [];
             for (let i = 1; i <= Math.min(10, cached.movies.length); i++) {
               if ((i - 1) % 5 === 0) {
@@ -1806,7 +1843,7 @@ client.on('interactionCreate', async (interaction) => {
               const movieTitle = cached.movies[i - 1].name.substring(0, 15);
               newButtonRows[Math.floor((i - 1) / 5)].addComponents(
                 new ButtonBuilder()
-                  .setCustomId(`search_detail_${i}_${userId}`)
+                  .setCustomId(`search_detail_${i}_${userId}_${cacheId}`)
                   .setLabel(`${i}. ${movieTitle}`)
                   .setStyle(1)
               );
@@ -1817,11 +1854,8 @@ client.on('interactionCreate', async (interaction) => {
               components: newButtonRows.length > 0 ? newButtonRows : []
             });
           } else {
-            // Fallback: just acknowledge
-            await interaction.editReply({
-              content: '⚠️ Cache expired, vui lòng chạy lại /search',
-              components: []
-            });
+            // Cache expired or not found - do nothing (no error message)
+            // Just keep the current message
           }
         } catch (err) {
           console.error('Error back to search:', err);
