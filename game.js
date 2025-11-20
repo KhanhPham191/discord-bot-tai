@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { 
   searchWeapons, 
   searchNPCs, 
@@ -229,11 +229,271 @@ async function handleGameStats(interaction) {
   return interaction.reply({ embeds: [embed] });
 }
 
+// Handle weapon dropdown selection
+async function handleWeaponSelect(interaction) {
+  const weaponId = parseInt(interaction.values[0]);
+  const weapon = getAllWeapons().find(w => w.id === weaponId);
+  
+  if (!weapon) {
+    return interaction.reply({
+      content: '❌ Vũ khí không tồn tại!',
+      ephemeral: true
+    });
+  }
+
+  return interaction.reply({
+    embeds: [createWeaponEmbed(weapon)]
+  });
+}
+
+// Handle NPC dropdown selection
+async function handleNPCSelect(interaction) {
+  const npcId = parseInt(interaction.values[0]);
+  const npc = getAllNPCs().find(n => n.id === npcId);
+  
+  if (!npc) {
+    return interaction.reply({
+      content: '❌ Nhân vật không tồn tại!',
+      ephemeral: true
+    });
+  }
+
+  return interaction.reply({
+    embeds: [createNPCEmbed(npc)]
+  });
+}
+
+// Handle boss dropdown selection
+async function handleBossSelect(interaction) {
+  const bossId = parseInt(interaction.values[0]);
+  const boss = getAllBosses().find(b => b.id === bossId);
+  
+  if (!boss) {
+    return interaction.reply({
+      content: '❌ Boss không tồn tại!',
+      ephemeral: true
+    });
+  }
+
+  return interaction.reply({
+    embeds: [createBossEmbed(boss)]
+  });
+}
+
+// Handle skill dropdown selection
+async function handleSkillSelect(interaction) {
+  const skillId = parseInt(interaction.values[0]);
+  const skill = getAllSkills().find(s => s.id === skillId);
+  
+  if (!skill) {
+    return interaction.reply({
+      content: '❌ Kỹ năng không tồn tại!',
+      ephemeral: true
+    });
+  }
+
+  return interaction.reply({
+    embeds: [createSkillEmbed(skill)]
+  });
+}
+
+// Handle item dropdown selection
+async function handleItemSelect(interaction) {
+  const itemId = parseInt(interaction.values[0]);
+  const item = getAllItems().find(i => i.id === itemId);
+  
+  if (!item) {
+    return interaction.reply({
+      content: '❌ Vật phẩm không tồn tại!',
+      ephemeral: true
+    });
+  }
+
+  return interaction.reply({
+    embeds: [createItemEmbed(item)]
+  });
+}
+
+// Create weapon dropdown menu
+function createWeaponSelectMenu() {
+  const weapons = getAllWeapons().slice(0, 25);
+  const options = weapons.map(w => ({
+    label: w.name.substring(0, 100),
+    value: w.id.toString(),
+    emoji: '⚔️'
+  }));
+
+  return new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('game_weapon_select')
+        .setPlaceholder('Chọn một vũ khí...')
+        .addOptions(options)
+    );
+}
+
+// Create NPC dropdown menu
+function createNPCSelectMenu() {
+  const npcs = getAllNPCs().slice(0, 25);
+  const options = npcs.map(n => ({
+    label: n.name.substring(0, 100),
+    value: n.id.toString(),
+    emoji: '👤'
+  }));
+
+  return new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('game_npc_select')
+        .setPlaceholder('Chọn một nhân vật...')
+        .addOptions(options)
+    );
+}
+
+// Create boss dropdown menu
+function createBossSelectMenu() {
+  const bosses = getAllBosses().slice(0, 25);
+  const options = bosses.map(b => ({
+    label: b.name.substring(0, 100),
+    value: b.id.toString(),
+    emoji: '👹'
+  }));
+
+  return new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('game_boss_select')
+        .setPlaceholder('Chọn một boss...')
+        .addOptions(options)
+    );
+}
+
+// Create skill dropdown menu
+function createSkillSelectMenu() {
+  const skills = getAllSkills().slice(0, 25);
+  const options = skills.map(s => ({
+    label: s.name.substring(0, 100),
+    value: s.id.toString(),
+    emoji: '✨'
+  }));
+
+  return new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('game_skill_select')
+        .setPlaceholder('Chọn một kỹ năng...')
+        .addOptions(options)
+    );
+}
+
+// Create item dropdown menu
+function createItemSelectMenu() {
+  const items = getAllItems().slice(0, 25);
+  const options = items.map(i => ({
+    label: i.name.substring(0, 100),
+    value: i.id.toString(),
+    emoji: '📦'
+  }));
+
+  return new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('game_item_select')
+        .setPlaceholder('Chọn một vật phẩm...')
+        .addOptions(options)
+    );
+}
+
+// Show all weapons with dropdown
+async function showAllWeapons(interaction) {
+  const embed = new EmbedBuilder()
+    .setColor(0x00AE86)
+    .setTitle('⚔️ Tất cả Vũ Khí')
+    .setDescription(`Có ${getAllWeapons().length} vũ khí trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
+    .setFooter({ text: 'Where Winds Meet Game Database' });
+
+  return interaction.reply({
+    embeds: [embed],
+    components: [createWeaponSelectMenu()],
+    ephemeral: false
+  });
+}
+
+// Show all NPCs with dropdown
+async function showAllNPCs(interaction) {
+  const embed = new EmbedBuilder()
+    .setColor(0x0099FF)
+    .setTitle('👤 Tất cả Nhân Vật')
+    .setDescription(`Có ${getAllNPCs().length} nhân vật trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
+    .setFooter({ text: 'Where Winds Meet Game Database' });
+
+  return interaction.reply({
+    embeds: [embed],
+    components: [createNPCSelectMenu()],
+    ephemeral: false
+  });
+}
+
+// Show all bosses with dropdown
+async function showAllBosses(interaction) {
+  const embed = new EmbedBuilder()
+    .setColor(0xFF0000)
+    .setTitle('👹 Tất cả Boss')
+    .setDescription(`Có ${getAllBosses().length} boss trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
+    .setFooter({ text: 'Where Winds Meet Game Database' });
+
+  return interaction.reply({
+    embeds: [embed],
+    components: [createBossSelectMenu()],
+    ephemeral: false
+  });
+}
+
+// Show all skills with dropdown
+async function showAllSkills(interaction) {
+  const embed = new EmbedBuilder()
+    .setColor(0xFFFF00)
+    .setTitle('✨ Tất cả Kỹ Năng')
+    .setDescription(`Có ${getAllSkills().length} kỹ năng trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
+    .setFooter({ text: 'Where Winds Meet Game Database' });
+
+  return interaction.reply({
+    embeds: [embed],
+    components: [createSkillSelectMenu()],
+    ephemeral: false
+  });
+}
+
+// Show all items with dropdown
+async function showAllItems(interaction) {
+  const embed = new EmbedBuilder()
+    .setColor(0xFF69B4)
+    .setTitle('📦 Tất cả Vật Phẩm')
+    .setDescription(`Có ${getAllItems().length} vật phẩm trong cơ sở dữ liệu. Chọn một từ menu bên dưới.`)
+    .setFooter({ text: 'Where Winds Meet Game Database' });
+
+  return interaction.reply({
+    embeds: [embed],
+    components: [createItemSelectMenu()],
+    ephemeral: false
+  });
+}
+
 module.exports = {
   handleWeaponSearch,
   handleNPCSearch,
   handleBossSearch,
   handleSkillSearch,
   handleItemSearch,
-  handleGameStats
+  handleGameStats,
+  handleWeaponSelect,
+  handleNPCSelect,
+  handleBossSelect,
+  handleSkillSelect,
+  handleItemSelect,
+  showAllWeapons,
+  showAllNPCs,
+  showAllBosses,
+  showAllSkills,
+  showAllItems
 };

@@ -10,7 +10,7 @@ const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpiso
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
 
 // Import game functions
-const { handleWeaponSearch, handleNPCSearch, handleBossSearch, handleSkillSearch, handleItemSearch, handleGameStats } = require('./game');
+const { handleWeaponSearch, handleNPCSearch, handleBossSearch, handleSkillSearch, handleItemSearch, handleGameStats, handleWeaponSelect, handleNPCSelect, handleBossSelect, handleSkillSelect, handleItemSelect, showAllWeapons, showAllNPCs, showAllBosses, showAllSkills, showAllItems } = require('./game');
 const { createSeedData } = require('./game-scraper');
 
 // Load .env file - required for API keys
@@ -371,7 +371,28 @@ async function registerSlashCommands() {
     
     new SlashCommandBuilder()
       .setName('gamestats')
-      .setDescription('🎮 Xem thống kê database Where Winds Meet')
+      .setDescription('🎮 Xem thống kê database Where Winds Meet'),
+
+    // Game dropdown commands
+    new SlashCommandBuilder()
+      .setName('weapons')
+      .setDescription('🎮 Chọn vũ khí từ danh sách (dropdown UI)'),
+    
+    new SlashCommandBuilder()
+      .setName('npcs')
+      .setDescription('🎮 Chọn nhân vật từ danh sách (dropdown UI)'),
+    
+    new SlashCommandBuilder()
+      .setName('bosses')
+      .setDescription('🎮 Chọn boss từ danh sách (dropdown UI)'),
+    
+    new SlashCommandBuilder()
+      .setName('skills')
+      .setDescription('🎮 Chọn kỹ năng từ danh sách (dropdown UI)'),
+    
+    new SlashCommandBuilder()
+      .setName('items')
+      .setDescription('🎮 Chọn vật phẩm từ danh sách (dropdown UI)')
   ];
 
   try {
@@ -1662,6 +1683,32 @@ client.on('interactionCreate', async (interaction) => {
         await handleGameStats(interaction);
         return;
       }
+
+      // Game dropdown UI commands
+      if (command === 'weapons') {
+        await showAllWeapons(interaction);
+        return;
+      }
+
+      if (command === 'npcs') {
+        await showAllNPCs(interaction);
+        return;
+      }
+
+      if (command === 'bosses') {
+        await showAllBosses(interaction);
+        return;
+      }
+
+      if (command === 'skills') {
+        await showAllSkills(interaction);
+        return;
+      }
+
+      if (command === 'items') {
+        await showAllItems(interaction);
+        return;
+      }
     } catch (error) {
       console.error('❌ Lỗi xử lý slash command:', error);
       if (!interaction.replied) {
@@ -1807,6 +1854,32 @@ client.on('interactionCreate', async (interaction) => {
         console.error('❌ Lỗi lấy lịch thi đấu:', e.message);
         await interaction.editReply('❌ Có lỗi xảy ra khi lấy lịch thi đấu. Vui lòng thử lại!');
       }
+      return;
+    }
+
+    // Game select menu handlers
+    if (interaction.customId === 'game_weapon_select') {
+      await handleWeaponSelect(interaction);
+      return;
+    }
+
+    if (interaction.customId === 'game_npc_select') {
+      await handleNPCSelect(interaction);
+      return;
+    }
+
+    if (interaction.customId === 'game_boss_select') {
+      await handleBossSelect(interaction);
+      return;
+    }
+
+    if (interaction.customId === 'game_skill_select') {
+      await handleSkillSelect(interaction);
+      return;
+    }
+
+    if (interaction.customId === 'game_item_select') {
+      await handleItemSelect(interaction);
       return;
     }
   }
