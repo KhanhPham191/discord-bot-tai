@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -157,9 +157,137 @@ const client = new Client({
   ],
 });
 
-client.once('ready', () => {
+// Function to register slash commands
+async function registerSlashCommands() {
+  const commands = [
+    new SlashCommandBuilder()
+      .setName('ping')
+      .setDescription('Kiểm tra bot sống hay không'),
+    
+    new SlashCommandBuilder()
+      .setName('hello')
+      .setDescription('Bot chào bạn'),
+    
+    new SlashCommandBuilder()
+      .setName('echo')
+      .setDescription('Bot lặp lại câu bạn nói')
+      .addStringOption(option =>
+        option.setName('noidung')
+          .setDescription('Nội dung muốn bot lặp lại')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('help')
+      .setDescription('Xem tất cả các lệnh'),
+    
+    new SlashCommandBuilder()
+      .setName('live')
+      .setDescription('Xem trận đang diễn ra')
+      .addStringOption(option =>
+        option.setName('league_id')
+          .setDescription('ID giải đấu (PL, EL1, SA...)')
+          .setRequired(false)),
+    
+    new SlashCommandBuilder()
+      .setName('standings')
+      .setDescription('Xem bảng xếp hạng')
+      .addStringOption(option =>
+        option.setName('league_code')
+          .setDescription('Mã giải đấu (PL, EL1, SA, BL1, FL1, PD, EC)')
+          .setRequired(false)),
+    
+    new SlashCommandBuilder()
+      .setName('fixtures')
+      .setDescription('Xem lịch thi đấu sắp tới')
+      .addIntegerOption(option =>
+        option.setName('team_id')
+          .setDescription('ID của đội bóng')
+          .setRequired(false)),
+    
+    new SlashCommandBuilder()
+      .setName('lineup')
+      .setDescription('Xem line-up trước trận (khi công bố)')
+      .addIntegerOption(option =>
+        option.setName('match_id')
+          .setDescription('ID của trận đấu')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('findteam')
+      .setDescription('Tìm Team ID')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên đội bóng')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('teams')
+      .setDescription('Hiển thị danh sách team có sẵn'),
+    
+    new SlashCommandBuilder()
+      .setName('track')
+      .setDescription('Chọn team để theo dõi (UI dropdown)'),
+    
+    new SlashCommandBuilder()
+      .setName('untrack')
+      .setDescription('Hủy theo dõi team')
+      .addIntegerOption(option =>
+        option.setName('team_id')
+          .setDescription('ID của team muốn hủy theo dõi')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('mytracks')
+      .setDescription('Xem danh sách team đang theo dõi'),
+    
+    new SlashCommandBuilder()
+      .setName('dashboard')
+      .setDescription('Xem dashboard với lịch thi đấu'),
+    
+    new SlashCommandBuilder()
+      .setName('search')
+      .setDescription('Tìm phim')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên phim (gõ "help" để xem chi tiết)')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('newmovies')
+      .setDescription('Phim mới cập nhật')
+      .addIntegerOption(option =>
+        option.setName('page')
+          .setDescription('Số trang (mặc định: 1)')
+          .setRequired(false)),
+    
+    new SlashCommandBuilder()
+      .setName('episodes')
+      .setDescription('Xem danh sách tập phim')
+      .addStringOption(option =>
+        option.setName('slug')
+          .setDescription('Slug của phim')
+          .setRequired(true))
+  ];
+
+  try {
+    const rest = new REST({ version: '10' }).setToken(TOKEN);
+    await rest.put(
+      Routes.applicationCommands(client.user.id),
+      { body: commands.map(cmd => cmd.toJSON()) }
+    );
+    console.log('✅ Slash commands đã được đăng ký thành công');
+  } catch (error) {
+    console.error('❌ Lỗi đăng ký slash commands:', error);
+  }
+}
+
+client.once('ready', async () => {
   console.log(`✅ Bot đã đăng nhập với tư cách: ${client.user.tag}`);
   loadConfig();
+  
+  // Register slash commands
+  await registerSlashCommands();
+
   
   // Setup auto-reminder for upcoming matches (1 hour before)
   setInterval(async () => {
@@ -222,19 +350,854 @@ client.once('ready', () => {
   }, 15 * 60 * 1000); // Check every 15 minutes
 });
 
-// Handle interactions (select menu, buttons)
+// Handle interactions (slash commands, select menu, buttons)
 client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isStringSelectMenu()) return;
+  // Handle slash commands
+  if (interaction.isChatInputCommand()) {
+    const command = interaction.commandName;
+    const userId = interaction.user.id;
+    const now = Date.now();
+    
+    try {
+      // Convert slash command to message-like object for reuse
+      const messageData = {
+        author: interaction.user,
+        member: interaction.member,
+        guild: interaction.guild,
+        reply: (content) => interaction.reply(content),
+        channel: interaction.channel,
+        deferReply: () => interaction.deferReply(),
+        editReply: (content) => interaction.editReply(content)
+      };
+
+      if (command === 'ping') {
+        await interaction.reply('Pong! 🏓');
+        return;
+      }
+
+      if (command === 'hello') {
+        await interaction.reply(`Hello ${interaction.user.username} 😎`);
+        return;
+      }
+
+      if (command === 'help') {
+        await interaction.reply(
+          [
+            '📌 Các lệnh hiện có:',
+            '`/ping` - kiểm tra bot sống hay không',
+            '`/hello` - bot chào bạn',
+            '`/echo <nội dung>` - bot lặp lại câu bạn nói',
+            '',
+            '⚽ Livescore & Fixtures:',
+            '`/live [league_id]` - xem trận đang diễn ra',
+            '`/standings [league_code]` - bảng xếp hạng',
+            '`/fixtures <team_id>` - lịch thi đấu sắp tới',
+            '`/lineup <match_id>` - xem line-up trước trận (khi công bố)',
+            '`/findteam <name>` - tìm Team ID',
+            '',
+            '📍 Team Tracking (Auto-Reminder):',
+            '`/teams` - hiển thị danh sách team có sẵn',
+            '`/track` - chọn team để theo dõi (UI dropdown)',
+            '`/untrack <team_id>` - hủy theo dõi team',
+            '`/mytracks` - xem danh sách team đang theo dõi',
+            '`/dashboard` - xem dashboard với lịch thi đấu',
+            '💡 **Auto-Reminder**: Bot sẽ nhắc 1h trước mỗi trận của team bạn track',
+            '',
+            '🎬 Movie Search:',
+            '`/search <tên phim>` - tìm phim (gõ `help` để xem chi tiết)',
+            '`/newmovies [trang]` - phim mới cập nhật (trang 1 nếu không chỉ định)'
+          ].join('\n')
+        );
+        return;
+      }
+
+      if (command === 'echo') {
+        const content = interaction.options.getString('noidung');
+        await interaction.reply(content);
+        return;
+      }
+
+      if (command === 'teams') {
+        const premierLeagueTeams = config.livescoreTeams.slice(0, 10);
+        
+        let teamsText = '⚽ **Chọn đội bóng để theo dõi:**\n\n';
+        premierLeagueTeams.forEach((team, idx) => {
+          const tracked = config.trackedTeams.includes(team.id) ? '✅' : '  ';
+          teamsText += `${tracked} ${idx + 1}. **${team.name}** (ID: ${team.id})\n`;
+        });
+        
+        teamsText += `\n💡 Dùng \`/track\` để theo dõi\n`;
+        teamsText += `💡 Dùng \`/untrack <team_id>\` để hủy theo dõi\n`;
+        teamsText += `💡 Dùng \`/mytracks\` để xem danh sách theo dõi`;
+        
+        await interaction.reply(teamsText);
+        return;
+      }
+
+      if (command === 'track') {
+        const teams = config.livescoreTeams;
+        const userTrackedTeams = getUserTrackedTeams(userId);
+        
+        const options = teams.map(team => ({
+          label: team.name,
+          value: team.id.toString(),
+          description: `ID: ${team.id}${userTrackedTeams.includes(team.id) ? ' ✅ (bạn theo dõi)' : ''}`
+        }));
+        
+        const selectMenu = new StringSelectMenuBuilder()
+          .setCustomId('track_team_select')
+          .setPlaceholder('Chọn đội bóng để theo dõi')
+          .addOptions(options);
+        
+        const row = new ActionRowBuilder()
+          .addComponents(selectMenu);
+        
+        const response = await interaction.reply({
+          content: '⚽ **Chọn đội bóng muốn theo dõi:**',
+          components: [row],
+          fetchReply: true
+        });
+        return;
+      }
+
+      if (command === 'untrack') {
+        const teamId = interaction.options.getInteger('team_id');
+        const userTrackedTeams = getUserTrackedTeams(userId);
+        
+        if (!userTrackedTeams.includes(teamId)) {
+          await interaction.reply(`❌ Bạn không theo dõi team với ID **${teamId}**!`);
+          return;
+        }
+        
+        removeUserTrackedTeam(userId, teamId);
+        saveConfig();
+        
+        const team = config.livescoreTeams.find(t => t.id === teamId);
+        const teamName = team?.name || `Team ${teamId}`;
+        
+        await interaction.reply(`✅ Đã hủy theo dõi **${teamName}**`);
+        return;
+      }
+
+      if (command === 'mytracks') {
+        const userTrackedTeams = getUserTrackedTeams(userId);
+        
+        if (userTrackedTeams.length === 0) {
+          await interaction.reply('📋 Bạn chưa theo dõi team nào. Dùng `/track` để thêm team.');
+          return;
+        }
+
+        const trackedTeamNames = userTrackedTeams
+          .map(id => {
+            const team = config.livescoreTeams.find(t => t.id === id);
+            return team ? team.name : `ID: ${id}`;
+          })
+          .join('\n');
+        
+        await interaction.reply(`📋 **Danh sách team bạn theo dõi:**\n${trackedTeamNames}\n\nDùng \`/untrack <team_id>\` để xóa.`);
+        return;
+      }
+
+      if (command === 'dashboard') {
+        // Check cooldown - 60 seconds per user
+        if (dashboardCooldown.has(userId)) {
+          const cooldownExpires = dashboardCooldown.get(userId);
+          if (now < cooldownExpires) {
+            const secondsLeft = Math.ceil((cooldownExpires - now) / 1000);
+            await interaction.reply(`⏳ Dashboard cooldown. Vui lòng chờ ${secondsLeft}s trước khi sử dụng lại.`);
+            return;
+          }
+        }
+        
+        dashboardCooldown.set(userId, now + DASHBOARD_COOLDOWN_MS);
+        
+        await interaction.deferReply();
+        
+        try {
+          const pages = await createTrackedTeamsDashboard(userId);
+          
+          if (!pages || pages.length === 0) {
+            await interaction.editReply('❌ Không có team nào được theo dõi.');
+            return;
+          }
+          
+          if (pages.length === 1) {
+            await interaction.editReply(pages[0]);
+            return;
+          }
+          
+          let currentPage = 0;
+          
+          const createButtons = () => {
+            return new ActionRowBuilder()
+              .addComponents(
+                new ButtonBuilder()
+                  .setCustomId(`dashboard_prev_${userId}`)
+                  .setLabel('⬅️ Trước')
+                  .setStyle(2)
+                  .setDisabled(currentPage === 0),
+                new ButtonBuilder()
+                  .setCustomId(`dashboard_next_${userId}`)
+                  .setLabel('Sau ➡️')
+                  .setStyle(2)
+                  .setDisabled(currentPage === pages.length - 1)
+              );
+          };
+          
+          const response = await interaction.editReply({
+            ...pages[currentPage],
+            components: [createButtons()]
+          });
+          
+          const collector = response.createMessageComponentCollector({ 
+            filter: (inter) => inter.user.id === userId,
+            time: 5 * 60 * 1000
+          });
+          
+          collector.on('collect', async (inter) => {
+            if (inter.customId === `dashboard_prev_${userId}`) {
+              currentPage--;
+            } else if (inter.customId === `dashboard_next_${userId}`) {
+              currentPage++;
+            }
+            
+            await inter.update({
+              ...pages[currentPage],
+              components: [createButtons()]
+            }).catch(() => {});
+          });
+          
+          collector.on('end', async () => {
+            const disabledRow = new ActionRowBuilder()
+              .addComponents(
+                new ButtonBuilder()
+                  .setCustomId(`dashboard_prev_${userId}`)
+                  .setLabel('⬅️ Trước')
+                  .setStyle(2)
+                  .setDisabled(true),
+                new ButtonBuilder()
+                  .setCustomId(`dashboard_next_${userId}`)
+                  .setLabel('Sau ➡️')
+                  .setStyle(2)
+                  .setDisabled(true)
+              );
+            await response.edit({ components: [disabledRow] }).catch(() => {});
+          });
+        } catch (e) {
+          console.error('❌ Lỗi tải dashboard:', e.message);
+          await interaction.editReply('❌ Lỗi khi tải dashboard. Vui lòng thử lại.');
+        }
+        return;
+      }
+
+      if (command === 'live') {
+        const competitionId = interaction.options.getString('league_id') || 'PL';
+        await interaction.deferReply();
+        
+        const liveMatches = await getLiveMatches(competitionId);
+        
+        if (liveMatches.length === 0) {
+          await interaction.editReply('❌ Không có trận đấu nào đang diễn ra!');
+          return;
+        }
+        
+        let liveText = `🔴 **LIVE - Trận đấu đang diễn ra**\n`;
+        liveText += `═══════════════════════════════════\n\n`;
+        
+        liveMatches.slice(0, 10).forEach((match, idx) => {
+          const homeTeam = match.homeTeam.name;
+          const awayTeam = match.awayTeam.name;
+          const homeGoals = match.score?.fullTime?.home || 0;
+          const awayGoals = match.score?.fullTime?.away || 0;
+          const status = match.status;
+          const minute = match.minute || '?';
+          
+          liveText += `${idx + 1}. **${homeTeam} ${homeGoals} - ${awayGoals} ${awayTeam}**\n`;
+          liveText += `   ⏱️ ${minute}' | Status: ${status}\n`;
+          liveText += `\n`;
+        });
+        
+        liveText += `═══════════════════════════════════`;
+        await interaction.editReply(liveText);
+        return;
+      }
+
+      if (command === 'findteam') {
+        const teamName = interaction.options.getString('name').toLowerCase();
+        
+        await interaction.deferReply();
+        
+        try {
+          const foundTeams = (config.livescoreTeams || []).filter(team => 
+            team.name.toLowerCase().includes(teamName)
+          );
+          
+          if (foundTeams.length === 0) {
+            await interaction.editReply(`❌ Không tìm thấy đội bóng: **${teamName}**\n\n💡 **Danh sách đội hỗ trợ (Premier League):**\n${(config.livescoreTeams || []).slice(0, 10).map((t, i) => `${i + 1}. ${t.name}`).join('\n')}`);
+            return;
+          }
+          
+          let resultText = `🔍 **Kết quả tìm kiếm: "${teamName}"**\n`;
+          resultText += `═══════════════════════════════════\n\n`;
+          
+          foundTeams.forEach((team, idx) => {
+            resultText += `${idx + 1}. **${team.name}**\n`;
+            resultText += `   📍 ID: **${team.id}**\n`;
+            resultText += `   ⚽ \`/fixtures ${team.id}\` - xem lịch thi đấu\n`;
+            resultText += `   ❤️ \`/track ${team.id}\` - theo dõi đội\n\n`;
+          });
+          
+          resultText += `═══════════════════════════════════\n`;
+          resultText += `💡 **Copy Team ID rồi dùng các lệnh ở trên**`;
+          
+          await interaction.editReply(resultText);
+        } catch (e) {
+          console.error('❌ Lỗi tìm kiếm đội bóng:', e.message);
+          await interaction.editReply('❌ Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại!');
+        }
+        return;
+      }
+
+      if (command === 'standings') {
+        const compCode = interaction.options.getString('league_code')?.toUpperCase() || null;
+        const supportedComps = {
+          'PL': 'Premier League',
+          'EL1': 'La Liga',
+          'SA': 'Serie A',
+          'BL1': 'Bundesliga',
+          'FL1': 'Ligue 1',
+          'PD': 'Primeira Liga',
+          'EC': 'Champions League'
+        };
+        
+        if (!compCode) {
+          let compList = `📊 **DANH SÁCH GIẢI ĐẤU**\n`;
+          compList += `═══════════════════════════════════\n\n`;
+          
+          Object.entries(supportedComps).forEach(([code, name]) => {
+            compList += `• **${code}** - ${name}\n`;
+          });
+          
+          compList += `\n═══════════════════════════════════\n`;
+          compList += `💡 Dùng: \`/standings <competition_code>\` để xem bảng xếp`;
+          
+          await interaction.reply(compList);
+          return;
+        }
+        
+        if (!supportedComps[compCode]) {
+          await interaction.reply(`❌ Không tìm thấy giải đấu! Dùng \`/standings\` để xem danh sách.`);
+          return;
+        }
+        
+        await interaction.deferReply();
+        
+        const standings = await getStandings(compCode);
+        
+        if (!standings) {
+          await interaction.editReply('❌ Không tìm thấy bảng xếp hạng!');
+          return;
+        }
+        
+        const table = standings.standings[0].table;
+        let standingsText = `📊 **${standings.competition.name} - Season ${standings.season.currentSeason}**\n`;
+        standingsText += `═══════════════════════════════════\n\n`;
+        
+        table.slice(0, 10).forEach((team, idx) => {
+          const rank = team.position;
+          const name = team.team.name;
+          const points = team.points;
+          const played = team.playedGames;
+          const wins = team.won;
+          const draws = team.draw;
+          const losses = team.lost;
+          const gf = team.goalsFor;
+          const ga = team.goalsAgainst;
+          const gd = gf - ga;
+          
+          standingsText += `${rank.toString().padStart(2, '0')}. ${name.padEnd(20, ' ')} | ${points.toString().padStart(2, ' ')}pts\n`;
+          standingsText += `    📈 ${played}P ${wins}W ${draws}D ${losses}L | ${gf}:${ga} (${gd > 0 ? '+' : ''}${gd})\n`;
+          standingsText += `\n`;
+        });
+        
+        standingsText += `═══════════════════════════════════`;
+        await interaction.editReply(standingsText);
+        return;
+      }
+
+      if (command === 'lineup') {
+        const matchId = interaction.options.getInteger('match_id');
+        await interaction.deferReply();
+
+        try {
+          const matchData = await getMatchLineup(matchId);
+          
+          if (!matchData) {
+            await interaction.editReply('❌ Không tìm thấy thông tin trận đấu!');
+            return;
+          }
+
+          const homeTeam = matchData.homeTeam;
+          const awayTeam = matchData.awayTeam;
+          const utcDate = new Date(matchData.utcDate);
+          const dateStr = utcDate.toLocaleString('vi-VN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          const embeds = [];
+          
+          const headerEmbed = new EmbedBuilder()
+            .setColor('#3b82f6')
+            .setTitle(`📋 Line-up: ${homeTeam.name} vs ${awayTeam.name}`)
+            .setDescription(`🏆 ${matchData.competition?.name || 'Unknown'}\n📅 ${dateStr}\n📊 Status: ${matchData.status}`)
+            .setTimestamp();
+
+          embeds.push(headerEmbed);
+
+          if (matchData.lineupNotAvailable) {
+            const messageEmbed = new EmbedBuilder()
+              .setColor('#f97316')
+              .setDescription(matchData.message || 'Line-up chưa được công bố. Trạng thái: ' + matchData.status);
+            
+            embeds.push(messageEmbed);
+            await interaction.editReply({ embeds });
+            return;
+          }
+
+          const homeLineup = matchData.homeTeamLineup || [];
+          let homeText = `🏠 **${homeTeam.name}** (Formation: ${matchData.homeTeamFormation || 'N/A'})\n\n`;
+          
+          if (homeLineup.length > 0) {
+            homeText += '**Starting XI:**\n';
+            homeLineup.slice(0, 11).forEach((player, idx) => {
+              if (player && player.position && player.position !== 'UNKNOWN') {
+                homeText += `${idx + 1}. ${player.name} - ${player.position}\n`;
+              }
+            });
+          } else {
+            homeText += '_Line-up chưa được công bố_\n';
+          }
+
+          const homeEmbed = new EmbedBuilder()
+            .setColor('#ef4444')
+            .setDescription(homeText.slice(0, 2048))
+            .setFooter({ text: `${homeTeam.name}` });
+
+          embeds.push(homeEmbed);
+
+          const awayLineup = matchData.awayTeamLineup || [];
+          let awayText = `✈️ **${awayTeam.name}** (Formation: ${matchData.awayTeamFormation || 'N/A'})\n\n`;
+          
+          if (awayLineup.length > 0) {
+            awayText += '**Starting XI:**\n';
+            awayLineup.slice(0, 11).forEach((player, idx) => {
+              if (player && player.position && player.position !== 'UNKNOWN') {
+                awayText += `${idx + 1}. ${player.name} - ${player.position}\n`;
+              }
+            });
+          } else {
+            awayText += '_Line-up chưa được công bố_\n';
+          }
+
+          const awayEmbed = new EmbedBuilder()
+            .setColor('#3b82f6')
+            .setDescription(awayText.slice(0, 2048))
+            .setFooter({ text: `${awayTeam.name}` });
+
+          embeds.push(awayEmbed);
+
+          await interaction.editReply({ embeds });
+        } catch (e) {
+          console.error('❌ Lỗi lấy line-up:', e.message);
+          await interaction.editReply('❌ Có lỗi xảy ra. Vui lòng thử lại!');
+        }
+        return;
+      }
+
+      if (command === 'fixtures') {
+        const teamId = interaction.options.getInteger('team_id');
+        
+        // Check cooldown
+        if (fixturesCooldown.has(userId)) {
+          const cooldownExpires = fixturesCooldown.get(userId);
+          if (now < cooldownExpires) {
+            const secondsLeft = Math.ceil((cooldownExpires - now) / 1000);
+            await interaction.reply(`⏳ Fixtures cooldown. Vui lòng chờ ${secondsLeft}s trước khi sử dụng lại.`);
+            return;
+          }
+        }
+        
+        fixturesCooldown.set(userId, now + FIXTURES_COOLDOWN_MS);
+        
+        if (teamId) {
+          await interaction.deferReply();
+          
+          try {
+            const fixtures = await getFixturesWithCL(teamId, 10);
+            
+            if (fixtures.length === 0) {
+              await interaction.editReply(`❌ Không tìm thấy lịch thi đấu cho team ID: **${teamId}**`);
+              return;
+            }
+            
+            let teamName = `Team ${teamId}`;
+            try {
+              const teamData = await getTeamById(teamId);
+              if (teamData) {
+                teamName = teamData.name;
+              }
+            } catch (e) {
+              console.log('⚠️ Could not fetch team name:', e.message);
+            }
+            
+            const embeds = [];
+            const headerEmbed = new EmbedBuilder()
+              .setColor('#1e40af')
+              .setTitle(`⚽ ${teamName}`)
+              .setDescription(`**Lịch Thi Đấu Sắp Tới**\n${fixtures.length} trận`)
+              .setTimestamp()
+              .setFooter({ text: 'Football Bot | Updated' });
+            
+            embeds.push(headerEmbed);
+            
+            let currentText = '';
+            let matchCount = 0;
+            
+            fixtures.slice(0, 10).forEach((f, idx) => {
+              const date = new Date(f.utcDate);
+              const dateStr = date.toLocaleString('vi-VN', {
+                weekday: 'short',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              const opponent = f.homeTeam.id === teamId ? f.awayTeam.name : f.homeTeam.name;
+              const isHome = f.homeTeam.id === teamId ? '🏠' : '✈️';
+              const competition = f.inChampionsLeague ? '🏆 Champions League' : (f.competition?.name || 'Unknown');
+              
+              const matchStr = `\`${idx + 1}.\` ${isHome} **${opponent}**\n└─ 📅 ${dateStr} • ${competition}\n`;
+              
+              currentText += matchStr;
+              matchCount++;
+              
+              if (matchCount === 5 || idx === fixtures.length - 1) {
+                const fixturesEmbed = new EmbedBuilder()
+                  .setColor('#059669')
+                  .setDescription(currentText.trim())
+                  .setFooter({ text: `Trận ${matchCount === 5 ? (idx - 4) + '-' + (idx + 1) : (idx - matchCount + 2) + '-' + (idx + 1)} của ${fixtures.length}` });
+                
+                embeds.push(fixturesEmbed);
+                currentText = '';
+                matchCount = 0;
+              }
+            });
+            
+            await interaction.editReply({ embeds });
+          } catch (e) {
+            console.error('❌ Lỗi lấy lịch thi đấu:', e.message);
+            await interaction.editReply('❌ Có lỗi xảy ra khi lấy lịch thi đấu. Vui lòng thử lại!');
+          }
+          return;
+        }
+        
+        // Show tracked teams menu
+        const userTrackedTeams = getUserTrackedTeams(userId);
+        
+        if (userTrackedTeams.length === 0) {
+          await interaction.reply('❌ Bạn chưa theo dõi team nào.\n\n💡 Cách dùng:\n• `/track` - chọn team để theo dõi\n• `/fixtures <team_id>` - xem lịch của team nào đó\n• `/findteam <tên>` - tìm Team ID');
+          return;
+        }
+        
+        const trackedTeamsList = config.livescoreTeams.filter(t => userTrackedTeams.includes(t.id));
+        const options = trackedTeamsList.map(team => ({
+          label: team.name,
+          value: team.id.toString(),
+          description: `ID: ${team.id}`
+        }));
+        
+        const selectMenu = new StringSelectMenuBuilder()
+          .setCustomId('fixtures_team_select')
+          .setPlaceholder('Chọn đội bóng để xem lịch thi đấu')
+          .addOptions(options);
+        
+        const row = new ActionRowBuilder()
+          .addComponents(selectMenu);
+        
+        const response = await interaction.reply({
+          content: '⚽ **Chọn đội bóng để xem lịch thi đấu:**',
+          components: [row],
+          fetchReply: true
+        });
+        return;
+      }
+
+      if (command === 'search') {
+        const searchQuery = interaction.options.getString('name');
+        
+        if (searchQuery.toLowerCase() === 'help') {
+          const helpText = `
+📌 **Hướng Dẫn Lệnh Tìm Phim**
+
+**Cú pháp:**
+\`/search <tên phim>\`
+
+**Ví dụ:**
+• \`/search avatar\` - Tìm phim "avatar"
+• \`/search mưa đỏ\` - Tìm phim "mưa đỏ"
+• \`/search the marvel\` - Tìm phim "the marvel"
+
+**Tính năng:**
+✅ Hiển thị tối đa 10 kết quả
+✅ Hiển thị tên Việt + tên Anh + năm phát hành
+✅ Click button để xem chi tiết
+✅ Chọn server để xem danh sách tập
+✅ Phân trang tập (10 tập/trang)
+✅ Nút quay lại để điều hướng
+
+**Lệnh khác:**
+• \`/newmovies\` - Phim mới cập nhật
+• \`/help\` - Xem tất cả lệnh
+`;
+          await interaction.reply(helpText);
+          return;
+        }
+        
+        await interaction.deferReply();
+        
+        try {
+          const results = await searchMovies(searchQuery);
+          
+          if (!results || results.length === 0) {
+            await interaction.editReply(`❌ Không tìm thấy phim: **${searchQuery}**`);
+            return;
+          }
+          
+          const movies = results.slice(0, 10);
+          
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}"`)
+            .setDescription(`Tìm thấy **${movies.length}** phim`)
+            .setTimestamp();
+          
+          let description = '';
+          for (let idx = 0; idx < movies.length; idx++) {
+            const movie = movies[idx];
+            const slug = movie.slug || '';
+            const title = movie.name || movie.title || 'Unknown';
+            const englishTitle = movie.original_name || '';
+            const year = movie.year || 'N/A';
+            
+            let totalEpisodes = 'N/A';
+            let category = 'N/A';
+            try {
+              if (slug) {
+                const detail = await getMovieDetail(slug);
+                if (detail) {
+                  if (detail.total_episodes) {
+                    totalEpisodes = detail.total_episodes.toString();
+                  }
+                  if (detail.category && detail.category[1]) {
+                    const categoryList = detail.category[1].list;
+                    if (categoryList && categoryList.length > 0) {
+                      category = categoryList[0].name;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.log(`⚠️ Could not fetch detail for ${slug}`);
+            }
+            
+            const movieNum = idx + 1;
+            let titleDisplay = `**${movieNum}. ${title}**`;
+            if (englishTitle && englishTitle !== title) {
+              titleDisplay += ` (${englishTitle})`;
+            }
+            
+            description += `${titleDisplay}\n`;
+            
+            let infoLine = '';
+            if (year !== 'N/A') {
+              infoLine += `📅 ${year}`;
+            }
+            if (category !== 'N/A') {
+              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
+            }
+            if (totalEpisodes !== 'N/A') {
+              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+            }
+            
+            if (infoLine) {
+              description += infoLine + '\n';
+            }
+            
+            description += '\n';
+          }
+          
+          embed.setDescription(description);
+          
+          const buttons = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_detail_${i}_${userId}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+          
+          const buttonRows = [];
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          
+          const response = await interaction.editReply({ 
+            embeds: [embed],
+            components: buttonRows.length > 0 ? buttonRows : []
+          });
+        } catch (error) {
+          console.error('❌ Lỗi tìm kiếm phim:', error.message);
+          await interaction.editReply('❌ Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại!');
+        }
+        return;
+      }
+
+      if (command === 'newmovies') {
+        const page = interaction.options.getInteger('page') || 1;
+        
+        await interaction.deferReply();
+        
+        try {
+          const newMovies = await getNewMovies(1);
+          console.log(`✅ Found ${newMovies.length} new movies`);
+          
+          if (!newMovies || newMovies.length === 0) {
+            await interaction.editReply(`❌ Không tìm thấy phim mới`);
+            return;
+          }
+
+          const movies = newMovies.slice(0, 10);
+          
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 Phim Mới Cập Nhật`)
+            .setDescription(`Hiển thị **${movies.length}** phim mới nhất`)
+            .setTimestamp();
+
+          let description = '';
+          for (let idx = 0; idx < movies.length; idx++) {
+            const movie = movies[idx];
+            const slug = movie.slug || '';
+            const title = movie.name || movie.title || 'Unknown';
+            const englishTitle = movie.original_name || '';
+            const year = movie.year || 'N/A';
+            
+            let totalEpisodes = 'N/A';
+            let category = 'N/A';
+            try {
+              if (slug) {
+                const detail = await getMovieDetail(slug);
+                if (detail) {
+                  if (detail.total_episodes) {
+                    totalEpisodes = detail.total_episodes.toString();
+                  }
+                  if (detail.category && detail.category[1]) {
+                    const categoryList = detail.category[1].list;
+                    if (categoryList && categoryList.length > 0) {
+                      category = categoryList[0].name;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.log(`⚠️ Could not fetch detail for ${slug}`);
+            }
+            
+            const movieNum = idx + 1;
+            let titleDisplay = `**${movieNum}. ${title}**`;
+            if (englishTitle && englishTitle !== title) {
+              titleDisplay += ` (${englishTitle})`;
+            }
+            
+            description += `${titleDisplay}\n`;
+            
+            let infoLine = '';
+            if (year !== 'N/A') {
+              infoLine += `📅 ${year}`;
+            }
+            if (category !== 'N/A') {
+              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
+            }
+            if (totalEpisodes !== 'N/A') {
+              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+            }
+            
+            if (infoLine) {
+              description += infoLine + '\n';
+            }
+            
+            description += '\n';
+          }
+
+          embed.setDescription(description);
+          
+          const buttons = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`newmovies_detail_${i}_${userId}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+
+          const buttonRows = [];
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+
+          const response = await interaction.editReply({ 
+            embeds: [embed],
+            components: buttonRows.length > 0 ? buttonRows : []
+          });
+        } catch (error) {
+          console.error('❌ Lỗi lấy phim mới:', error.message);
+          await interaction.editReply('❌ Có lỗi xảy ra khi lấy phim mới. Vui lòng thử lại!');
+        }
+        
+        return;
+      }
+    } catch (error) {
+      console.error('❌ Lỗi xử lý slash command:', error);
+      if (!interaction.replied) {
+        await interaction.reply({ content: '❌ Có lỗi xảy ra khi xử lý lệnh.', flags: 64 }).catch(() => {});
+      }
+    }
+  }
   
-  if (interaction.customId === 'track_team_select') {
-    // This is handled in the track command collector
-    // No need to handle again here
+  // Original interaction handlers for select menus and buttons
+  if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu()) return;
+  
+  if (interaction.isStringSelectMenu()) {
+    if (interaction.customId === 'track_team_select') {
+      // This is handled in the track command collector
+    }
   }
 });
 
 
 // Auto-update livescore function - DISABLED to prevent API quota issues
-// Users can manually use !live, !fixtures, !livescore commands instead
+// Users can manually use /live, /fixtures, /livescore commands instead
+
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
