@@ -1783,6 +1783,7 @@ client.on('interactionCreate', async (interaction) => {
         const parts = customId.split('_');
         const slug = parts[3];
         const interactionUserId = parts[4];
+        const cacheId = parts[5] ? parseInt(parts[5]) : null;
         
         if (userId !== interactionUserId) {
           await interaction.reply({ content: '❌ Bạn không có quyền sử dụng button này!', flags: 64 });
@@ -1826,7 +1827,7 @@ client.on('interactionCreate', async (interaction) => {
           // Add back button to go back to movie list
           serverButtons.push(
             new ButtonBuilder()
-              .setCustomId(`back_to_search_${userId}`)
+              .setCustomId(`back_to_search_${cacheId || 'default'}`)
               .setLabel('⬅️ Quay lại')
               .setStyle(4)
           );
