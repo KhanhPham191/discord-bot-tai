@@ -1250,18 +1250,6 @@ client.on('interactionCreate', async (interaction) => {
           
           embed.setDescription(description);
           
-          // Create movie detail buttons
-          const buttons = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
-            const movieTitle = movies[i - 1].name.substring(0, 15);
-            buttons.push(
-              new ButtonBuilder()
-                .setCustomId(`search_detail_${i}_${userId}_${page}`)
-                .setLabel(`${i}. ${movieTitle}`)
-                .setStyle(1)
-            );
-          }
-
           // Create pagination buttons
           const paginationButtons = [];
           if (page > 1) {
@@ -1291,9 +1279,7 @@ client.on('interactionCreate', async (interaction) => {
           }
 
           const buttonRows = [];
-          for (let i = 0; i < buttons.length; i += 5) {
-            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-          }
+
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
@@ -1464,31 +1450,9 @@ client.on('interactionCreate', async (interaction) => {
           let description = '';
           for (let idx = 0; idx < movies.length; idx++) {
             const movie = movies[idx];
-            const slug = movie.slug || '';
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
-            
-            let totalEpisodes = 'N/A';
-            let category = 'N/A';
-            try {
-              if (slug) {
-                const detail = await getMovieDetail(slug);
-                if (detail) {
-                  if (detail.total_episodes) {
-                    totalEpisodes = detail.total_episodes.toString();
-                  }
-                  if (detail.category && detail.category[1]) {
-                    const categoryList = detail.category[1].list;
-                    if (categoryList && categoryList.length > 0) {
-                      category = categoryList[0].name;
-                    }
-                  }
-                }
-              }
-            } catch (e) {
-              console.log(`⚠️ Could not fetch detail for ${slug}`);
-            }
             
             const movieNum = idx + 1;
             let titleDisplay = `**${movieNum}. ${title}**`;
@@ -1498,19 +1462,8 @@ client.on('interactionCreate', async (interaction) => {
             
             description += `${titleDisplay}\n`;
             
-            let infoLine = '';
             if (year !== 'N/A') {
-              infoLine += `📅 ${year}`;
-            }
-            if (category !== 'N/A') {
-              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
-            }
-            if (totalEpisodes !== 'N/A') {
-              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
-            }
-            
-            if (infoLine) {
-              description += infoLine + '\n';
+              description += `📅 ${year}\n`;
             }
             
             description += '\n';
@@ -1518,19 +1471,7 @@ client.on('interactionCreate', async (interaction) => {
 
           embed.setDescription(description);
           
-          // Create movie detail buttons
-          const buttons = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
-            const movieTitle = movies[i - 1].name.substring(0, 15);
-            buttons.push(
-              new ButtonBuilder()
-                .setCustomId(`newmovies_detail_${i}_${userId}_${page}`)
-                .setLabel(`${i}. ${movieTitle}`)
-                .setStyle(1)
-            );
-          }
-
-          // Create pagination buttons
+          // Create pagination buttons (no detail buttons)
           const paginationButtons = [];
           if (page > 1) {
             paginationButtons.push(
@@ -1558,9 +1499,7 @@ client.on('interactionCreate', async (interaction) => {
 
           const buttonRows = [];
           // Add movie buttons in rows of 5
-          for (let i = 0; i < buttons.length; i += 5) {
-            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-          }
+
           // Add pagination buttons
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
@@ -1584,89 +1523,6 @@ client.on('interactionCreate', async (interaction) => {
             embeds: [embed],
             components: buttonRows.length > 0 ? buttonRows : [],
             fetchReply: true
-          });
-          
-          // Create collector for movie selection buttons
-          const movieCollector = response.createMessageComponentCollector({
-            filter: (btn) => btn.user.id === userId && btn.customId.startsWith('newmovies_detail_'),
-            time: 5 * 60 * 1000 // 5 minutes
-          });
-
-          movieCollector.on('collect', async (buttonInteraction) => {
-            const parts = buttonInteraction.customId.split('_');
-            const movieNum = parseInt(parts[2]);
-            const pageNum = parseInt(parts[4]);
-            const selectedMovie = movies[movieNum - 1];
-            const slug = selectedMovie.slug;
-            console.log(`📍 [NEWMOVIES CLICK] MovieNum: ${movieNum}, Page: ${pageNum}`);
-
-            try {
-              const detail = await getMovieDetail(slug);
-              
-              if (!detail) {
-                await buttonInteraction.reply({ content: '❌ Không thể lấy thông tin phim', flags: 64 });
-                return;
-              }
-
-              // Show movie detail with server selection buttons
-              const movieDetail = new EmbedBuilder()
-                .setColor('#e50914')
-                .setTitle(`🎬 ${detail.name}`)
-                .setThumbnail(detail.thumb_url)
-                .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
-                .addFields(
-                  { name: '📅 Năm phát hành', value: String(detail.year || 'N/A'), inline: true },
-                  { name: '🎭 Chất lượng', value: String(detail.quality || 'N/A'), inline: true },
-                  { name: '🗣️ Ngôn ngữ', value: String(detail.language || 'N/A'), inline: true },
-                  { name: '📺 Số tập', value: String(detail.total_episodes || 'N/A'), inline: true },
-                  { name: '▶️ Tập hiện tại', value: String(detail.current_episode || 'N/A'), inline: true }
-                )
-                .setTimestamp()
-                .setFooter({ text: 'Movie Detail' });
-
-              // Create server selection buttons
-              const serverButtons = [];
-              for (let i = 0; i < detail.episodes.length; i++) {
-                serverButtons.push(
-                  new ButtonBuilder()
-                    .setCustomId(`server_select_${i}_${slug}_${userId}`)
-                    .setLabel(detail.episodes[i].server_name.substring(0, 20))
-                    .setStyle(2) // Secondary style
-                );
-              }
-
-              // Add back button with page number
-              serverButtons.push(
-                new ButtonBuilder()
-                  .setCustomId(`back_to_newmovies_list_${pageNum}_${userId}`)
-                  .setLabel('⬅️ Quay lại')
-                  .setStyle(4) // Danger style (red)
-              );
-
-              const serverRow = serverButtons.length > 0 ? new ActionRowBuilder().addComponents(serverButtons) : null;
-
-              await buttonInteraction.update({
-                embeds: [movieDetail],
-                components: serverRow ? [serverRow] : []
-              });
-            } catch (error) {
-              console.error('❌ Lỗi khi chọn phim:', error.message);
-              await buttonInteraction.reply({ content: '❌ Có lỗi xảy ra. Vui lòng thử lại!', flags: 64 });
-            }
-          });
-
-          movieCollector.on('end', () => {
-            // Disable buttons after collection ends
-            const disabledRows = buttonRows.map(row => {
-              const newRow = new ActionRowBuilder();
-              row.components.forEach(btn => {
-                newRow.addComponents(
-                  ButtonBuilder.from(btn).setDisabled(true)
-                );
-              });
-              return newRow;
-            });
-            response.edit({ components: disabledRows }).catch(() => {});
           });
         } catch (error) {
           console.error('❌ Lỗi lấy phim mới:', error.message);
@@ -2624,31 +2480,9 @@ client.on('interactionCreate', async (interaction) => {
           let description = '';
           for (let idx = 0; idx < movies.length; idx++) {
             const movie = movies[idx];
-            const slug = movie.slug || '';
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
-            
-            let totalEpisodes = 'N/A';
-            let category = 'N/A';
-            try {
-              if (slug) {
-                const detail = await getMovieDetail(slug);
-                if (detail) {
-                  if (detail.total_episodes) {
-                    totalEpisodes = detail.total_episodes.toString();
-                  }
-                  if (detail.category && detail.category[1]) {
-                    const categoryList = detail.category[1].list;
-                    if (categoryList && categoryList.length > 0) {
-                      category = categoryList[0].name;
-                    }
-                  }
-                }
-              }
-            } catch (e) {
-              console.log(`⚠️ Could not fetch detail for ${slug}`);
-            }
             
             const movieNum = idx + 1;
             let titleDisplay = `**${movieNum}. ${title}**`;
@@ -2658,19 +2492,8 @@ client.on('interactionCreate', async (interaction) => {
             
             description += `${titleDisplay}\n`;
             
-            let infoLine = '';
             if (year !== 'N/A') {
-              infoLine += `📅 ${year}`;
-            }
-            if (category !== 'N/A') {
-              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
-            }
-            if (totalEpisodes !== 'N/A') {
-              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
-            }
-            
-            if (infoLine) {
-              description += infoLine + '\n';
+              description += `📅 ${year}\n`;
             }
             
             description += '\n';
@@ -2678,18 +2501,6 @@ client.on('interactionCreate', async (interaction) => {
 
           embed.setDescription(description);
           
-          // Create movie detail buttons
-          const buttons = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
-            const movieTitle = movies[i - 1].name.substring(0, 15);
-            buttons.push(
-              new ButtonBuilder()
-                .setCustomId(`newmovies_detail_${i}_${userId}_${nextPage}`)
-                .setLabel(`${i}. ${movieTitle}`)
-                .setStyle(1)
-            );
-          }
-
           // Create pagination buttons
           const paginationButtons = [];
           if (nextPage > 1) {
@@ -2717,9 +2528,7 @@ client.on('interactionCreate', async (interaction) => {
           );
 
           const buttonRows = [];
-          for (let i = 0; i < buttons.length; i += 5) {
-            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-          }
+
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
@@ -2776,31 +2585,9 @@ client.on('interactionCreate', async (interaction) => {
           let description = '';
           for (let idx = 0; idx < movies.length; idx++) {
             const movie = movies[idx];
-            const slug = movie.slug || '';
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
-            
-            let totalEpisodes = 'N/A';
-            let category = 'N/A';
-            try {
-              if (slug) {
-                const detail = await getMovieDetail(slug);
-                if (detail) {
-                  if (detail.total_episodes) {
-                    totalEpisodes = detail.total_episodes.toString();
-                  }
-                  if (detail.category && detail.category[1]) {
-                    const categoryList = detail.category[1].list;
-                    if (categoryList && categoryList.length > 0) {
-                      category = categoryList[0].name;
-                    }
-                  }
-                }
-              }
-            } catch (e) {
-              console.log(`⚠️ Could not fetch detail for ${slug}`);
-            }
             
             const movieNum = idx + 1;
             let titleDisplay = `**${movieNum}. ${title}**`;
@@ -2810,19 +2597,8 @@ client.on('interactionCreate', async (interaction) => {
             
             description += `${titleDisplay}\n`;
             
-            let infoLine = '';
             if (year !== 'N/A') {
-              infoLine += `📅 ${year}`;
-            }
-            if (category !== 'N/A') {
-              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
-            }
-            if (totalEpisodes !== 'N/A') {
-              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
-            }
-            
-            if (infoLine) {
-              description += infoLine + '\n';
+              description += `📅 ${year}\n`;
             }
             
             description += '\n';
@@ -2830,18 +2606,6 @@ client.on('interactionCreate', async (interaction) => {
 
           embed.setDescription(description);
           
-          // Create movie detail buttons
-          const buttons = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
-            const movieTitle = movies[i - 1].name.substring(0, 15);
-            buttons.push(
-              new ButtonBuilder()
-                .setCustomId(`newmovies_detail_${i}_${userId}_${nextPage}`)
-                .setLabel(`${i}. ${movieTitle}`)
-                .setStyle(1)
-            );
-          }
-
           // Create pagination buttons
           const paginationButtons = [];
           if (nextPage > 1) {
@@ -2869,9 +2633,7 @@ client.on('interactionCreate', async (interaction) => {
           );
 
           const buttonRows = [];
-          for (let i = 0; i < buttons.length; i += 5) {
-            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-          }
+
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
@@ -3041,9 +2803,7 @@ client.on('interactionCreate', async (interaction) => {
           }
 
           const buttonRows = [];
-          for (let i = 0; i < buttons.length; i += 5) {
-            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-          }
+
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
@@ -3216,9 +2976,7 @@ client.on('interactionCreate', async (interaction) => {
           }
 
           const buttonRows = [];
-          for (let i = 0; i < buttons.length; i += 5) {
-            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-          }
+
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
