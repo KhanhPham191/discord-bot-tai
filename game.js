@@ -461,7 +461,7 @@ async function showAllWeapons(interaction, page = 0) {
     components.push(createPaginationButtons('weapons', page, maxPage));
   }
 
-  if (interaction.replied) {
+  if (interaction.replied || interaction.deferred) {
     return interaction.editReply({
       embeds: [embed],
       components
@@ -493,7 +493,7 @@ async function showAllNPCs(interaction, page = 0) {
     components.push(createPaginationButtons('npcs', page, maxPage));
   }
 
-  if (interaction.replied) {
+  if (interaction.replied || interaction.deferred) {
     return interaction.editReply({
       embeds: [embed],
       components
@@ -525,7 +525,7 @@ async function showAllBosses(interaction, page = 0) {
     components.push(createPaginationButtons('bosses', page, maxPage));
   }
 
-  if (interaction.replied) {
+  if (interaction.replied || interaction.deferred) {
     return interaction.editReply({
       embeds: [embed],
       components
@@ -557,7 +557,7 @@ async function showAllSkills(interaction, page = 0) {
     components.push(createPaginationButtons('skills', page, maxPage));
   }
 
-  if (interaction.replied) {
+  if (interaction.replied || interaction.deferred) {
     return interaction.editReply({
       embeds: [embed],
       components
@@ -589,7 +589,7 @@ async function showAllItems(interaction, page = 0) {
     components.push(createPaginationButtons('items', page, maxPage));
   }
 
-  if (interaction.replied) {
+  if (interaction.replied || interaction.deferred) {
     return interaction.editReply({
       embeds: [embed],
       components
@@ -659,17 +659,22 @@ async function handleGameCommand(interaction) {
 async function handleGameTypeSelect(interaction) {
   const type = interaction.values[0];
   
-  await interaction.deferUpdate();
-
-  if (type === 'weapons') {
-    await showAllWeapons(interaction, 0);
-  } else if (type === 'npcs') {
-    await showAllNPCs(interaction, 0);
-  } else if (type === 'bosses') {
-    await showAllBosses(interaction, 0);
-  } else if (type === 'skills') {
-    await showAllSkills(interaction, 0);
-  } else if (type === 'items') {
-    await showAllItems(interaction, 0);
+  try {
+    if (type === 'weapons') {
+      await showAllWeapons(interaction, 0);
+    } else if (type === 'npcs') {
+      await showAllNPCs(interaction, 0);
+    } else if (type === 'bosses') {
+      await showAllBosses(interaction, 0);
+    } else if (type === 'skills') {
+      await showAllSkills(interaction, 0);
+    } else if (type === 'items') {
+      await showAllItems(interaction, 0);
+    }
+  } catch (err) {
+    console.error('❌ Error handling game type select:', err);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ content: '❌ Có lỗi xảy ra!', ephemeral: true }).catch(() => {});
+    }
   }
 }
