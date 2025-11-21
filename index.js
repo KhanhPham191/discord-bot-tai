@@ -10,7 +10,7 @@ const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpiso
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
 
 // Import game functions
-const { handleWeaponSearch, handleNPCSearch, handleBossSearch, handleSkillSearch, handleItemSearch, handleGameStats, handleWeaponSelect, handleNPCSelect, handleBossSelect, handleSkillSelect, handleItemSelect, showAllWeapons, showAllNPCs, showAllBosses, showAllSkills, showAllItems, handleGameCommand } = require('./game');
+const { handleWeaponSearch, handleNPCSearch, handleBossSearch, handleSkillSearch, handleItemSearch, handleGameStats, handleWeaponSelect, handleNPCSelect, handleBossSelect, handleSkillSelect, handleItemSelect, showAllWeapons, showAllNPCs, showAllBosses, showAllSkills, showAllItems } = require('./game');
 const { createSeedData } = require('./game-scraper');
 
 // Load .env file - required for API keys
@@ -332,11 +332,6 @@ async function registerSlashCommands() {
           .setDescription('Bật/tắt tính năng thông báo phim update')
           .setRequired(false)),
 
-    // Game commands - Single unified command
-    new SlashCommandBuilder()
-      .setName('game')
-      .setDescription('🎮 Chơi Where Winds Meet - Chọn item từ dropdown'),
-    
     new SlashCommandBuilder()
       .setName('weapon')
       .setDescription('⚔️ Tìm vũ khí')
@@ -1648,12 +1643,6 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
 
-      // Game command - unified single command
-      if (command === 'game') {
-        await handleGameCommand(interaction);
-        return;
-      }
-
       if (command === 'weapon') {
         await handleWeaponSearch(interaction);
         return;
@@ -1725,13 +1714,6 @@ client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu() && !interaction.isButton()) return;
   
   if (interaction.isStringSelectMenu()) {
-    // Game type selection
-    if (interaction.customId === 'game_type_select') {
-      const { handleGameTypeSelect } = require('./game');
-      await handleGameTypeSelect(interaction);
-      return;
-    }
-
     // Search dropdowns
     if (interaction.customId === 'weapon_select_search') {
       const weaponId = parseInt(interaction.values[0].split('_')[1]);

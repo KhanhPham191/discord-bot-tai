@@ -694,66 +694,9 @@ module.exports = {
   showAllBosses,
   showAllSkills,
   showAllItems,
-  handleGameCommand,
-  handleGameTypeSelect,
   createWeaponEmbed,
   createNPCEmbed,
   createBossEmbed,
   createSkillEmbed,
   createItemEmbed
 };
-
-// Unified game command - choose type first
-async function handleGameCommand(interaction) {
-  const typeOptions = [
-    { label: '⚔️ Vũ Khí', value: 'weapons' },
-    { label: '👤 Nhân Vật', value: 'npcs' },
-    { label: '👹 Boss', value: 'bosses' },
-    { label: '✨ Kỹ Năng', value: 'skills' },
-    { label: '📦 Vật Phẩm', value: 'items' }
-  ];
-
-  const typeRow = new ActionRowBuilder()
-    .addComponents(
-      new StringSelectMenuBuilder()
-        .setCustomId('game_type_select')
-        .setPlaceholder('Chọn loại vật phẩm...')
-        .addOptions(typeOptions)
-    );
-
-  const embed = new EmbedBuilder()
-    .setColor(0xFF6B00)
-    .setTitle('🎮 Where Winds Meet')
-    .setDescription('Chọn loại vật phẩm bạn muốn xem')
-    .setFooter({ text: 'Database: 650+ entries' });
-
-  return interaction.reply({
-    embeds: [embed],
-    components: [typeRow],
-    ephemeral: false
-  });
-}
-
-// Handle type selection
-async function handleGameTypeSelect(interaction) {
-  const type = interaction.values[0];
-  
-  try {
-    if (type === 'weapons') {
-      await showAllWeapons(interaction, 0);
-    } else if (type === 'npcs') {
-      await showAllNPCs(interaction, 0);
-    } else if (type === 'bosses') {
-      await showAllBosses(interaction, 0);
-    } else if (type === 'skills') {
-      await showAllSkills(interaction, 0);
-    } else if (type === 'items') {
-      await showAllItems(interaction, 0);
-    }
-  } catch (err) {
-    console.error('❌ Error handling game type select:', err);
-    if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({ content: '❌ Có lỗi xảy ra!', ephemeral: true }).catch(() => {});
-    }
-  }
-}
