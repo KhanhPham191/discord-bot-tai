@@ -1399,10 +1399,10 @@ client.on('interactionCreate', async (interaction) => {
                 );
               }
 
-              // Add back button with cacheId
+              // Add back button with just cacheId (keep it short to avoid 100 char limit)
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_search_${returnCacheId}_${pageNum}`)
+                  .setCustomId(`back_search_${returnCacheId}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -2245,14 +2245,13 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
 
-      // Old back_to_search handler for compatibility
-      if (customId.startsWith('back_to_search_') && !customId.includes('list_')) {
-        const parts = customId.split('_');
-        // Format: back_to_search_${returnCacheId}_${pageNum}
-        const returnCacheId = parseInt(parts[3]);
-        const pageNum = parseInt(parts[4]);
+      // Back button handler for search
+      if (customId.startsWith('back_search_')) {
+        const afterPrefix = customId.replace('back_search_', '');
+        const returnCacheId = parseInt(afterPrefix);
         
-        console.log(`⬅️ [BACK SEARCH] User: ${userId}, CacheID: ${returnCacheId}, Page: ${pageNum}`);
+        console.log(`⬅️ [BACK SEARCH] User: ${userId}, CacheID: ${returnCacheId}`);
+        console.log(`🔍 Parsing: customId="${customId}", afterPrefix="${afterPrefix}", returnCacheId=${returnCacheId}`);
         
         await interaction.deferUpdate();
         
@@ -2345,9 +2344,15 @@ client.on('interactionCreate', async (interaction) => {
             console.log(`⚠️ [SEARCH CACHE MISS] Cache not found for cacheId ${returnCacheId}`);
           }
         } catch (err) {
-          console.error('Error back to search:', err);
+          console.error('❌ Error back to search:', err);
         }
         return;
+      }
+
+      // Old back_to_search handler for compatibility (deprecated)
+      if (customId.startsWith('back_to_search_') && !customId.includes('list_')) {
+        console.log(`⚠️ [DEPRECATED BACK] Using old back_to_search handler`);
+        return; // Skip old handler
       }
       
       // Back from servers to movie list (newmovies)
