@@ -76,8 +76,18 @@ function loadConfig() {
 }
 
 function saveConfig() {
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-  console.log('✅ Config đã được lưu vào config.json');
+  try {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    console.log(`✅ Config đã được lưu vào ${CONFIG_FILE}`);
+    console.log(`📊 Hiện tại có ${config.movieUpdate?.channels?.length || 0} kênh movie update`);
+    if (config.movieUpdate?.channels?.length > 0) {
+      config.movieUpdate.channels.forEach((ch, idx) => {
+        console.log(`   ${idx + 1}. ${ch.name} (${ch.id})`);
+      });
+    }
+  } catch (error) {
+    console.error(`❌ Lỗi lưu config: ${error.message}`);
+  }
 }
 
 // Load notified movies from file
@@ -361,14 +371,19 @@ client.once('ready', async () => {
         return;
       }
 
-      console.log(`✅ Movie update enabled. Fetching ${config.movieUpdate.channels.length} channels...`);
+      console.log(`✅ Movie update enabled. Configured channels:`);
+      config.movieUpdate.channels.forEach((ch, idx) => {
+        console.log(`   ${idx + 1}. ${ch.name} (${ch.id})`);
+      });
 
       // Fetch all channels
       const channels = [];
       for (const channelConfig of config.movieUpdate.channels) {
+        console.log(`🔍 Fetching channel: ${channelConfig.id}...`);
         const channel = await client.channels.fetch(channelConfig.id).catch(() => null);
         if (channel) {
           channels.push(channel);
+          console.log(`✅ Successfully fetched: ${channel.name} (${channel.id})`);
         } else {
           console.warn(`⚠️ Could not fetch channel ${channelConfig.id}`);
         }
@@ -1520,21 +1535,28 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       if (command === 'set-movie-update-channel') {
+        console.log(`\n🔧 Processing set-movie-update-channel command...`);
         const channel = interaction.options.getChannel('channel');
         const enabled = interaction.options.getBoolean('enabled') ?? true;
 
+        console.log(`📺 Channel: ${channel?.name} (${channel?.id}), Enabled: ${enabled}`);
+
         // Initialize movieUpdate config if doesn't exist
         if (!config.movieUpdate) {
+          console.log(`📝 Initializing movieUpdate config...`);
           config.movieUpdate = {
             channels: [],
-            enabled: false
+            enabled: true
           };
         }
 
         // Ensure channels array exists
         if (!config.movieUpdate.channels) {
+          console.log(`📝 Initializing channels array...`);
           config.movieUpdate.channels = [];
         }
+
+        console.log(`📊 Current channels before: ${config.movieUpdate.channels.length}`);
 
         // Check if channel already exists
         const channelExists = config.movieUpdate.channels.some(c => c.id === channel.id);
@@ -1548,6 +1570,7 @@ client.on('interactionCreate', async (interaction) => {
               guildId: interaction.guildId
             });
             console.log(`✅ Added movie notification channel: ${channel.name} (${channel.id})`);
+            console.log(`📊 Current channels after: ${config.movieUpdate.channels.length}`);
           } else {
             console.log(`⚠️ Channel already in notification list: ${channel.name} (${channel.id})`);
           }
@@ -1555,10 +1578,17 @@ client.on('interactionCreate', async (interaction) => {
           // Remove channel from list
           config.movieUpdate.channels = config.movieUpdate.channels.filter(c => c.id !== channel.id);
           console.log(`✅ Removed movie notification channel: ${channel.name} (${channel.id})`);
+          console.log(`📊 Current channels after: ${config.movieUpdate.channels.length}`);
         }
 
+        // ALWAYS enable movieUpdate if we have channels
         config.movieUpdate.enabled = config.movieUpdate.channels.length > 0;
+        console.log(`💾 Saving config with ${config.movieUpdate.channels.length} channels... (enabled: ${config.movieUpdate.enabled})`);
+        console.log(`📋 Channels:`, JSON.stringify(config.movieUpdate.channels, null, 2));
+        console.log(`📝 CONFIG_FILE path: ${CONFIG_FILE}`);
+        console.log(`📝 Full config object:`, JSON.stringify(config, null, 2));
         saveConfig();
+        console.log(`✨ Save complete!\n`);
 
         const statusEmbed = new EmbedBuilder()
           .setColor(enabled ? '#10b981' : '#ef4444')
@@ -2639,7 +2669,11 @@ client.on('interactionCreate', async (interaction) => {
         
         console.log(`⬅️ [SEARCH PREV] User: ${userId}, Query: ${searchQuery}, Page: ${currentPage} -> ${nextPage}`);
         
-        await interaction.deferUpdate();
+        try {
+          await interaction.deferUpdate();
+        } catch (e) {
+          console.log('⚠️ Interaction already acknowledged, skipping deferUpdate');
+        }
         
         try {
           const results = await searchMovies(searchQuery);
@@ -2774,6 +2808,15 @@ client.on('interactionCreate', async (interaction) => {
 
           const buttonRows = [];
 
+          // Add detail buttons first
+          for (let row = 0; row < Math.ceil(buttons.length / 2); row++) {
+            const rowButtons = buttons.slice(row * 2, (row + 1) * 2);
+            if (rowButtons.length > 0) {
+              buttonRows.push(new ActionRowBuilder().addComponents(rowButtons));
+            }
+          }
+
+          // Add pagination buttons at the bottom
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
@@ -2812,7 +2855,11 @@ client.on('interactionCreate', async (interaction) => {
         
         console.log(`➡️ [SEARCH NEXT] User: ${userId}, Query: ${searchQuery}, Page: ${currentPage} -> ${nextPage}`);
         
-        await interaction.deferUpdate();
+        try {
+          await interaction.deferUpdate();
+        } catch (e) {
+          console.log('⚠️ Interaction already acknowledged, skipping deferUpdate');
+        }
         
         try {
           const results = await searchMovies(searchQuery);
@@ -2947,6 +2994,15 @@ client.on('interactionCreate', async (interaction) => {
 
           const buttonRows = [];
 
+          // Add detail buttons first
+          for (let row = 0; row < Math.ceil(buttons.length / 2); row++) {
+            const rowButtons = buttons.slice(row * 2, (row + 1) * 2);
+            if (rowButtons.length > 0) {
+              buttonRows.push(new ActionRowBuilder().addComponents(rowButtons));
+            }
+          }
+
+          // Add pagination buttons at the bottom
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
