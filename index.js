@@ -2939,6 +2939,22 @@ client.on('interactionCreate', async (interaction) => {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
 
+          // Discord limit: max 5 ActionRows per message
+          if (buttonRows.length > 5) {
+            console.warn(`⚠️ [SEARCH PREV] Too many rows: ${buttonRows.length}, truncating to 5`);
+            buttonRows = buttonRows.slice(0, 5);
+          }
+
+          // Validate all components before sending
+          for (let i = 0; i < buttonRows.length; i++) {
+            const row = buttonRows[i];
+            if (!row || !row.components) {
+              console.error(`❌ [SEARCH PREV] Invalid component at row ${i}`);
+              buttonRows.splice(i, 1);
+              i--;
+            }
+          }
+
           await interaction.editReply({
             embeds: [embed],
             components: buttonRows.length > 0 ? buttonRows : []
@@ -3125,6 +3141,22 @@ client.on('interactionCreate', async (interaction) => {
           // Add pagination buttons at the bottom
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+
+          // Discord limit: max 5 ActionRows per message
+          if (buttonRows.length > 5) {
+            console.warn(`⚠️ [COMPONENTS LIMIT] Too many rows: ${buttonRows.length}, truncating to 5`);
+            buttonRows = buttonRows.slice(0, 5);
+          }
+
+          // Validate all components before sending
+          for (let i = 0; i < buttonRows.length; i++) {
+            const row = buttonRows[i];
+            if (!row || !row.components) {
+              console.error(`❌ [INVALID COMPONENT] Row ${i} is invalid:`, row);
+              buttonRows.splice(i, 1);
+              i--;
+            }
           }
 
           await interaction.editReply({
