@@ -2309,7 +2309,7 @@ client.on('interactionCreate', async (interaction) => {
             );
           }
 
-          const buttonRows = [];
+          let buttonRows = [];
           for (let i = 0; i < buttons.length; i += 5) {
             buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
           }
@@ -2317,11 +2317,27 @@ client.on('interactionCreate', async (interaction) => {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
           
+          // Discord limit: max 5 ActionRows per message
+          if (buttonRows.length > 5) {
+            console.warn(`⚠️ [BACK SEARCH] Too many rows: ${buttonRows.length}, truncating to 5`);
+            buttonRows = buttonRows.slice(0, 5);
+          }
+
+          // Validate all components before sending
+          for (let i = 0; i < buttonRows.length; i++) {
+            const row = buttonRows[i];
+            if (!row || !row.components) {
+              console.error(`❌ [BACK SEARCH] Invalid component at row ${i}`);
+              buttonRows.splice(i, 1);
+              i--;
+            }
+          }
+          
           console.log(`🖱️ [BUTTON ROWS] Total rows: ${buttonRows.length}`);
           
           await interaction.editReply({
             embeds: [cached.embed],
-            components: buttonRows
+            components: buttonRows.length > 0 ? buttonRows : []
           });
           console.log(`✅ [SEARCH BACK SUCCESS] Message updated`);
         } catch (err) {
