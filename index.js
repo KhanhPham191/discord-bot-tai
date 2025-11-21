@@ -1402,7 +1402,7 @@ client.on('interactionCreate', async (interaction) => {
               // Add back button with cacheId
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_search_${returnCacheId}`)
+                  .setCustomId(`back_to_search_${returnCacheId}_${pageNum}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -2247,15 +2247,17 @@ client.on('interactionCreate', async (interaction) => {
 
       // Old back_to_search handler for compatibility
       if (customId.startsWith('back_to_search_') && !customId.includes('list_')) {
-        const afterPrefix = customId.replace('back_to_search_', '');
-        const returnCacheId = parseInt(afterPrefix);
+        const parts = customId.split('_');
+        // Format: back_to_search_${returnCacheId}_${pageNum}
+        const returnCacheId = parseInt(parts[3]);
+        const pageNum = parseInt(parts[4]);
         
-        console.log(`⬅️ [BACK SEARCH] User: ${userId}, CacheID: ${returnCacheId}`);
+        console.log(`⬅️ [BACK SEARCH] User: ${userId}, CacheID: ${returnCacheId}, Page: ${pageNum}`);
         
         await interaction.deferUpdate();
         
         try {
-          // Search for cache with matching cacheId and userId
+          // Search for cache with matching cacheId
           let cached = null;
           let foundKey = null;
           
