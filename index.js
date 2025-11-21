@@ -1379,8 +1379,8 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.deferReply();
         
         try {
-          const newMovies = await getNewMovies(1);
-          console.log(`✅ Found ${newMovies.length} new movies`);
+          const newMovies = await getNewMovies(page);
+          console.log(`✅ Found ${newMovies.length} new movies on page ${page}`);
           
           if (!newMovies || newMovies.length === 0) {
             await interaction.editReply(`❌ Không tìm thấy phim mới`);
@@ -1391,8 +1391,8 @@ client.on('interactionCreate', async (interaction) => {
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
-            .setTitle(`🎬 Phim Mới Cập Nhật`)
-            .setDescription(`Hiển thị **${movies.length}** phim mới nhất`)
+            .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${page}`)
+            .setDescription(`Hiển thị **${movies.length}** phim`)
             .setTimestamp();
 
           let description = '';
@@ -1452,34 +1452,67 @@ client.on('interactionCreate', async (interaction) => {
 
           embed.setDescription(description);
           
-          // Add cache for newmovies (similar to search)
+          // Create movie detail buttons
+          const buttons = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`newmovies_detail_${i}_${userId}_${page}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+
+          // Create pagination buttons
+          const paginationButtons = [];
+          if (page > 1) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`newmovies_prev_${page}_${userId}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(2)
+            );
+          }
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`newmovies_page_${page}_${userId}`)
+              .setLabel(`📄 Trang ${page}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`newmovies_next_${page}_${userId}`)
+              .setLabel('Trang sau ➡️')
+              .setStyle(2)
+          );
+
+          const buttonRows = [];
+          // Add movie buttons in rows of 5
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          // Add pagination buttons
+          if (paginationButtons.length > 0) {
+            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+
+          // Add cache for newmovies
           const newmoviesCacheId = ++cacheIdCounter;
-          searchCache.set(`newmovies_${userId}`, {
+          searchCache.set(`newmovies_${userId}_${page}`, {
             embed,
             components: buttonRows,
             movies,
             searchQuery: 'newmovies',
             type: 'newmovies',
             cacheId: newmoviesCacheId,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            page: page
           });
-          console.log(`✅ [NEWMOVIES CACHE] User ${userId} - CacheID: ${newmoviesCacheId}, Movies: ${movies.length}`);
-          
-          const buttons = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
-            const movieTitle = movies[i - 1].name.substring(0, 15);
-            buttons.push(
-              new ButtonBuilder()
-                .setCustomId(`newmovies_detail_${i}_${userId}_${newmoviesCacheId}`)
-                .setLabel(`${i}. ${movieTitle}`)
-                .setStyle(1)
-            );
-          }
-
-          const buttonRows = [];
-          for (let i = 0; i < buttons.length; i += 5) {
-            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-          }
+          console.log(`✅ [NEWMOVIES CACHE] User ${userId} - Page: ${page}, CacheID: ${newmoviesCacheId}, Movies: ${movies.length}`);
 
           const response = await interaction.editReply({ 
             embeds: [embed],
@@ -1496,10 +1529,10 @@ client.on('interactionCreate', async (interaction) => {
           movieCollector.on('collect', async (buttonInteraction) => {
             const parts = buttonInteraction.customId.split('_');
             const movieNum = parseInt(parts[2]);
-            const returnCacheId = parseInt(parts[4]);
+            const pageNum = parseInt(parts[4]);
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
-            console.log(`📍 [NEWMOVIES CLICK] MovieNum: ${movieNum}, CacheID: ${returnCacheId}`);
+            console.log(`📍 [NEWMOVIES CLICK] MovieNum: ${movieNum}, Page: ${pageNum}`);
 
             try {
               const detail = await getMovieDetail(slug);
@@ -1536,10 +1569,10 @@ client.on('interactionCreate', async (interaction) => {
                 );
               }
 
-              // Add back button with cacheId
+              // Add back button with page number
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_to_newmovies_${returnCacheId}`)
+                  .setCustomId(`back_to_newmovies_list_${pageNum}_${userId}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -2232,44 +2265,452 @@ client.on('interactionCreate', async (interaction) => {
       }
       
       // Back from servers to movie list (newmovies)
-      if (customId.startsWith('back_to_newmovies_')) {
-        const cacheId = parseInt(customId.replace('back_to_newmovies_', ''));
-        console.log(`⬅️ [BACK NEWMOVIES] User: ${userId}, CacheID: ${cacheId}`);
+      if (customId.startsWith('back_to_newmovies_list_')) {
+        const parts = customId.split('_');
+        const pageNum = parseInt(parts[4]);
+        console.log(`⬅️ [BACK NEWMOVIES] User: ${userId}, Page: ${pageNum}`);
         
         await interaction.deferUpdate();
         
         try {
-          // Try to get from cache using "newmovies_${userId}" as key
-          const cached = searchCache.get(`newmovies_${userId}`);
-          console.log(`📦 [NEWMOVIES CACHE CHECK] Found: ${!!cached}, CacheID Match: ${cached?.cacheId === cacheId}, StoredCacheID: ${cached?.cacheId}`);
+          const cacheKey = `newmovies_${userId}_${pageNum}`;
+          const cached = searchCache.get(cacheKey);
+          console.log(`📦 [NEWMOVIES CACHE CHECK] Key: ${cacheKey}, Found: ${!!cached}`);
           
-          if (cached && cached.type === 'newmovies' && cached.cacheId === cacheId) {
-            console.log(`✅ [NEWMOVIES CACHE HIT] Restoring ${cached.movies.length} movies`);
-            // Recreate buttons with current userId and cacheId
-            const newButtonRows = [];
-            for (let i = 1; i <= Math.min(10, cached.movies.length); i++) {
-              if ((i - 1) % 5 === 0) {
-                newButtonRows.push(new ActionRowBuilder());
-              }
-              const movieTitle = cached.movies[i - 1].name.substring(0, 15);
-              newButtonRows[Math.floor((i - 1) / 5)].addComponents(
-                new ButtonBuilder()
-                  .setCustomId(`newmovies_detail_${i}_${userId}_${cacheId}`)
-                  .setLabel(`${i}. ${movieTitle}`)
-                  .setStyle(1)
-              );
-            }
+          if (cached && cached.type === 'newmovies') {
+            console.log(`✅ [NEWMOVIES CACHE HIT] Restoring ${cached.movies.length} movies from page ${pageNum}`);
             
             await interaction.editReply({
               embeds: [cached.embed],
-              components: newButtonRows.length > 0 ? newButtonRows : []
+              components: cached.components
             });
             console.log(`✅ [NEWMOVIES BACK SUCCESS] Message updated`);
           } else {
-            console.log(`⚠️ [NEWMOVIES CACHE MISS] Cache not found or cacheId mismatch`);
+            console.log(`⚠️ [NEWMOVIES CACHE MISS] Cache not found for page ${pageNum}`);
+            // Fallback: reload the page
+            const newMovies = await getNewMovies(pageNum);
+            if (newMovies && newMovies.length > 0) {
+              const movies = newMovies.slice(0, 10);
+              
+              const embed = new EmbedBuilder()
+                .setColor('#e50914')
+                .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${pageNum}`)
+                .setDescription(`Hiển thị **${movies.length}** phim`)
+                .setTimestamp();
+
+              let description = '';
+              for (let idx = 0; idx < movies.length; idx++) {
+                const movie = movies[idx];
+                const slug = movie.slug || '';
+                const title = movie.name || movie.title || 'Unknown';
+                const englishTitle = movie.original_name || '';
+                const year = movie.year || 'N/A';
+                
+                let totalEpisodes = 'N/A';
+                let category = 'N/A';
+                try {
+                  if (slug) {
+                    const detail = await getMovieDetail(slug);
+                    if (detail) {
+                      if (detail.total_episodes) {
+                        totalEpisodes = detail.total_episodes.toString();
+                      }
+                      if (detail.category && detail.category[1]) {
+                        const categoryList = detail.category[1].list;
+                        if (categoryList && categoryList.length > 0) {
+                          category = categoryList[0].name;
+                        }
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.log(`⚠️ Could not fetch detail for ${slug}`);
+                }
+                
+                const movieNum = idx + 1;
+                let titleDisplay = `**${movieNum}. ${title}**`;
+                if (englishTitle && englishTitle !== title) {
+                  titleDisplay += ` (${englishTitle})`;
+                }
+                
+                description += `${titleDisplay}\n`;
+                
+                let infoLine = '';
+                if (year !== 'N/A') {
+                  infoLine += `📅 ${year}`;
+                }
+                if (category !== 'N/A') {
+                  infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
+                }
+                if (totalEpisodes !== 'N/A') {
+                  infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+                }
+                
+                if (infoLine) {
+                  description += infoLine + '\n';
+                }
+                
+                description += '\n';
+              }
+
+              embed.setDescription(description);
+              
+              const buttons = [];
+              for (let i = 1; i <= Math.min(10, movies.length); i++) {
+                const movieTitle = movies[i - 1].name.substring(0, 15);
+                buttons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`newmovies_detail_${i}_${userId}_${pageNum}`)
+                    .setLabel(`${i}. ${movieTitle}`)
+                    .setStyle(1)
+                );
+              }
+
+              const paginationButtons = [];
+              if (pageNum > 1) {
+                paginationButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`newmovies_prev_${pageNum}_${userId}`)
+                    .setLabel('⬅️ Trang trước')
+                    .setStyle(2)
+                );
+              }
+              
+              paginationButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`newmovies_page_${pageNum}_${userId}`)
+                  .setLabel(`📄 Trang ${pageNum}`)
+                  .setStyle(2)
+                  .setDisabled(true)
+              );
+              
+              paginationButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`newmovies_next_${pageNum}_${userId}`)
+                  .setLabel('Trang sau ➡️')
+                  .setStyle(2)
+              );
+
+              const buttonRows = [];
+              for (let i = 0; i < buttons.length; i += 5) {
+                buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+              }
+              if (paginationButtons.length > 0) {
+                buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+              }
+
+              await interaction.editReply({
+                embeds: [embed],
+                components: buttonRows.length > 0 ? buttonRows : []
+              });
+            }
           }
         } catch (err) {
           console.error('Error back to newmovies:', err);
+        }
+        return;
+      }
+
+      // Newmovies pagination - Previous page
+      if (customId.startsWith('newmovies_prev_')) {
+        const parts = customId.split('_');
+        const currentPage = parseInt(parts[2]);
+        const nextPage = currentPage - 1;
+        
+        console.log(`⬅️ [NEWMOVIES PREV] User: ${userId}, Page: ${currentPage} -> ${nextPage}`);
+        
+        await interaction.deferUpdate();
+        
+        try {
+          const newMovies = await getNewMovies(nextPage);
+          console.log(`✅ Found ${newMovies.length} movies on page ${nextPage}`);
+          
+          if (!newMovies || newMovies.length === 0) {
+            console.log(`❌ No movies on page ${nextPage}`);
+            return;
+          }
+
+          const movies = newMovies.slice(0, 10);
+          
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${nextPage}`)
+            .setDescription(`Hiển thị **${movies.length}** phim`)
+            .setTimestamp();
+
+          let description = '';
+          for (let idx = 0; idx < movies.length; idx++) {
+            const movie = movies[idx];
+            const slug = movie.slug || '';
+            const title = movie.name || movie.title || 'Unknown';
+            const englishTitle = movie.original_name || '';
+            const year = movie.year || 'N/A';
+            
+            let totalEpisodes = 'N/A';
+            let category = 'N/A';
+            try {
+              if (slug) {
+                const detail = await getMovieDetail(slug);
+                if (detail) {
+                  if (detail.total_episodes) {
+                    totalEpisodes = detail.total_episodes.toString();
+                  }
+                  if (detail.category && detail.category[1]) {
+                    const categoryList = detail.category[1].list;
+                    if (categoryList && categoryList.length > 0) {
+                      category = categoryList[0].name;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.log(`⚠️ Could not fetch detail for ${slug}`);
+            }
+            
+            const movieNum = idx + 1;
+            let titleDisplay = `**${movieNum}. ${title}**`;
+            if (englishTitle && englishTitle !== title) {
+              titleDisplay += ` (${englishTitle})`;
+            }
+            
+            description += `${titleDisplay}\n`;
+            
+            let infoLine = '';
+            if (year !== 'N/A') {
+              infoLine += `📅 ${year}`;
+            }
+            if (category !== 'N/A') {
+              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
+            }
+            if (totalEpisodes !== 'N/A') {
+              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+            }
+            
+            if (infoLine) {
+              description += infoLine + '\n';
+            }
+            
+            description += '\n';
+          }
+
+          embed.setDescription(description);
+          
+          // Create movie detail buttons
+          const buttons = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`newmovies_detail_${i}_${userId}_${nextPage}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+
+          // Create pagination buttons
+          const paginationButtons = [];
+          if (nextPage > 1) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`newmovies_prev_${nextPage}_${userId}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(2)
+            );
+          }
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`newmovies_page_${nextPage}_${userId}`)
+              .setLabel(`📄 Trang ${nextPage}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`newmovies_next_${nextPage}_${userId}`)
+              .setLabel('Trang sau ➡️')
+              .setStyle(2)
+          );
+
+          const buttonRows = [];
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          if (paginationButtons.length > 0) {
+            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+
+          await interaction.editReply({
+            embeds: [embed],
+            components: buttonRows.length > 0 ? buttonRows : []
+          });
+          
+          const newmoviesCacheId = ++cacheIdCounter;
+          searchCache.set(`newmovies_${userId}_${nextPage}`, {
+            embed,
+            components: buttonRows,
+            movies,
+            searchQuery: 'newmovies',
+            type: 'newmovies',
+            cacheId: newmoviesCacheId,
+            timestamp: Date.now(),
+            page: nextPage
+          });
+        } catch (err) {
+          console.error('Error newmovies prev:', err);
+        }
+        return;
+      }
+
+      // Newmovies pagination - Next page
+      if (customId.startsWith('newmovies_next_')) {
+        const parts = customId.split('_');
+        const currentPage = parseInt(parts[2]);
+        const nextPage = currentPage + 1;
+        
+        console.log(`➡️ [NEWMOVIES NEXT] User: ${userId}, Page: ${currentPage} -> ${nextPage}`);
+        
+        await interaction.deferUpdate();
+        
+        try {
+          const newMovies = await getNewMovies(nextPage);
+          console.log(`✅ Found ${newMovies.length} movies on page ${nextPage}`);
+          
+          if (!newMovies || newMovies.length === 0) {
+            console.log(`❌ No movies on page ${nextPage}`);
+            return;
+          }
+
+          const movies = newMovies.slice(0, 10);
+          
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${nextPage}`)
+            .setDescription(`Hiển thị **${movies.length}** phim`)
+            .setTimestamp();
+
+          let description = '';
+          for (let idx = 0; idx < movies.length; idx++) {
+            const movie = movies[idx];
+            const slug = movie.slug || '';
+            const title = movie.name || movie.title || 'Unknown';
+            const englishTitle = movie.original_name || '';
+            const year = movie.year || 'N/A';
+            
+            let totalEpisodes = 'N/A';
+            let category = 'N/A';
+            try {
+              if (slug) {
+                const detail = await getMovieDetail(slug);
+                if (detail) {
+                  if (detail.total_episodes) {
+                    totalEpisodes = detail.total_episodes.toString();
+                  }
+                  if (detail.category && detail.category[1]) {
+                    const categoryList = detail.category[1].list;
+                    if (categoryList && categoryList.length > 0) {
+                      category = categoryList[0].name;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.log(`⚠️ Could not fetch detail for ${slug}`);
+            }
+            
+            const movieNum = idx + 1;
+            let titleDisplay = `**${movieNum}. ${title}**`;
+            if (englishTitle && englishTitle !== title) {
+              titleDisplay += ` (${englishTitle})`;
+            }
+            
+            description += `${titleDisplay}\n`;
+            
+            let infoLine = '';
+            if (year !== 'N/A') {
+              infoLine += `📅 ${year}`;
+            }
+            if (category !== 'N/A') {
+              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
+            }
+            if (totalEpisodes !== 'N/A') {
+              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+            }
+            
+            if (infoLine) {
+              description += infoLine + '\n';
+            }
+            
+            description += '\n';
+          }
+
+          embed.setDescription(description);
+          
+          // Create movie detail buttons
+          const buttons = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`newmovies_detail_${i}_${userId}_${nextPage}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+
+          // Create pagination buttons
+          const paginationButtons = [];
+          if (nextPage > 1) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`newmovies_prev_${nextPage}_${userId}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(2)
+            );
+          }
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`newmovies_page_${nextPage}_${userId}`)
+              .setLabel(`📄 Trang ${nextPage}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`newmovies_next_${nextPage}_${userId}`)
+              .setLabel('Trang sau ➡️')
+              .setStyle(2)
+          );
+
+          const buttonRows = [];
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          if (paginationButtons.length > 0) {
+            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+
+          await interaction.editReply({
+            embeds: [embed],
+            components: buttonRows.length > 0 ? buttonRows : []
+          });
+          
+          const newmoviesCacheId = ++cacheIdCounter;
+          searchCache.set(`newmovies_${userId}_${nextPage}`, {
+            embed,
+            components: buttonRows,
+            movies,
+            searchQuery: 'newmovies',
+            type: 'newmovies',
+            cacheId: newmoviesCacheId,
+            timestamp: Date.now(),
+            page: nextPage
+          });
+        } catch (err) {
+          console.error('Error newmovies next:', err);
         }
         return;
       }
