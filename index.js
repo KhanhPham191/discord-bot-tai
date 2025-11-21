@@ -9,10 +9,6 @@ const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpiso
 // Import football functions
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
 
-// Import game functions
-const { handleGameStats, handleWeaponSelect, handleNPCSelect, handleBossSelect, handleSkillSelect, handleItemSelect, showAllWeapons, showAllNPCs, showAllBosses, showAllSkills, showAllItems } = require('./game');
-const { createSeedData } = require('./game-scraper');
-
 // Load .env file - required for API keys
 require('dotenv').config();
 
@@ -330,31 +326,7 @@ async function registerSlashCommands() {
       .addBooleanOption(option =>
         option.setName('enabled')
           .setDescription('Bật/tắt tính năng thông báo phim update')
-          .setRequired(false)),
-
-    new SlashCommandBuilder()
-      .setName('weapons')
-      .setDescription('⚔️ Xem tất cả vũ khí (dropdown)'),
-    
-    new SlashCommandBuilder()
-      .setName('npcs')
-      .setDescription('👤 Xem tất cả nhân vật (dropdown)'),
-    
-    new SlashCommandBuilder()
-      .setName('bosses')
-      .setDescription('👹 Xem tất cả boss (dropdown)'),
-    
-    new SlashCommandBuilder()
-      .setName('skills')
-      .setDescription('✨ Xem tất cả kỹ năng (dropdown)'),
-    
-    new SlashCommandBuilder()
-      .setName('items')
-      .setDescription('📦 Xem tất cả vật phẩm (dropdown)'),
-    
-    new SlashCommandBuilder()
-      .setName('gamestats')
-      .setDescription('🎮 Xem thống kê database Where Winds Meet')
+          .setRequired(false))
   ];
 
   try {
@@ -1600,41 +1572,6 @@ client.on('interactionCreate', async (interaction) => {
           .setTimestamp();
 
         await interaction.reply({ embeds: [statusEmbed] });
-        return;
-      }
-
-      if (command === 'weapons') {
-        const { showAllWeapons } = require('./game');
-        await showAllWeapons(interaction, 0);
-        return;
-      }
-
-      if (command === 'npcs') {
-        const { showAllNPCs } = require('./game');
-        await showAllNPCs(interaction, 0);
-        return;
-      }
-
-      if (command === 'bosses') {
-        const { showAllBosses } = require('./game');
-        await showAllBosses(interaction, 0);
-        return;
-      }
-
-      if (command === 'skills') {
-        const { showAllSkills } = require('./game');
-        await showAllSkills(interaction, 0);
-        return;
-      }
-
-      if (command === 'items') {
-        const { showAllItems } = require('./game');
-        await showAllItems(interaction, 0);
-        return;
-      }
-
-      if (command === 'gamestats') {
-        await handleGameStats(interaction);
         return;
       }
     } catch (error) {
@@ -3035,37 +2972,6 @@ client.on('interactionCreate', async (interaction) => {
           console.log(`✅ [SEARCH NEXT CACHE] Page: ${nextPage}/${totalPages}, CacheID: ${cacheId}, Movies: ${movies.length}`);
         } catch (err) {
           console.error('Error search next:', err);
-        }
-        return;
-      }
-
-      // Game pagination buttons
-      if (customId.startsWith('game_page_')) {
-        const parts = customId.split('_');
-        const action = parts[2]; // prev, next, or info
-        const type = parts[3]; // weapons, npcs, bosses, skills, items
-        const currentPage = parseInt(parts[4]);
-
-        let nextPage = currentPage;
-        if (action === 'next') nextPage = currentPage + 1;
-        if (action === 'prev') nextPage = currentPage - 1;
-
-        await interaction.deferUpdate();
-
-        try {
-          if (type === 'weapons') {
-            await showAllWeapons(interaction, nextPage);
-          } else if (type === 'npcs') {
-            await showAllNPCs(interaction, nextPage);
-          } else if (type === 'bosses') {
-            await showAllBosses(interaction, nextPage);
-          } else if (type === 'skills') {
-            await showAllSkills(interaction, nextPage);
-          } else if (type === 'items') {
-            await showAllItems(interaction, nextPage);
-          }
-        } catch (err) {
-          console.error('❌ Lỗi pagination game:', err);
         }
         return;
       }
