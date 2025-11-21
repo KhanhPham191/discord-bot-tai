@@ -298,7 +298,11 @@ async function registerSlashCommands() {
       .addStringOption(option =>
         option.setName('name')
           .setDescription('Tên phim (gõ "help" để xem chi tiết)')
-          .setRequired(true)),
+          .setRequired(true))
+      .addIntegerOption(option =>
+        option.setName('page')
+          .setDescription('Số trang (mặc định: 1)')
+          .setRequired(false)),
     
     new SlashCommandBuilder()
       .setName('newmovies')
@@ -1127,21 +1131,23 @@ client.on('interactionCreate', async (interaction) => {
 
       if (command === 'search') {
         const searchQuery = interaction.options.getString('name');
+        const page = interaction.options.getInteger('page') || 1;
         
         if (searchQuery.toLowerCase() === 'help') {
           const helpText = `
 📌 **Hướng Dẫn Lệnh Tìm Phim**
 
 **Cú pháp:**
-\`/search <tên phim>\`
+\`/search <tên phim> [page]\`
 
 **Ví dụ:**
 • \`/search avatar\` - Tìm phim "avatar"
-• \`/search mưa đỏ\` - Tìm phim "mưa đỏ"
-• \`/search the marvel\` - Tìm phim "the marvel"
+• \`/search mưa đỏ page:2\` - Tìm "mưa đỏ" trang 2
+• \`/search the marvel page:1\` - Tìm "the marvel"
 
 **Tính năng:**
-✅ Hiển thị tối đa 10 kết quả
+✅ Hiển thị tối đa 10 kết quả/trang
+✅ Hỗ trợ phân trang (trang trước/sau)
 ✅ Hiển thị tên Việt + tên Anh + năm phát hành
 ✅ Click button để xem chi tiết
 ✅ Chọn server để xem danh sách tập
@@ -1149,7 +1155,7 @@ client.on('interactionCreate', async (interaction) => {
 ✅ Nút quay lại để điều hướng
 
 **Lệnh khác:**
-• \`/newmovies\` - Phim mới cập nhật
+• \`/newmovies [page]\` - Phim mới cập nhật
 • \`/help\` - Xem tất cả lệnh
 `;
           await interaction.reply(helpText);
@@ -1165,13 +1171,26 @@ client.on('interactionCreate', async (interaction) => {
             await interaction.editReply(`❌ Không tìm thấy phim: **${searchQuery}**`);
             return;
           }
+
+          // Calculate pagination
+          const itemsPerPage = 10;
+          const totalResults = results.length;
+          const totalPages = Math.ceil(totalResults / itemsPerPage);
           
-          const movies = results.slice(0, 10);
+          // Validate page number
+          if (page < 1 || page > totalPages) {
+            await interaction.editReply(`❌ Trang không hợp lệ. Có **${totalPages}** trang tìm kiếm`);
+            return;
+          }
+          
+          const startIdx = (page - 1) * itemsPerPage;
+          const endIdx = startIdx + itemsPerPage;
+          const movies = results.slice(startIdx, endIdx);
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
-            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}"`)
-            .setDescription(`Tìm thấy **${movies.length}** phim`)
+            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${page}/${totalPages}`)
+            .setDescription(`Tìm thấy **${totalResults}** phim | Hiển thị **${movies.length}** phim`)
             .setTimestamp();
           
           let description = '';
@@ -1203,7 +1222,7 @@ client.on('interactionCreate', async (interaction) => {
               console.log(`⚠️ Could not fetch detail for ${slug}`);
             }
             
-            const movieNum = idx + 1;
+            const movieNum = startIdx + idx + 1;
             let titleDisplay = `**${movieNum}. ${title}**`;
             if (englishTitle && englishTitle !== title) {
               titleDisplay += ` (${englishTitle})`;
@@ -1231,20 +1250,52 @@ client.on('interactionCreate', async (interaction) => {
           
           embed.setDescription(description);
           
+          // Create movie detail buttons
           const buttons = [];
           for (let i = 1; i <= Math.min(10, movies.length); i++) {
             const movieTitle = movies[i - 1].name.substring(0, 15);
             buttons.push(
               new ButtonBuilder()
-                .setCustomId(`search_detail_${i}_${userId}`)
+                .setCustomId(`search_detail_${i}_${userId}_${page}`)
                 .setLabel(`${i}. ${movieTitle}`)
                 .setStyle(1)
             );
           }
+
+          // Create pagination buttons
+          const paginationButtons = [];
+          if (page > 1) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_prev_${page}_${userId}_${searchQuery}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(2)
+            );
+          }
           
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`search_page_${page}_${userId}`)
+              .setLabel(`📄 Trang ${page}/${totalPages}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+          
+          if (page < totalPages) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_next_${page}_${userId}_${searchQuery}`)
+                .setLabel('Trang sau ➡️')
+                .setStyle(2)
+            );
+          }
+
           const buttonRows = [];
           for (let i = 0; i < buttons.length; i += 5) {
             buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          if (paginationButtons.length > 0) {
+            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
           
           const response = await interaction.editReply({ 
@@ -1253,18 +1304,22 @@ client.on('interactionCreate', async (interaction) => {
             fetchReply: true
           });
           
-          // Cache this search result for back button - use userId as key
+          // Cache this search result for back button
           const cacheId = ++cacheIdCounter;
-          searchCache.set(userId, {
+          const cacheKey = `search_${userId}_${page}_${searchQuery}`;
+          searchCache.set(cacheKey, {
             embed,
             components: buttonRows,
             movies,
+            allResults: results,
             searchQuery,
             type: 'search',
             cacheId,
+            page,
+            totalPages,
             timestamp: Date.now()
           });
-          console.log(`✅ [SEARCH CACHE] User ${userId} - CacheID: ${cacheId}, Movies: ${movies.length}, Query: ${searchQuery}`);
+          console.log(`✅ [SEARCH CACHE] User ${userId} - Page: ${page}/${totalPages}, CacheID: ${cacheId}, Movies: ${movies.length}, Query: ${searchQuery}`);
           
           // Store cache ID in each button so we can retrieve it later
           const updatedButtonRows = [];
@@ -1275,10 +1330,15 @@ client.on('interactionCreate', async (interaction) => {
             const movieTitle = movies[i - 1].name.substring(0, 15);
             updatedButtonRows[Math.floor((i - 1) / 5)].addComponents(
               new ButtonBuilder()
-                .setCustomId(`search_detail_${i}_${userId}_${cacheId}`)
+                .setCustomId(`search_detail_${i}_${userId}_${page}_${cacheId}`)
                 .setLabel(`${i}. ${movieTitle}`)
                 .setStyle(1)
             );
+          }
+          
+          // Add pagination buttons to updated rows
+          if (paginationButtons.length > 0) {
+            updatedButtonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
           
           await interaction.editReply({
@@ -1294,7 +1354,8 @@ client.on('interactionCreate', async (interaction) => {
           movieCollector.on('collect', async (buttonInteraction) => {
             const parts = buttonInteraction.customId.split('_');
             const movieNum = parseInt(parts[2]);
-            const returnCacheId = parseInt(parts[4]);
+            const pageNum = parseInt(parts[4]);
+            const returnCacheId = parseInt(parts[6]);
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
 
@@ -1327,13 +1388,13 @@ client.on('interactionCreate', async (interaction) => {
               for (let i = 0; i < detail.episodes.length; i++) {
                 serverButtons.push(
                   new ButtonBuilder()
-                    .setCustomId(`server_select_${i}_${slug}_${userId}_${returnCacheId}`)
+                    .setCustomId(`server_select_${i}_${slug}_${userId}`)
                     .setLabel(detail.episodes[i].server_name.substring(0, 20))
                     .setStyle(2) // Secondary style
                 );
               }
 
-              // Add back button - use cacheId from original search response
+              // Add back button with cacheId
               serverButtons.push(
                 new ButtonBuilder()
                   .setCustomId(`back_to_search_${returnCacheId}`)
@@ -2148,115 +2209,68 @@ client.on('interactionCreate', async (interaction) => {
       }
       
       // Back from servers to movie list (search)
-      if (customId.startsWith('back_to_search_')) {
-        const afterPrefix = customId.replace('back_to_search_', '');
-        const cacheId = parseInt(afterPrefix);
+      if (customId.startsWith('back_to_search_list_')) {
+        const parts = customId.split('_');
+        const pageNum = parseInt(parts[4]);
+        const searchQuery = parts.slice(5).join('_');
+        
+        console.log(`⬅️ [BACK SEARCH] User: ${userId}, Page: ${pageNum}, Query: ${searchQuery}`);
         
         await interaction.deferUpdate();
         
         try {
-          // Try to get from cache using userId as key
-          const cached = searchCache.get(userId);
+          const cacheKey = `search_${userId}_${pageNum}_${searchQuery}`;
+          const cached = searchCache.get(cacheKey);
+          console.log(`📦 [SEARCH CACHE CHECK] Key: ${cacheKey}, Found: ${!!cached}`);
           
-          if (cached && cached.type === 'search' && cached.cacheId === cacheId) {
-            // Recreate buttons with current userId and cacheId
-            const newButtonRows = [];
-            for (let i = 1; i <= Math.min(10, cached.movies.length); i++) {
-              if ((i - 1) % 5 === 0) {
-                newButtonRows.push(new ActionRowBuilder());
-              }
-              const movieTitle = cached.movies[i - 1].name.substring(0, 15);
-              newButtonRows[Math.floor((i - 1) / 5)].addComponents(
-                new ButtonBuilder()
-                  .setCustomId(`search_detail_${i}_${userId}_${cacheId}`)
-                  .setLabel(`${i}. ${movieTitle}`)
-                  .setStyle(1)
-              );
-            }
+          if (cached && cached.type === 'search') {
+            console.log(`✅ [SEARCH CACHE HIT] Restoring ${cached.movies.length} movies from page ${pageNum}`);
             
             await interaction.editReply({
               embeds: [cached.embed],
-              components: newButtonRows.length > 0 ? newButtonRows : []
+              components: cached.components
             });
-            console.log(`✅ [BACK SUCCESS] Message updated with ${cached.movies.length} movies`);
-            
-            // Create NEW collector for the restored buttons
-            const message = await interaction.fetchReply();
-            const movies = cached.movies;
-            const searchQuery = cached.searchQuery;
-            
-            const movieCollector = message.createMessageComponentCollector({
-              filter: (btn) => btn.user.id === userId && btn.customId.startsWith('search_detail_'),
-              time: 5 * 60 * 1000 // 5 minutes
-            });
-
-            movieCollector.on('collect', async (buttonInteraction) => {
-              const parts = buttonInteraction.customId.split('_');
-              const movieNum = parseInt(parts[2]);
-              const returnCacheId = parseInt(parts[4]);
-              console.log(`📍 [BUTTON CLICK] User: ${userId}, MovieNum: ${movieNum}, CacheID: ${returnCacheId}, CustomID: ${buttonInteraction.customId}`);
-              
-              const selectedMovie = movies[movieNum - 1];
-              const slug = selectedMovie.slug;
-
-              try {
-                const detail = await getMovieDetail(slug);
-                
-                if (!detail) {
-                  await buttonInteraction.reply({ content: '❌ Không thể lấy thông tin phim', flags: 64 });
-                  return;
-                }
-
-                // Show movie detail with server selection buttons
-                const movieDetail = new EmbedBuilder()
-                  .setColor('#e50914')
-                  .setTitle(`🎬 ${detail.name}`)
-                  .setThumbnail(detail.thumb_url)
-                  .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
-                  .addFields(
-                    { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
-                    { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
-                    { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
-                    { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
-                    { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
-                  )
-                  .setTimestamp()
-                  .setFooter({ text: 'Movie Detail' });
-
-                // Create server selection buttons
-                const serverButtons = [];
-                for (let i = 0; i < detail.episodes.length; i++) {
-                  serverButtons.push(
-                    new ButtonBuilder()
-                      .setCustomId(`server_select_${i}_${slug}_${userId}_${returnCacheId}`)
-                      .setLabel(detail.episodes[i].server_name.substring(0, 20))
-                      .setStyle(2) // Secondary style
-                  );
-                }
-
-                // Add back button - use cacheId from original search response
-                serverButtons.push(
-                  new ButtonBuilder()
-                    .setCustomId(`back_to_search_${returnCacheId}`)
-                    .setLabel('⬅️ Quay lại')
-                    .setStyle(4) // Danger style (red)
-                );
-
-                const serverRow = serverButtons.length > 0 ? new ActionRowBuilder().addComponents(serverButtons) : null;
-
-                await buttonInteraction.update({
-                  embeds: [movieDetail],
-                  components: serverRow ? [serverRow] : []
-                });
-              } catch (error) {
-                console.error('❌ Lỗi khi chọn phim:', error.message);
-                await buttonInteraction.reply({ content: '❌ Có lỗi xảy ra. Vui lòng thử lại!', flags: 64 });
-              }
-            });
+            console.log(`✅ [SEARCH BACK SUCCESS] Message updated`);
           } else {
-            // Cache expired or not found - do nothing (no error message)
-            console.log(`⚠️ [CACHE MISS] Cache not found or cacheId mismatch for user ${userId}`);
-            // Just keep the current message
+            console.log(`⚠️ [SEARCH CACHE MISS] Cache not found for page ${pageNum}`);
+          }
+        } catch (err) {
+          console.error('Error back to search:', err);
+        }
+        return;
+      }
+
+      // Old back_to_search handler for compatibility
+      if (customId.startsWith('back_to_search_') && !customId.includes('list_')) {
+        const afterPrefix = customId.replace('back_to_search_', '');
+        const returnCacheId = parseInt(afterPrefix);
+        
+        console.log(`⬅️ [BACK SEARCH] User: ${userId}, CacheID: ${returnCacheId}`);
+        
+        await interaction.deferUpdate();
+        
+        try {
+          // Find cache by searching through all caches with matching cacheId
+          let cached = null;
+          for (const [key, value] of searchCache.entries()) {
+            if (value.type === 'search' && value.cacheId === returnCacheId && key.startsWith(`search_${userId}`)) {
+              cached = value;
+              break;
+            }
+          }
+          
+          console.log(`📦 [SEARCH CACHE CHECK] Found: ${!!cached}, CacheID: ${returnCacheId}`);
+          
+          if (cached && cached.type === 'search') {
+            console.log(`✅ [SEARCH CACHE HIT] Restoring ${cached.movies.length} movies from page ${cached.page}`);
+            
+            await interaction.editReply({
+              embeds: [cached.embed],
+              components: cached.components
+            });
+            console.log(`✅ [SEARCH BACK SUCCESS] Message updated`);
+          } else {
+            console.log(`⚠️ [SEARCH CACHE MISS] Cache not found for cacheId ${returnCacheId}`);
           }
         } catch (err) {
           console.error('Error back to search:', err);
@@ -2711,6 +2725,338 @@ client.on('interactionCreate', async (interaction) => {
           });
         } catch (err) {
           console.error('Error newmovies next:', err);
+        }
+        return;
+      }
+
+      // Search pagination - Previous page
+      if (customId.startsWith('search_prev_')) {
+        const parts = customId.split('_');
+        const currentPage = parseInt(parts[2]);
+        const nextPage = currentPage - 1;
+        const searchQuery = parts.slice(4).join('_');
+        
+        console.log(`⬅️ [SEARCH PREV] User: ${userId}, Query: ${searchQuery}, Page: ${currentPage} -> ${nextPage}`);
+        
+        await interaction.deferUpdate();
+        
+        try {
+          const results = await searchMovies(searchQuery);
+          
+          if (!results || results.length === 0) {
+            console.log(`❌ No results for query: ${searchQuery}`);
+            return;
+          }
+
+          const itemsPerPage = 10;
+          const totalResults = results.length;
+          const totalPages = Math.ceil(totalResults / itemsPerPage);
+          
+          if (nextPage < 1) {
+            console.log(`❌ Invalid page ${nextPage}`);
+            return;
+          }
+          
+          const startIdx = (nextPage - 1) * itemsPerPage;
+          const endIdx = startIdx + itemsPerPage;
+          const movies = results.slice(startIdx, endIdx);
+          
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${nextPage}/${totalPages}`)
+            .setDescription(`Tìm thấy **${totalResults}** phim | Hiển thị **${movies.length}** phim`)
+            .setTimestamp();
+          
+          let description = '';
+          for (let idx = 0; idx < movies.length; idx++) {
+            const movie = movies[idx];
+            const slug = movie.slug || '';
+            const title = movie.name || movie.title || 'Unknown';
+            const englishTitle = movie.original_name || '';
+            const year = movie.year || 'N/A';
+            
+            let totalEpisodes = 'N/A';
+            let category = 'N/A';
+            try {
+              if (slug) {
+                const detail = await getMovieDetail(slug);
+                if (detail) {
+                  if (detail.total_episodes) {
+                    totalEpisodes = detail.total_episodes.toString();
+                  }
+                  if (detail.category && detail.category[1]) {
+                    const categoryList = detail.category[1].list;
+                    if (categoryList && categoryList.length > 0) {
+                      category = categoryList[0].name;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.log(`⚠️ Could not fetch detail for ${slug}`);
+            }
+            
+            const movieNum = startIdx + idx + 1;
+            let titleDisplay = `**${movieNum}. ${title}**`;
+            if (englishTitle && englishTitle !== title) {
+              titleDisplay += ` (${englishTitle})`;
+            }
+            
+            description += `${titleDisplay}\n`;
+            
+            let infoLine = '';
+            if (year !== 'N/A') {
+              infoLine += `📅 ${year}`;
+            }
+            if (category !== 'N/A') {
+              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
+            }
+            if (totalEpisodes !== 'N/A') {
+              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+            }
+            
+            if (infoLine) {
+              description += infoLine + '\n';
+            }
+            
+            description += '\n';
+          }
+          
+          embed.setDescription(description);
+          
+          const buttons = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_detail_${i}_${userId}_${nextPage}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+
+          const paginationButtons = [];
+          if (nextPage > 1) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_prev_${nextPage}_${userId}_${searchQuery}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(2)
+            );
+          }
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`search_page_${nextPage}_${userId}`)
+              .setLabel(`📄 Trang ${nextPage}/${totalPages}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+          
+          if (nextPage < totalPages) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_next_${nextPage}_${userId}_${searchQuery}`)
+                .setLabel('Trang sau ➡️')
+                .setStyle(2)
+            );
+          }
+
+          const buttonRows = [];
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          if (paginationButtons.length > 0) {
+            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+
+          await interaction.editReply({
+            embeds: [embed],
+            components: buttonRows.length > 0 ? buttonRows : []
+          });
+          
+          const cacheKey = `search_${userId}_${nextPage}_${searchQuery}`;
+          const cacheId = ++cacheIdCounter;
+          searchCache.set(cacheKey, {
+            embed,
+            components: buttonRows,
+            movies,
+            allResults: results,
+            searchQuery,
+            type: 'search',
+            cacheId,
+            page: nextPage,
+            totalPages,
+            timestamp: Date.now()
+          });
+        } catch (err) {
+          console.error('Error search prev:', err);
+        }
+        return;
+      }
+
+      // Search pagination - Next page
+      if (customId.startsWith('search_next_')) {
+        const parts = customId.split('_');
+        const currentPage = parseInt(parts[2]);
+        const nextPage = currentPage + 1;
+        const searchQuery = parts.slice(4).join('_');
+        
+        console.log(`➡️ [SEARCH NEXT] User: ${userId}, Query: ${searchQuery}, Page: ${currentPage} -> ${nextPage}`);
+        
+        await interaction.deferUpdate();
+        
+        try {
+          const results = await searchMovies(searchQuery);
+          
+          if (!results || results.length === 0) {
+            console.log(`❌ No results for query: ${searchQuery}`);
+            return;
+          }
+
+          const itemsPerPage = 10;
+          const totalResults = results.length;
+          const totalPages = Math.ceil(totalResults / itemsPerPage);
+          
+          if (nextPage > totalPages) {
+            console.log(`❌ Invalid page ${nextPage}`);
+            return;
+          }
+          
+          const startIdx = (nextPage - 1) * itemsPerPage;
+          const endIdx = startIdx + itemsPerPage;
+          const movies = results.slice(startIdx, endIdx);
+          
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${nextPage}/${totalPages}`)
+            .setDescription(`Tìm thấy **${totalResults}** phim | Hiển thị **${movies.length}** phim`)
+            .setTimestamp();
+          
+          let description = '';
+          for (let idx = 0; idx < movies.length; idx++) {
+            const movie = movies[idx];
+            const slug = movie.slug || '';
+            const title = movie.name || movie.title || 'Unknown';
+            const englishTitle = movie.original_name || '';
+            const year = movie.year || 'N/A';
+            
+            let totalEpisodes = 'N/A';
+            let category = 'N/A';
+            try {
+              if (slug) {
+                const detail = await getMovieDetail(slug);
+                if (detail) {
+                  if (detail.total_episodes) {
+                    totalEpisodes = detail.total_episodes.toString();
+                  }
+                  if (detail.category && detail.category[1]) {
+                    const categoryList = detail.category[1].list;
+                    if (categoryList && categoryList.length > 0) {
+                      category = categoryList[0].name;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.log(`⚠️ Could not fetch detail for ${slug}`);
+            }
+            
+            const movieNum = startIdx + idx + 1;
+            let titleDisplay = `**${movieNum}. ${title}**`;
+            if (englishTitle && englishTitle !== title) {
+              titleDisplay += ` (${englishTitle})`;
+            }
+            
+            description += `${titleDisplay}\n`;
+            
+            let infoLine = '';
+            if (year !== 'N/A') {
+              infoLine += `📅 ${year}`;
+            }
+            if (category !== 'N/A') {
+              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
+            }
+            if (totalEpisodes !== 'N/A') {
+              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
+            }
+            
+            if (infoLine) {
+              description += infoLine + '\n';
+            }
+            
+            description += '\n';
+          }
+          
+          embed.setDescription(description);
+          
+          const buttons = [];
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_detail_${i}_${userId}_${nextPage}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+
+          const paginationButtons = [];
+          if (nextPage > 1) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_prev_${nextPage}_${userId}_${searchQuery}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(2)
+            );
+          }
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`search_page_${nextPage}_${userId}`)
+              .setLabel(`📄 Trang ${nextPage}/${totalPages}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+          
+          if (nextPage < totalPages) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_next_${nextPage}_${userId}_${searchQuery}`)
+                .setLabel('Trang sau ➡️')
+                .setStyle(2)
+            );
+          }
+
+          const buttonRows = [];
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          if (paginationButtons.length > 0) {
+            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+
+          await interaction.editReply({
+            embeds: [embed],
+            components: buttonRows.length > 0 ? buttonRows : []
+          });
+          
+          const cacheKey = `search_${userId}_${nextPage}_${searchQuery}`;
+          const cacheId = ++cacheIdCounter;
+          searchCache.set(cacheKey, {
+            embed,
+            components: buttonRows,
+            movies,
+            allResults: results,
+            searchQuery,
+            type: 'search',
+            cacheId,
+            page: nextPage,
+            totalPages,
+            timestamp: Date.now()
+          });
+        } catch (err) {
+          console.error('Error search next:', err);
         }
         return;
       }
