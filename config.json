@@ -215,7 +215,13 @@
   },
   "allowedUsers": [],
   "movieUpdate": {
-    "channelId": "743938937172525067",
+    "channels": [
+      {
+        "id": "743938937172525067",
+        "name": "movie-updates",
+        "guildId": "694577581298810944"
+      }
+    ],
     "enabled": true
   }
 }

@@ -364,21 +364,31 @@ client.once('ready', async () => {
       const now = new Date().toLocaleString('vi-VN');
       console.log(`🔄 [${now}] Checking for movie updates...`);
       
-      // Check if movie update feature is enabled and channel is configured
-      if (!config.movieUpdate?.enabled || !config.movieUpdate?.channelId) {
-        console.log(`⚠️ Movie update not configured. Enabled: ${config.movieUpdate?.enabled}, Channel: ${config.movieUpdate?.channelId}`);
+      // Check if movie update feature is enabled and channels are configured
+      if (!config.movieUpdate?.enabled || !config.movieUpdate?.channels || config.movieUpdate.channels.length === 0) {
+        console.log(`⚠️ Movie update not configured or no channels set.`);
         return;
       }
 
-      console.log(`✅ Movie update enabled. Fetching channel ${config.movieUpdate.channelId}...`);
+      console.log(`✅ Movie update enabled. Fetching ${config.movieUpdate.channels.length} channels...`);
 
-      const channel = await client.channels.fetch(config.movieUpdate.channelId).catch(() => null);
-      if (!channel) {
-        console.error('❌ Could not fetch movie update channel');
+      // Fetch all channels
+      const channels = [];
+      for (const channelConfig of config.movieUpdate.channels) {
+        const channel = await client.channels.fetch(channelConfig.id).catch(() => null);
+        if (channel) {
+          channels.push(channel);
+        } else {
+          console.warn(`⚠️ Could not fetch channel ${channelConfig.id}`);
+        }
+      }
+
+      if (channels.length === 0) {
+        console.error('❌ Could not fetch any movie update channels');
         return;
       }
 
-      console.log(`✅ Channel fetched successfully. Getting new movies...`);
+      console.log(`✅ Fetched ${channels.length} channels successfully. Getting new movies...`);
 
       // Get new movies with timeout
       const newMovies = await Promise.race([
@@ -437,12 +447,18 @@ client.once('ready', async () => {
             .setFooter({ text: `Thông báo phim mới sẽ được update` })
             .setTimestamp();
 
-          await channel.send({ 
-            content: `🆕 **Phim mới được cập nhật!**`,
-            embeds: [movieEmbed] 
-          });
-
-          console.log(`✅ Sent notification for movie: ${detail.name}`);
+          // Send notification to all configured channels
+          for (const channel of channels) {
+            try {
+              await channel.send({ 
+                content: `🆕 **Phim mới được cập nhật!**`,
+                embeds: [movieEmbed] 
+              });
+              console.log(`✅ Sent notification to ${channel.name}: ${detail.name}`);
+            } catch (e) {
+              console.error(`⚠️ Error sending to channel ${channel.name}:`, e.message);
+            }
+          }
         } catch (e) {
           console.error(`⚠️ Error getting detail for ${movie.slug}:`, e.message);
         }
@@ -1568,31 +1584,52 @@ client.on('interactionCreate', async (interaction) => {
         // Initialize movieUpdate config if doesn't exist
         if (!config.movieUpdate) {
           config.movieUpdate = {
-            channelId: null,
+            channels: [],
             enabled: false
           };
         }
 
-        // Update config
-        config.movieUpdate.channelId = channel.id;
-        config.movieUpdate.enabled = enabled;
-        saveConfig();
+        // Ensure channels array exists
+        if (!config.movieUpdate.channels) {
+          config.movieUpdate.channels = [];
+        }
 
-        // Update the global constant (for immediate effect)
-        // We'll add a check in the auto-update interval
+        // Check if channel already exists
+        const channelExists = config.movieUpdate.channels.some(c => c.id === channel.id);
+        
+        if (enabled) {
+          // Add channel if not exists
+          if (!channelExists) {
+            config.movieUpdate.channels.push({
+              id: channel.id,
+              name: channel.name,
+              guildId: interaction.guildId
+            });
+            console.log(`✅ Added movie notification channel: ${channel.name} (${channel.id})`);
+          } else {
+            console.log(`⚠️ Channel already in notification list: ${channel.name} (${channel.id})`);
+          }
+        } else {
+          // Remove channel from list
+          config.movieUpdate.channels = config.movieUpdate.channels.filter(c => c.id !== channel.id);
+          console.log(`✅ Removed movie notification channel: ${channel.name} (${channel.id})`);
+        }
+
+        config.movieUpdate.enabled = config.movieUpdate.channels.length > 0;
+        saveConfig();
 
         const statusEmbed = new EmbedBuilder()
           .setColor(enabled ? '#10b981' : '#ef4444')
           .setTitle('⚙️ Thiết lập kênh thông báo phim update')
           .addFields(
             { name: '📺 Kênh được chọn', value: `${channel} (${channel.id})`, inline: false },
-            { name: '🔄 Trạng thái', value: enabled ? '✅ Đã bật' : '❌ Tắt', inline: false }
+            { name: '🔄 Thao tác', value: enabled ? '✅ Thêm vào danh sách' : '❌ Xóa khỏi danh sách', inline: false },
+            { name: '📊 Tổng channels', value: `${config.movieUpdate.channels.length}`, inline: false }
           )
-          .setFooter({ text: 'Bot sẽ gửi thông báo phim mới vào kênh này mỗi 30 phút' })
+          .setFooter({ text: 'Bot sẽ gửi thông báo phim mới vào tất cả channels đã thiết lập mỗi 30 phút' })
           .setTimestamp();
 
         await interaction.reply({ embeds: [statusEmbed] });
-        console.log(`✅ Movie update channel set to: ${channel.name} (${channel.id}), Enabled: ${enabled}`);
         return;
       }
 
