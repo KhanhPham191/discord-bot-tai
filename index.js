@@ -1682,6 +1682,62 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
+    // Search dropdowns
+    if (interaction.customId === 'weapon_select_search') {
+      const weaponId = parseInt(interaction.values[0].split('_')[1]);
+      const { getAllWeapons } = require('./game-scraper');
+      const { createWeaponEmbed } = require('./game');
+      const weapon = getAllWeapons().find(w => w.id === weaponId);
+      if (weapon) {
+        await interaction.reply({ embeds: [createWeaponEmbed(weapon)] });
+      }
+      return;
+    }
+
+    if (interaction.customId === 'npc_select_search') {
+      const npcId = parseInt(interaction.values[0].split('_')[1]);
+      const { getAllNPCs } = require('./game-scraper');
+      const { createNPCEmbed } = require('./game');
+      const npc = getAllNPCs().find(n => n.id === npcId);
+      if (npc) {
+        await interaction.reply({ embeds: [createNPCEmbed(npc)] });
+      }
+      return;
+    }
+
+    if (interaction.customId === 'boss_select_search') {
+      const bossId = parseInt(interaction.values[0].split('_')[1]);
+      const { getAllBosses } = require('./game-scraper');
+      const { createBossEmbed } = require('./game');
+      const boss = getAllBosses().find(b => b.id === bossId);
+      if (boss) {
+        await interaction.reply({ embeds: [createBossEmbed(boss)] });
+      }
+      return;
+    }
+
+    if (interaction.customId === 'skill_select_search') {
+      const skillId = parseInt(interaction.values[0].split('_')[1]);
+      const { getAllSkills } = require('./game-scraper');
+      const { createSkillEmbed } = require('./game');
+      const skill = getAllSkills().find(s => s.id === skillId);
+      if (skill) {
+        await interaction.reply({ embeds: [createSkillEmbed(skill)] });
+      }
+      return;
+    }
+
+    if (interaction.customId === 'item_select_search') {
+      const itemId = parseInt(interaction.values[0].split('_')[1]);
+      const { getAllItems } = require('./game-scraper');
+      const { createItemEmbed } = require('./game');
+      const item = getAllItems().find(i => i.id === itemId);
+      if (item) {
+        await interaction.reply({ embeds: [createItemEmbed(item)] });
+      }
+      return;
+    }
+
     if (interaction.customId === 'track_team_select') {
       const userId = interaction.user.id;
       const teamId = parseInt(interaction.values[0]);

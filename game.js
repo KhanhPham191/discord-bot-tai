@@ -87,7 +87,7 @@ async function handleWeaponSearch(interaction) {
 
   if (results.length === 0) {
     return interaction.reply({
-      content: `❌ No weapons found matching "${query}"`,
+      content: `❌ Không tìm thấy vũ khí "${query}"`,
       ephemeral: true
     });
   }
@@ -98,11 +98,25 @@ async function handleWeaponSearch(interaction) {
     });
   }
 
-  // Show first 5 results
-  const embeds = results.slice(0, 5).map(createWeaponEmbed);
+  // Multiple results - show dropdown
+  const options = results.slice(0, 25).map(w => ({
+    label: w.name,
+    value: `weapon_${w.id}`,
+    description: w.type
+  }));
+
+  const selectMenu = new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('weapon_select_search')
+        .setPlaceholder('Chọn vũ khí...')
+        .addOptions(options)
+    );
+
   return interaction.reply({
-    content: `🔍 Found ${results.length} weapons. Showing first 5:`,
-    embeds
+    content: `🔍 Tìm thấy ${results.length} vũ khí. Chọn từ dropdown:`,
+    components: [selectMenu],
+    ephemeral: false
   });
 }
 
@@ -124,10 +138,25 @@ async function handleNPCSearch(interaction) {
     });
   }
 
-  const embeds = results.slice(0, 5).map(createNPCEmbed);
+  // Multiple results - show dropdown
+  const options = results.slice(0, 25).map(n => ({
+    label: n.name,
+    value: `npc_${n.id}`,
+    description: n.role
+  }));
+
+  const selectMenu = new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('npc_select_search')
+        .setPlaceholder('Chọn nhân vật...')
+        .addOptions(options)
+    );
+
   return interaction.reply({
-    content: `🔍 Found ${results.length} NPCs. Showing first 5:`,
-    embeds
+    content: `🔍 Tìm thấy ${results.length} nhân vật. Chọn từ dropdown:`,
+    components: [selectMenu],
+    ephemeral: false
   });
 }
 
@@ -138,7 +167,7 @@ async function handleBossSearch(interaction) {
 
   if (results.length === 0) {
     return interaction.reply({
-      content: `❌ No bosses found matching "${query}"`,
+      content: `❌ Không tìm thấy boss "${query}"`,
       ephemeral: true
     });
   }
@@ -149,10 +178,25 @@ async function handleBossSearch(interaction) {
     });
   }
 
-  const embeds = results.slice(0, 5).map(createBossEmbed);
+  // Multiple results - show dropdown
+  const options = results.slice(0, 25).map(b => ({
+    label: b.name,
+    value: `boss_${b.id}`,
+    description: b.type || 'Boss'
+  }));
+
+  const selectMenu = new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('boss_select_search')
+        .setPlaceholder('Chọn boss...')
+        .addOptions(options)
+    );
+
   return interaction.reply({
-    content: `🔍 Found ${results.length} bosses. Showing first 5:`,
-    embeds
+    content: `🔍 Tìm thấy ${results.length} boss. Chọn từ dropdown:`,
+    components: [selectMenu],
+    ephemeral: false
   });
 }
 
@@ -163,7 +207,7 @@ async function handleSkillSearch(interaction) {
 
   if (results.length === 0) {
     return interaction.reply({
-      content: `❌ No skills found matching "${query}"`,
+      content: `❌ Không tìm thấy kỹ năng "${query}"`,
       ephemeral: true
     });
   }
@@ -174,10 +218,25 @@ async function handleSkillSearch(interaction) {
     });
   }
 
-  const embeds = results.slice(0, 5).map(createSkillEmbed);
+  // Multiple results - show dropdown
+  const options = results.slice(0, 25).map(s => ({
+    label: s.name,
+    value: `skill_${s.id}`,
+    description: s.type
+  }));
+
+  const selectMenu = new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('skill_select_search')
+        .setPlaceholder('Chọn kỹ năng...')
+        .addOptions(options)
+    );
+
   return interaction.reply({
-    content: `🔍 Found ${results.length} skills. Showing first 5:`,
-    embeds
+    content: `🔍 Tìm thấy ${results.length} kỹ năng. Chọn từ dropdown:`,
+    components: [selectMenu],
+    ephemeral: false
   });
 }
 
@@ -188,7 +247,7 @@ async function handleItemSearch(interaction) {
 
   if (results.length === 0) {
     return interaction.reply({
-      content: `❌ No items found matching "${query}"`,
+      content: `❌ Không tìm thấy vật phẩm "${query}"`,
       ephemeral: true
     });
   }
@@ -199,10 +258,25 @@ async function handleItemSearch(interaction) {
     });
   }
 
-  const embeds = results.slice(0, 5).map(createItemEmbed);
+  // Multiple results - show dropdown
+  const options = results.slice(0, 25).map(i => ({
+    label: i.name,
+    value: `item_${i.id}`,
+    description: i.type
+  }));
+
+  const selectMenu = new ActionRowBuilder()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('item_select_search')
+        .setPlaceholder('Chọn vật phẩm...')
+        .addOptions(options)
+    );
+
   return interaction.reply({
-    content: `🔍 Found ${results.length} items. Showing first 5:`,
-    embeds
+    content: `🔍 Tìm thấy ${results.length} vật phẩm. Chọn từ dropdown:`,
+    components: [selectMenu],
+    ephemeral: false
   });
 }
 
@@ -621,7 +695,12 @@ module.exports = {
   showAllSkills,
   showAllItems,
   handleGameCommand,
-  handleGameTypeSelect
+  handleGameTypeSelect,
+  createWeaponEmbed,
+  createNPCEmbed,
+  createBossEmbed,
+  createSkillEmbed,
+  createItemEmbed
 };
 
 // Unified game command - choose type first
