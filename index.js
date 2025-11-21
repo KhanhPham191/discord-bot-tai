@@ -3137,9 +3137,9 @@ client.on('interactionCreate', async (interaction) => {
 
           let buttonRows = [];
 
-          // Add detail buttons first
-          for (let row = 0; row < Math.ceil(buttons.length / 2); row++) {
-            const rowButtons = buttons.slice(row * 2, (row + 1) * 2);
+          // Add detail buttons first - 5 buttons per row to avoid exceeding 5 ActionRow limit
+          for (let row = 0; row < Math.ceil(buttons.length / 5); row++) {
+            const rowButtons = buttons.slice(row * 5, (row + 1) * 5);
             if (rowButtons.length > 0) {
               buttonRows.push(new ActionRowBuilder().addComponents(rowButtons));
             }
