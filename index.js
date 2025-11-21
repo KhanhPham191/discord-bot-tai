@@ -338,6 +338,46 @@ async function registerSlashCommands() {
       .setDescription('🎮 Chơi Where Winds Meet - Chọn item từ dropdown'),
     
     new SlashCommandBuilder()
+      .setName('weapon')
+      .setDescription('⚔️ Tìm vũ khí')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên vũ khí')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('npc')
+      .setDescription('👤 Tìm nhân vật')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên nhân vật')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('boss')
+      .setDescription('👹 Tìm boss')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên boss')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('skill')
+      .setDescription('✨ Tìm kỹ năng')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên kỹ năng')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
+      .setName('item')
+      .setDescription('📦 Tìm vật phẩm')
+      .addStringOption(option =>
+        option.setName('name')
+          .setDescription('Tên vật phẩm')
+          .setRequired(true)),
+    
+    new SlashCommandBuilder()
       .setName('gamestats')
       .setDescription('🎮 Xem thống kê database Where Winds Meet')
   ];
@@ -1591,6 +1631,31 @@ client.on('interactionCreate', async (interaction) => {
       // Game command - unified single command
       if (command === 'game') {
         await handleGameCommand(interaction);
+        return;
+      }
+
+      if (command === 'weapon') {
+        await handleWeaponSearch(interaction);
+        return;
+      }
+
+      if (command === 'npc') {
+        await handleNPCSearch(interaction);
+        return;
+      }
+
+      if (command === 'boss') {
+        await handleBossSearch(interaction);
+        return;
+      }
+
+      if (command === 'skill') {
+        await handleSkillSearch(interaction);
+        return;
+      }
+
+      if (command === 'item') {
+        await handleItemSearch(interaction);
         return;
       }
 
