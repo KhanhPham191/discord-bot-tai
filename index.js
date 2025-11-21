@@ -378,6 +378,26 @@ async function registerSlashCommands() {
           .setRequired(true)),
     
     new SlashCommandBuilder()
+      .setName('weapons')
+      .setDescription('⚔️ Xem tất cả vũ khí (dropdown)'),
+    
+    new SlashCommandBuilder()
+      .setName('npcs')
+      .setDescription('👤 Xem tất cả nhân vật (dropdown)'),
+    
+    new SlashCommandBuilder()
+      .setName('bosses')
+      .setDescription('👹 Xem tất cả boss (dropdown)'),
+    
+    new SlashCommandBuilder()
+      .setName('skills')
+      .setDescription('✨ Xem tất cả kỹ năng (dropdown)'),
+    
+    new SlashCommandBuilder()
+      .setName('items')
+      .setDescription('📦 Xem tất cả vật phẩm (dropdown)'),
+    
+    new SlashCommandBuilder()
       .setName('gamestats')
       .setDescription('🎮 Xem thống kê database Where Winds Meet')
   ];
@@ -1656,6 +1676,36 @@ client.on('interactionCreate', async (interaction) => {
 
       if (command === 'item') {
         await handleItemSearch(interaction);
+        return;
+      }
+
+      if (command === 'weapons') {
+        const { showAllWeapons } = require('./game');
+        await showAllWeapons(interaction, 0);
+        return;
+      }
+
+      if (command === 'npcs') {
+        const { showAllNPCs } = require('./game');
+        await showAllNPCs(interaction, 0);
+        return;
+      }
+
+      if (command === 'bosses') {
+        const { showAllBosses } = require('./game');
+        await showAllBosses(interaction, 0);
+        return;
+      }
+
+      if (command === 'skills') {
+        const { showAllSkills } = require('./game');
+        await showAllSkills(interaction, 0);
+        return;
+      }
+
+      if (command === 'items') {
+        const { showAllItems } = require('./game');
+        await showAllItems(interaction, 0);
         return;
       }
 
