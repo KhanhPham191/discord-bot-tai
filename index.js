@@ -32,6 +32,7 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 
 // Cache for search embeds and components (for back button)
 const searchCache = new Map(); // userId -> { embed, components, movies, searchQuery, cacheId, timestamp }
+const cacheIdIndex = new Map(); // cacheId -> cache object (for fast lookup)
 let cacheIdCounter = 0;
 const CACHE_TTL = 60 * 1000; // 60 seconds
 
@@ -45,6 +46,7 @@ setInterval(() => {
   for (const [key, value] of searchCache.entries()) {
     if (now - value.timestamp > CACHE_TTL) {
       searchCache.delete(key);
+      cacheIdIndex.delete(value.cacheId); // Also remove from index
     }
   }
 }, 30 * 1000); // Check every 30 seconds
@@ -1295,7 +1297,7 @@ client.on('interactionCreate', async (interaction) => {
           // Cache this search result for back button
           const cacheId = ++cacheIdCounter;
           const cacheKey = `search_${userId}_${page}_${searchQuery}`;
-          searchCache.set(cacheKey, {
+          const cacheData = {
             embed,
             components: buttonRows,
             movies,
@@ -1306,7 +1308,9 @@ client.on('interactionCreate', async (interaction) => {
             page,
             totalPages,
             timestamp: Date.now()
-          });
+          };
+          searchCache.set(cacheKey, cacheData);
+          cacheIdIndex.set(cacheId, cacheData);
           console.log(`✅ [SEARCH CACHE] User ${userId} - Page: ${page}/${totalPages}, CacheID: ${cacheId}, Movies: ${movies.length}, Query: ${searchQuery}`);
           
           // Store cache ID in each button so we can retrieve it later
@@ -1353,6 +1357,25 @@ client.on('interactionCreate', async (interaction) => {
             console.log(`🎬 [SELECTED MOVIE] Title: ${selectedMovie.name}, Slug: ${slug}`);
 
             try {
+              // IMPORTANT: Save cache BEFORE showing detail, so back button can find it
+              const cacheKey = `search_${userId}_${pageNum}_${searchQuery}`;
+              console.log(`💾 [SAVING CACHE FOR BACK BUTTON] Key: ${cacheKey}, CacheID: ${returnCacheId}`);
+              
+              const cacheData = {
+                embed: response.embeds[0],
+                components: buttonRows,
+                movies: movies,
+                allResults: results,
+                searchQuery,
+                type: 'search',
+                cacheId: returnCacheId,
+                page: pageNum,
+                totalPages: Math.ceil(results.length / 10),
+                timestamp: Date.now()
+              };
+              searchCache.set(cacheKey, cacheData);
+              cacheIdIndex.set(returnCacheId, cacheData);
+              
               const detail = await getMovieDetail(slug);
               
               if (!detail) {
@@ -2112,93 +2135,188 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.deferUpdate();
         
         try {
-          // Search for cache with matching cacheId
-          let cached = null;
-          let foundKey = null;
+          // Fast O(1) lookup using cacheIdIndex instead of looping
+          const cached = cacheIdIndex.get(returnCacheId);
           
-          console.log(`🔍 [SEARCHING CACHE] Looking for CacheID: ${returnCacheId}`);
-          console.log(`📦 [CACHE SIZE] Total caches: ${searchCache.size}`);
+          console.log(`🔍 [FAST CACHE LOOKUP] CacheID: ${returnCacheId}, Found: ${!!cached}`);
           
-          for (const [key, value] of searchCache.entries()) {
-            console.log(`  🔎 Checking cache key: ${key}, CacheID: ${value.cacheId}, Type: ${value.type}, Page: ${value.page}`);
-            if (value.type === 'search' && value.cacheId === returnCacheId) {
-              cached = value;
-              foundKey = key;
-              console.log(`  ✅ MATCH FOUND!`);
-              break;
-            }
+          if (!cached) {
+            console.log(`⚠️ [SEARCH CACHE MISS] Cache not found for cacheId ${returnCacheId}`);
+            await interaction.editReply({
+              content: '❌ Cache đã hết hạn hoặc không tìm thấy. Vui lòng tìm kiếm lại!',
+              components: []
+            });
+            return;
           }
           
-          console.log(`📦 [SEARCH CACHE CHECK] Key: ${foundKey}, Found: ${!!cached}, CacheID: ${returnCacheId}`);
+          console.log(`✅ [SEARCH CACHE HIT] Restoring ${cached.movies.length} movies from page ${cached.page}/${cached.totalPages}`);
           
-          if (cached && cached.type === 'search') {
-            console.log(`✅ [SEARCH CACHE HIT] Restoring ${cached.movies.length} movies from page ${cached.page}/${cached.totalPages}`);
-            
-            // Recreate buttons with proper IDs
-            const page = cached.page;
-            const movies = cached.movies;
-            const searchQuery = cached.searchQuery;
-            
-            console.log(`🎬 [RECREATING BUTTONS] Page: ${page}, Movies: ${movies.length}, Query: ${searchQuery}`);
-            
-            const buttons = [];
-            
-            for (let i = 1; i <= Math.min(10, movies.length); i++) {
-              const movieTitle = movies[i - 1].name.substring(0, 15);
-              buttons.push(
-                new ButtonBuilder()
-                  .setCustomId(`search_detail_${i}_${userId}_${page}_${returnCacheId}`)
-                  .setLabel(`${i}. ${movieTitle}`)
-                  .setStyle(1)
-              );
-            }
+          // Recreate buttons with proper IDs
+          const page = cached.page;
+          const movies = cached.movies;
+          const searchQuery = cached.searchQuery;
+          
+          console.log(`🎬 [RECREATING BUTTONS] Page: ${page}, Movies: ${movies.length}, Query: ${searchQuery}`);
+          
+          const buttons = [];
+          
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_detail_${i}_${userId}_${page}_${returnCacheId}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
 
-            // Add pagination buttons
-            const paginationButtons = [];
-            if (page > 1) {
-              paginationButtons.push(
-                new ButtonBuilder()
-                  .setCustomId(`search_prev_${page}_${userId}_${searchQuery}`)
-                  .setLabel('⬅️ Trang trước')
-                  .setStyle(2)
-              );
-            }
-            
+          // Add pagination buttons
+          const paginationButtons = [];
+          if (page > 1) {
             paginationButtons.push(
               new ButtonBuilder()
-                .setCustomId(`search_page_${page}_${userId}`)
-                .setLabel(`📄 Trang ${page}/${cached.totalPages}`)
+                .setCustomId(`search_prev_${page}_${userId}_${searchQuery}`)
+                .setLabel('⬅️ Trang trước')
                 .setStyle(2)
-                .setDisabled(true)
             );
-            
-            if (page < cached.totalPages) {
-              paginationButtons.push(
-                new ButtonBuilder()
-                  .setCustomId(`search_next_${page}_${userId}_${searchQuery}`)
-                  .setLabel('Trang sau ➡️')
-                  .setStyle(2)
-              );
-            }
-
-            const buttonRows = [];
-            for (let i = 0; i < buttons.length; i += 5) {
-              buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-            }
-            if (paginationButtons.length > 0) {
-              buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
-            }
-            
-            console.log(`🖱️ [BUTTON ROWS] Total rows: ${buttonRows.length}`);
-            
-            await interaction.editReply({
-              embeds: [cached.embed],
-              components: buttonRows
-            });
-            console.log(`✅ [SEARCH BACK SUCCESS] Message updated`);
-          } else {
-            console.log(`⚠️ [SEARCH CACHE MISS] Cache not found for cacheId ${returnCacheId}`);
           }
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`search_page_${page}_${userId}`)
+              .setLabel(`📄 Trang ${page}/${cached.totalPages}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+          
+          if (page < cached.totalPages) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_next_${page}_${userId}_${searchQuery}`)
+                .setLabel('Trang sau ➡️')
+                .setStyle(2)
+            );
+          }
+
+          const buttonRows = [];
+
+          // Add detail buttons first
+          for (let row = 0; row < Math.ceil(buttons.length / 2); row++) {
+            const rowButtons = buttons.slice(row * 2, (row + 1) * 2);
+            if (rowButtons.length > 0) {
+              buttonRows.push(new ActionRowBuilder().addComponents(rowButtons));
+            }
+          }
+
+          // Add pagination buttons
+          if (paginationButtons.length > 0) {
+            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+
+          // Create new embed with current page info
+          const embed = new EmbedBuilder()
+            .setColor('#e50914')
+            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${page}/${cached.totalPages}`)
+            .setDescription(cached.embed.description)
+            .setTimestamp();
+
+          await interaction.editReply({
+            embeds: [embed],
+            components: buttonRows
+          });
+          
+          console.log(`✅ [SEARCH BACK SUCCESS] Restored page ${page}/${cached.totalPages}`);
+        } catch (err) {
+          console.error('Error back to search:', err);
+        }
+        return;
+      }
+
+      // Back button handler for search
+      if (customId.startsWith('back_search_')) {
+        const afterPrefix = customId.replace('back_search_', '');
+        const returnCacheId = parseInt(afterPrefix);
+        
+        console.log(`⬅️ [BACK SEARCH] User: ${userId}, CacheID: ${returnCacheId}`);
+        
+        try {
+          await interaction.deferUpdate();
+        } catch (e) {
+          console.log('⚠️ Interaction already acknowledged, skipping deferUpdate');
+        }
+        
+        try {
+          // Fast O(1) lookup using cacheIdIndex instead of looping
+          const cached = cacheIdIndex.get(returnCacheId);
+          
+          console.log(`🔍 [FAST CACHE LOOKUP] CacheID: ${returnCacheId}, Found: ${!!cached}`);
+          
+          if (!cached) {
+            console.log(`⚠️ [SEARCH CACHE MISS] Cache not found for cacheId ${returnCacheId}`);
+            return;
+          }
+          
+          const page = cached.page;
+          const movies = cached.movies;
+          const searchQuery = cached.searchQuery;
+          
+          console.log(`🎬 [RECREATING BUTTONS] Page: ${page}, Movies: ${movies.length}, Query: ${searchQuery}`);
+          
+          const buttons = [];
+          
+          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+            const movieTitle = movies[i - 1].name.substring(0, 15);
+            buttons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_detail_${i}_${userId}_${page}_${returnCacheId}`)
+                .setLabel(`${i}. ${movieTitle}`)
+                .setStyle(1)
+            );
+          }
+
+          // Add pagination buttons
+          const paginationButtons = [];
+          if (page > 1) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_prev_${page}_${userId}_${searchQuery}`)
+                .setLabel('⬅️ Trang trước')
+                .setStyle(2)
+            );
+          }
+          
+          paginationButtons.push(
+            new ButtonBuilder()
+              .setCustomId(`search_page_${page}_${userId}`)
+              .setLabel(`📄 Trang ${page}/${cached.totalPages}`)
+              .setStyle(2)
+              .setDisabled(true)
+          );
+          
+          if (page < cached.totalPages) {
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_next_${page}_${userId}_${searchQuery}`)
+                .setLabel('Trang sau ➡️')
+                .setStyle(2)
+            );
+          }
+
+          const buttonRows = [];
+          for (let i = 0; i < buttons.length; i += 5) {
+            buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+          }
+          if (paginationButtons.length > 0) {
+            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+          
+          console.log(`🖱️ [BUTTON ROWS] Total rows: ${buttonRows.length}`);
+          
+          await interaction.editReply({
+            embeds: [cached.embed],
+            components: buttonRows
+          });
+          console.log(`✅ [SEARCH BACK SUCCESS] Message updated`);
         } catch (err) {
           console.error('❌ Error back to search:', err);
         }
@@ -2826,7 +2944,7 @@ client.on('interactionCreate', async (interaction) => {
             components: buttonRows.length > 0 ? buttonRows : []
           });
           
-          searchCache.set(cacheKey, {
+          const cacheData = {
             embed,
             components: buttonRows,
             movies,
@@ -2837,7 +2955,9 @@ client.on('interactionCreate', async (interaction) => {
             page: nextPage,
             totalPages,
             timestamp: Date.now()
-          });
+          };
+          searchCache.set(cacheKey, cacheData);
+          cacheIdIndex.set(cacheId, cacheData);
           
           console.log(`✅ [SEARCH PREV CACHE] Page: ${nextPage}/${totalPages}, CacheID: ${cacheId}, Movies: ${movies.length}`);
         } catch (err) {
