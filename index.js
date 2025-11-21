@@ -1319,11 +1319,10 @@ client.on('interactionCreate', async (interaction) => {
             if ((i - 1) % 5 === 0) {
               updatedButtonRows.push(new ActionRowBuilder());
             }
-            const movieTitle = movies[i - 1].name.substring(0, 15);
             updatedButtonRows[Math.floor((i - 1) / 5)].addComponents(
               new ButtonBuilder()
                 .setCustomId(`search_detail_${i}_${userId}_${page}_${cacheId}`)
-                .setLabel(`${i}. ${movieTitle}`)
+                .setLabel(`${i}`)
                 .setStyle(1)
             );
           }
@@ -2165,7 +2164,7 @@ client.on('interactionCreate', async (interaction) => {
             buttons.push(
               new ButtonBuilder()
                 .setCustomId(`search_detail_${i}_${userId}_${page}_${returnCacheId}`)
-                .setLabel(`${i}. ${movieTitle}`)
+                .setLabel(`${i}`)
                 .setStyle(1)
             );
           }
@@ -2277,7 +2276,7 @@ client.on('interactionCreate', async (interaction) => {
             buttons.push(
               new ButtonBuilder()
                 .setCustomId(`search_detail_${i}_${userId}_${page}_${returnCacheId}`)
-                .setLabel(`${i}. ${movieTitle}`)
+                .setLabel(`${i}`)
                 .setStyle(1)
             );
           }
@@ -2376,7 +2375,7 @@ client.on('interactionCreate', async (interaction) => {
               buttons.push(
                 new ButtonBuilder()
                   .setCustomId(`search_detail_${i}_${userId}_${page}_${returnCacheId}`)
-                  .setLabel(`${i}. ${movieTitle}`)
+                  .setLabel(`${i}`)
                   .setStyle(1)
               );
             }
@@ -2526,7 +2525,7 @@ client.on('interactionCreate', async (interaction) => {
                 buttons.push(
                   new ButtonBuilder()
                     .setCustomId(`newmovies_detail_${i}_${userId}_${pageNum}`)
-                    .setLabel(`${i}. ${movieTitle}`)
+                    .setLabel(`${i}`)
                     .setStyle(1)
                 );
               }
@@ -2900,7 +2899,7 @@ client.on('interactionCreate', async (interaction) => {
             buttons.push(
               new ButtonBuilder()
                 .setCustomId(`search_detail_${i}_${userId}_${nextPage}_${cacheId}`)
-                .setLabel(`${i}. ${movieTitle}`)
+                .setLabel(`${i}`)
                 .setStyle(1)
             );
           }
@@ -3104,7 +3103,7 @@ client.on('interactionCreate', async (interaction) => {
             buttons.push(
               new ButtonBuilder()
                 .setCustomId(`search_detail_${i}_${userId}_${nextPage}_${cacheId}`)
-                .setLabel(`${i}. ${movieTitle}`)
+                .setLabel(`${i}`)
                 .setStyle(1)
             );
           }
@@ -4361,7 +4360,7 @@ client.on('messageCreate', async (message) => {
           buttons.push(
             new ButtonBuilder()
               .setCustomId(`newmovies_detail_${i}_${message.author.id}`)
-              .setLabel(`${i}. ${movieTitle}`)
+              .setLabel(`${i}`)
               .setStyle(1) // Primary style
           );
         }
@@ -4803,7 +4802,7 @@ client.on('messageCreate', async (message) => {
           buttons.push(
             new ButtonBuilder()
               .setCustomId(`movie_detail_${i}_${message.author.id}`)
-              .setLabel(`${i}. ${movieTitle}`)
+              .setLabel(`${i}`)
               .setStyle(1) // Primary style
           );
         }
