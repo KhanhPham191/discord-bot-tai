@@ -10,7 +10,7 @@ const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpiso
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
 
 // Import game functions
-const { handleWeaponSearch, handleNPCSearch, handleBossSearch, handleSkillSearch, handleItemSearch, handleGameStats, handleWeaponSelect, handleNPCSelect, handleBossSelect, handleSkillSelect, handleItemSelect, showAllWeapons, showAllNPCs, showAllBosses, showAllSkills, showAllItems } = require('./game');
+const { handleGameStats, handleWeaponSelect, handleNPCSelect, handleBossSelect, handleSkillSelect, handleItemSelect, showAllWeapons, showAllNPCs, showAllBosses, showAllSkills, showAllItems } = require('./game');
 const { createSeedData } = require('./game-scraper');
 
 // Load .env file - required for API keys
@@ -332,46 +332,6 @@ async function registerSlashCommands() {
           .setDescription('Bật/tắt tính năng thông báo phim update')
           .setRequired(false)),
 
-    new SlashCommandBuilder()
-      .setName('weapon')
-      .setDescription('⚔️ Tìm vũ khí')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên vũ khí')
-          .setRequired(true)),
-    
-    new SlashCommandBuilder()
-      .setName('npc')
-      .setDescription('👤 Tìm nhân vật')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên nhân vật')
-          .setRequired(true)),
-    
-    new SlashCommandBuilder()
-      .setName('boss')
-      .setDescription('👹 Tìm boss')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên boss')
-          .setRequired(true)),
-    
-    new SlashCommandBuilder()
-      .setName('skill')
-      .setDescription('✨ Tìm kỹ năng')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên kỹ năng')
-          .setRequired(true)),
-    
-    new SlashCommandBuilder()
-      .setName('item')
-      .setDescription('📦 Tìm vật phẩm')
-      .addStringOption(option =>
-        option.setName('name')
-          .setDescription('Tên vật phẩm')
-          .setRequired(true)),
-    
     new SlashCommandBuilder()
       .setName('weapons')
       .setDescription('⚔️ Xem tất cả vũ khí (dropdown)'),
@@ -1643,31 +1603,6 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
 
-      if (command === 'weapon') {
-        await handleWeaponSearch(interaction);
-        return;
-      }
-
-      if (command === 'npc') {
-        await handleNPCSearch(interaction);
-        return;
-      }
-
-      if (command === 'boss') {
-        await handleBossSearch(interaction);
-        return;
-      }
-
-      if (command === 'skill') {
-        await handleSkillSearch(interaction);
-        return;
-      }
-
-      if (command === 'item') {
-        await handleItemSearch(interaction);
-        return;
-      }
-
       if (command === 'weapons') {
         const { showAllWeapons } = require('./game');
         await showAllWeapons(interaction, 0);
@@ -1715,61 +1650,6 @@ client.on('interactionCreate', async (interaction) => {
   
   if (interaction.isStringSelectMenu()) {
     // Search dropdowns
-    if (interaction.customId === 'weapon_select_search') {
-      const weaponId = parseInt(interaction.values[0].split('_')[1]);
-      const { getAllWeapons } = require('./game-scraper');
-      const { createWeaponEmbed } = require('./game');
-      const weapon = getAllWeapons().find(w => w.id === weaponId);
-      if (weapon) {
-        await interaction.reply({ embeds: [createWeaponEmbed(weapon)] });
-      }
-      return;
-    }
-
-    if (interaction.customId === 'npc_select_search') {
-      const npcId = parseInt(interaction.values[0].split('_')[1]);
-      const { getAllNPCs } = require('./game-scraper');
-      const { createNPCEmbed } = require('./game');
-      const npc = getAllNPCs().find(n => n.id === npcId);
-      if (npc) {
-        await interaction.reply({ embeds: [createNPCEmbed(npc)] });
-      }
-      return;
-    }
-
-    if (interaction.customId === 'boss_select_search') {
-      const bossId = parseInt(interaction.values[0].split('_')[1]);
-      const { getAllBosses } = require('./game-scraper');
-      const { createBossEmbed } = require('./game');
-      const boss = getAllBosses().find(b => b.id === bossId);
-      if (boss) {
-        await interaction.reply({ embeds: [createBossEmbed(boss)] });
-      }
-      return;
-    }
-
-    if (interaction.customId === 'skill_select_search') {
-      const skillId = parseInt(interaction.values[0].split('_')[1]);
-      const { getAllSkills } = require('./game-scraper');
-      const { createSkillEmbed } = require('./game');
-      const skill = getAllSkills().find(s => s.id === skillId);
-      if (skill) {
-        await interaction.reply({ embeds: [createSkillEmbed(skill)] });
-      }
-      return;
-    }
-
-    if (interaction.customId === 'item_select_search') {
-      const itemId = parseInt(interaction.values[0].split('_')[1]);
-      const { getAllItems } = require('./game-scraper');
-      const { createItemEmbed } = require('./game');
-      const item = getAllItems().find(i => i.id === itemId);
-      if (item) {
-        await interaction.reply({ embeds: [createItemEmbed(item)] });
-      }
-      return;
-    }
-
     if (interaction.customId === 'track_team_select') {
       const userId = interaction.user.id;
       const teamId = parseInt(interaction.values[0]);
