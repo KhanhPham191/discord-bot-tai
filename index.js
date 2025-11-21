@@ -1361,7 +1361,8 @@ client.on('interactionCreate', async (interaction) => {
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
             
-            console.log(`📍 [SEARCH CLICK] MovieNum: ${movieNum}, Page: ${pageNum}, CacheID: ${returnCacheId}, CustomID: ${customId}`);
+            console.log(`📍 [SEARCH DETAIL CLICK] MovieNum: ${movieNum}, Page: ${pageNum}, CacheID: ${returnCacheId}, CustomID: ${customId}`);
+            console.log(`🎬 [SELECTED MOVIE] Title: ${selectedMovie.name}, Slug: ${slug}`);
 
             try {
               const detail = await getMovieDetail(slug);
@@ -2258,10 +2259,15 @@ client.on('interactionCreate', async (interaction) => {
           let cached = null;
           let foundKey = null;
           
+          console.log(`🔍 [SEARCHING CACHE] Looking for CacheID: ${returnCacheId}`);
+          console.log(`📦 [CACHE SIZE] Total caches: ${searchCache.size}`);
+          
           for (const [key, value] of searchCache.entries()) {
+            console.log(`  🔎 Checking cache key: ${key}, CacheID: ${value.cacheId}, Type: ${value.type}, Page: ${value.page}`);
             if (value.type === 'search' && value.cacheId === returnCacheId) {
               cached = value;
               foundKey = key;
+              console.log(`  ✅ MATCH FOUND!`);
               break;
             }
           }
@@ -2275,6 +2281,9 @@ client.on('interactionCreate', async (interaction) => {
             const page = cached.page;
             const movies = cached.movies;
             const searchQuery = cached.searchQuery;
+            
+            console.log(`🎬 [RECREATING BUTTONS] Page: ${page}, Movies: ${movies.length}, Query: ${searchQuery}`);
+            
             const buttons = [];
             
             for (let i = 1; i <= Math.min(10, movies.length); i++) {
@@ -2322,6 +2331,8 @@ client.on('interactionCreate', async (interaction) => {
             if (paginationButtons.length > 0) {
               buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
             }
+            
+            console.log(`🖱️ [BUTTON ROWS] Total rows: ${buttonRows.length}`);
             
             await interaction.editReply({
               embeds: [cached.embed],
@@ -2820,6 +2831,8 @@ client.on('interactionCreate', async (interaction) => {
           const endIdx = startIdx + itemsPerPage;
           const movies = results.slice(startIdx, endIdx);
           
+          console.log(`📊 [SEARCH PREV DATA] Page: ${nextPage}/${totalPages}, Movies: ${movies.length}, Query: ${searchQuery}`);
+          
           const embed = new EmbedBuilder()
             .setColor('#e50914')
             .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${nextPage}/${totalPages}`)
@@ -2883,12 +2896,19 @@ client.on('interactionCreate', async (interaction) => {
           
           embed.setDescription(description);
           
+          // Create cache FIRST before creating buttons
+          const cacheKey = `search_${userId}_${nextPage}_${searchQuery}`;
+          const cacheId = ++cacheIdCounter;
+          
+          console.log(`💾 [CACHE SAVE] Key: ${cacheKey}, CacheID: ${cacheId}, Query: ${searchQuery}, Page: ${nextPage}`);
+          
+          // Create buttons WITH cacheId
           const buttons = [];
           for (let i = 1; i <= Math.min(10, movies.length); i++) {
             const movieTitle = movies[i - 1].name.substring(0, 15);
             buttons.push(
               new ButtonBuilder()
-                .setCustomId(`search_detail_${i}_${userId}_${nextPage}`)
+                .setCustomId(`search_detail_${i}_${userId}_${nextPage}_${cacheId}`)
                 .setLabel(`${i}. ${movieTitle}`)
                 .setStyle(1)
             );
@@ -2934,8 +2954,6 @@ client.on('interactionCreate', async (interaction) => {
             components: buttonRows.length > 0 ? buttonRows : []
           });
           
-          const cacheKey = `search_${userId}_${nextPage}_${searchQuery}`;
-          const cacheId = ++cacheIdCounter;
           searchCache.set(cacheKey, {
             embed,
             components: buttonRows,
@@ -2948,6 +2966,8 @@ client.on('interactionCreate', async (interaction) => {
             totalPages,
             timestamp: Date.now()
           });
+          
+          console.log(`✅ [SEARCH PREV CACHE] Page: ${nextPage}/${totalPages}, CacheID: ${cacheId}, Movies: ${movies.length}`);
         } catch (err) {
           console.error('Error search prev:', err);
         }
@@ -2978,13 +2998,15 @@ client.on('interactionCreate', async (interaction) => {
           const totalPages = Math.ceil(totalResults / itemsPerPage);
           
           if (nextPage > totalPages) {
-            console.log(`❌ Invalid page ${nextPage}`);
+            console.log(`❌ Invalid page ${nextPage}, totalPages: ${totalPages}`);
             return;
           }
           
           const startIdx = (nextPage - 1) * itemsPerPage;
           const endIdx = startIdx + itemsPerPage;
           const movies = results.slice(startIdx, endIdx);
+          
+          console.log(`📊 [SEARCH NEXT DATA] Page: ${nextPage}/${totalPages}, Movies: ${movies.length}, Query: ${searchQuery}`);
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
@@ -3049,12 +3071,19 @@ client.on('interactionCreate', async (interaction) => {
           
           embed.setDescription(description);
           
+          // Create cache FIRST before creating buttons
+          const cacheKey = `search_${userId}_${nextPage}_${searchQuery}`;
+          const cacheId = ++cacheIdCounter;
+          
+          console.log(`💾 [CACHE SAVE] Key: ${cacheKey}, CacheID: ${cacheId}, Query: ${searchQuery}, Page: ${nextPage}`);
+          
+          // Create buttons WITH cacheId
           const buttons = [];
           for (let i = 1; i <= Math.min(10, movies.length); i++) {
             const movieTitle = movies[i - 1].name.substring(0, 15);
             buttons.push(
               new ButtonBuilder()
-                .setCustomId(`search_detail_${i}_${userId}_${nextPage}`)
+                .setCustomId(`search_detail_${i}_${userId}_${nextPage}_${cacheId}`)
                 .setLabel(`${i}. ${movieTitle}`)
                 .setStyle(1)
             );
@@ -3100,8 +3129,6 @@ client.on('interactionCreate', async (interaction) => {
             components: buttonRows.length > 0 ? buttonRows : []
           });
           
-          const cacheKey = `search_${userId}_${nextPage}_${searchQuery}`;
-          const cacheId = ++cacheIdCounter;
           searchCache.set(cacheKey, {
             embed,
             components: buttonRows,
@@ -3114,6 +3141,8 @@ client.on('interactionCreate', async (interaction) => {
             totalPages,
             timestamp: Date.now()
           });
+          
+          console.log(`✅ [SEARCH NEXT CACHE] Page: ${nextPage}/${totalPages}, CacheID: ${cacheId}, Movies: ${movies.length}`);
         } catch (err) {
           console.error('Error search next:', err);
         }
