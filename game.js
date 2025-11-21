@@ -17,6 +17,7 @@ function createWeaponEmbed(weapon) {
   return new EmbedBuilder()
     .setColor(0x00AE86)
     .setTitle(`⚔️ ${weapon.name}`)
+    .setURL(weapon.url)
     .addFields(
       { name: 'Type', value: weapon.type, inline: true },
       { name: 'Damage', value: weapon.damage.toString(), inline: true },
@@ -31,6 +32,7 @@ function createNPCEmbed(npc) {
   return new EmbedBuilder()
     .setColor(0x0099FF)
     .setTitle(`👤 ${npc.name}`)
+    .setURL(npc.url)
     .addFields(
       { name: 'Role', value: npc.role, inline: true },
       { name: 'Description', value: npc.description || 'No description available' }
@@ -43,6 +45,7 @@ function createBossEmbed(boss) {
   return new EmbedBuilder()
     .setColor(0xFF0000)
     .setTitle(`👹 ${boss.name}`)
+    .setURL(boss.url)
     .addFields(
       { name: 'Type', value: boss.type, inline: true },
       { name: 'Description', value: boss.description || 'No description available' }
@@ -55,6 +58,7 @@ function createSkillEmbed(skill) {
   return new EmbedBuilder()
     .setColor(0xFFAA00)
     .setTitle(`✨ ${skill.name}`)
+    .setURL(skill.url)
     .addFields(
       { name: 'Type', value: skill.type, inline: true },
       { name: 'Damage Type', value: skill.damageType, inline: true },
@@ -69,6 +73,7 @@ function createItemEmbed(item) {
   return new EmbedBuilder()
     .setColor(0xAA00FF)
     .setTitle(`📦 ${item.name}`)
+    .setURL(item.url)
     .addFields(
       { name: 'Type', value: item.type, inline: true },
       { name: 'Rarity', value: item.rarity, inline: true },
