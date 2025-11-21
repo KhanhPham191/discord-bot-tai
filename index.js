@@ -1352,12 +1352,16 @@ client.on('interactionCreate', async (interaction) => {
           });
 
           movieCollector.on('collect', async (buttonInteraction) => {
-            const parts = buttonInteraction.customId.split('_');
+            const customId = buttonInteraction.customId;
+            const parts = customId.split('_');
+            // Format: search_detail_${i}_${userId}_${page}_${cacheId}
             const movieNum = parseInt(parts[2]);
             const pageNum = parseInt(parts[4]);
-            const returnCacheId = parseInt(parts[6]);
+            const returnCacheId = parseInt(parts[5]);
             const selectedMovie = movies[movieNum - 1];
             const slug = selectedMovie.slug;
+            
+            console.log(`📍 [SEARCH CLICK] MovieNum: ${movieNum}, Page: ${pageNum}, CacheID: ${returnCacheId}, CustomID: ${customId}`);
 
             try {
               const detail = await getMovieDetail(slug);
@@ -2250,23 +2254,78 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.deferUpdate();
         
         try {
-          // Find cache by searching through all caches with matching cacheId
+          // Search for cache with matching cacheId and userId
           let cached = null;
+          let foundKey = null;
+          
           for (const [key, value] of searchCache.entries()) {
-            if (value.type === 'search' && value.cacheId === returnCacheId && key.startsWith(`search_${userId}`)) {
+            if (value.type === 'search' && value.cacheId === returnCacheId) {
               cached = value;
+              foundKey = key;
               break;
             }
           }
           
-          console.log(`📦 [SEARCH CACHE CHECK] Found: ${!!cached}, CacheID: ${returnCacheId}`);
+          console.log(`📦 [SEARCH CACHE CHECK] Key: ${foundKey}, Found: ${!!cached}, CacheID: ${returnCacheId}`);
           
           if (cached && cached.type === 'search') {
-            console.log(`✅ [SEARCH CACHE HIT] Restoring ${cached.movies.length} movies from page ${cached.page}`);
+            console.log(`✅ [SEARCH CACHE HIT] Restoring ${cached.movies.length} movies from page ${cached.page}/${cached.totalPages}`);
+            
+            // Recreate buttons with proper IDs
+            const page = cached.page;
+            const movies = cached.movies;
+            const searchQuery = cached.searchQuery;
+            const buttons = [];
+            
+            for (let i = 1; i <= Math.min(10, movies.length); i++) {
+              const movieTitle = movies[i - 1].name.substring(0, 15);
+              buttons.push(
+                new ButtonBuilder()
+                  .setCustomId(`search_detail_${i}_${userId}_${page}_${returnCacheId}`)
+                  .setLabel(`${i}. ${movieTitle}`)
+                  .setStyle(1)
+              );
+            }
+
+            // Add pagination buttons
+            const paginationButtons = [];
+            if (page > 1) {
+              paginationButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`search_prev_${page}_${userId}_${searchQuery}`)
+                  .setLabel('⬅️ Trang trước')
+                  .setStyle(2)
+              );
+            }
+            
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_page_${page}_${userId}`)
+                .setLabel(`📄 Trang ${page}/${cached.totalPages}`)
+                .setStyle(2)
+                .setDisabled(true)
+            );
+            
+            if (page < cached.totalPages) {
+              paginationButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`search_next_${page}_${userId}_${searchQuery}`)
+                  .setLabel('Trang sau ➡️')
+                  .setStyle(2)
+              );
+            }
+
+            const buttonRows = [];
+            for (let i = 0; i < buttons.length; i += 5) {
+              buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+            }
+            if (paginationButtons.length > 0) {
+              buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+            }
             
             await interaction.editReply({
               embeds: [cached.embed],
-              components: cached.components
+              components: buttonRows
             });
             console.log(`✅ [SEARCH BACK SUCCESS] Message updated`);
           } else {
