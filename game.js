@@ -33,8 +33,7 @@ function createNPCEmbed(npc) {
     .setTitle(`👤 ${npc.name}`)
     .addFields(
       { name: 'Role', value: npc.role, inline: true },
-      { name: 'Location', value: npc.location, inline: true },
-      { name: 'Description', value: npc.description }
+      { name: 'Description', value: npc.description || 'No description available' }
     )
     .setFooter({ text: 'Where Winds Meet Game Database' });
 }
@@ -45,10 +44,8 @@ function createBossEmbed(boss) {
     .setColor(0xFF0000)
     .setTitle(`👹 ${boss.name}`)
     .addFields(
-      { name: 'Level', value: boss.level.toString(), inline: true },
-      { name: 'Health', value: boss.health.toString(), inline: true },
-      { name: 'Location', value: boss.location, inline: true },
-      { name: 'Rewards', value: boss.rewards }
+      { name: 'Type', value: boss.type, inline: true },
+      { name: 'Description', value: boss.description || 'No description available' }
     )
     .setFooter({ text: 'Where Winds Meet Game Database' });
 }
@@ -75,7 +72,7 @@ function createItemEmbed(item) {
     .addFields(
       { name: 'Type', value: item.type, inline: true },
       { name: 'Rarity', value: item.rarity, inline: true },
-      { name: 'Effect', value: item.effect }
+      { name: 'Description', value: item.description }
     )
     .setFooter({ text: 'Where Winds Meet Game Database' });
 }
