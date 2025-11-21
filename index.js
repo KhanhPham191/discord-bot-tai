@@ -441,9 +441,9 @@ client.once('ready', async () => {
             .setDescription(detail.original_name ? `*${detail.original_name}*` : '')
             .setThumbnail(detail.poster_url || detail.thumb_url)
             .addFields(
-              { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
-              { name: '⭐ Chất lượng', value: detail.quality || 'N/A', inline: true },
-              { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
+              { name: '📅 Năm phát hành', value: String(detail.year || 'N/A'), inline: true },
+              { name: '⭐ Chất lượng', value: String(detail.quality || 'N/A'), inline: true },
+              { name: '🗣️ Ngôn ngữ', value: String(detail.language || 'N/A'), inline: true },
               { name: '⏱️ Thời lượng', value: detail.time || 'N/A', inline: true },
               { name: '📺 Tập phim', value: `${detail.current_episode || 0}/${detail.total_episodes || '?'}`, inline: true },
               { name: '📋 Mô tả', value: (detail.description || 'Không có mô tả').substring(0, 300) + '...' }
@@ -1379,11 +1379,11 @@ client.on('interactionCreate', async (interaction) => {
                 .setThumbnail(detail.thumb_url)
                 .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
                 .addFields(
-                  { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
-                  { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
-                  { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
-                  { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
-                  { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+                  { name: '📅 Năm phát hành', value: String(detail.year || 'N/A'), inline: true },
+                  { name: '🎭 Chất lượng', value: String(detail.quality || 'N/A'), inline: true },
+                  { name: '🗣️ Ngôn ngữ', value: String(detail.language || 'N/A'), inline: true },
+                  { name: '📺 Số tập', value: String(detail.total_episodes || 'N/A'), inline: true },
+                  { name: '▶️ Tập hiện tại', value: String(detail.current_episode || 'N/A'), inline: true }
                 )
                 .setTimestamp()
                 .setFooter({ text: 'Movie Detail' });
@@ -1615,11 +1615,11 @@ client.on('interactionCreate', async (interaction) => {
                 .setThumbnail(detail.thumb_url)
                 .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
                 .addFields(
-                  { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
-                  { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
-                  { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
-                  { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
-                  { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+                  { name: '📅 Năm phát hành', value: String(detail.year || 'N/A'), inline: true },
+                  { name: '🎭 Chất lượng', value: String(detail.quality || 'N/A'), inline: true },
+                  { name: '🗣️ Ngôn ngữ', value: String(detail.language || 'N/A'), inline: true },
+                  { name: '📺 Số tập', value: String(detail.total_episodes || 'N/A'), inline: true },
+                  { name: '▶️ Tập hiện tại', value: String(detail.current_episode || 'N/A'), inline: true }
                 )
                 .setTimestamp()
                 .setFooter({ text: 'Movie Detail' });
@@ -2173,11 +2173,11 @@ client.on('interactionCreate', async (interaction) => {
             .setThumbnail(detail.thumb_url)
             .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
             .addFields(
-              { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
-              { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
-              { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
-              { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
-              { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+              { name: '📅 Năm phát hành', value: String(detail.year || 'N/A'), inline: true },
+              { name: '🎭 Chất lượng', value: String(detail.quality || 'N/A'), inline: true },
+              { name: '🗣️ Ngôn ngữ', value: String(detail.language || 'N/A'), inline: true },
+              { name: '📺 Số tập', value: String(detail.total_episodes || 'N/A'), inline: true },
+              { name: '▶️ Tập hiện tại', value: String(detail.current_episode || 'N/A'), inline: true }
             )
             .setTimestamp()
             .setFooter({ text: 'Movie Detail' });
@@ -2351,8 +2351,100 @@ client.on('interactionCreate', async (interaction) => {
 
       // Old back_to_search handler for compatibility (deprecated)
       if (customId.startsWith('back_to_search_') && !customId.includes('list_')) {
-        console.log(`⚠️ [DEPRECATED BACK] Using old back_to_search handler`);
-        return; // Skip old handler
+        const cacheId = customId.replace('back_to_search_', '');
+        console.log(`⚠️ [DEPRECATED BACK] Using old back_to_search handler for cacheId: ${cacheId}`);
+        
+        await interaction.deferUpdate();
+        
+        try {
+          // Search for cache with matching cacheId (fallback to first search cache if not found)
+          let cached = null;
+          let foundKey = null;
+          
+          for (const [key, value] of searchCache.entries()) {
+            if (value.type === 'search' && value.cacheId === parseInt(cacheId)) {
+              cached = value;
+              foundKey = key;
+              break;
+            }
+          }
+          
+          // If not found, try to get any recent search cache for this user
+          if (!cached) {
+            for (const [key, value] of searchCache.entries()) {
+              if (value.type === 'search' && key.includes(userId)) {
+                cached = value;
+                foundKey = key;
+                console.log(`✅ Using fallback search cache for user`);
+                break;
+              }
+            }
+          }
+          
+          if (cached && cached.type === 'search') {
+            console.log(`✅ [DEPRECATED BACK SUCCESS] Restoring ${cached.movies.length} movies`);
+            
+            const page = cached.page;
+            const movies = cached.movies;
+            const returnCacheId = cached.cacheId;
+            
+            const buttons = [];
+            for (let i = 1; i <= Math.min(10, movies.length); i++) {
+              const movieTitle = movies[i - 1].name.substring(0, 15);
+              buttons.push(
+                new ButtonBuilder()
+                  .setCustomId(`search_detail_${i}_${userId}_${page}_${returnCacheId}`)
+                  .setLabel(`${i}. ${movieTitle}`)
+                  .setStyle(1)
+              );
+            }
+
+            const paginationButtons = [];
+            if (page > 1) {
+              paginationButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`search_prev_${page}_${userId}_${cached.searchQuery}`)
+                  .setLabel('⬅️ Trang trước')
+                  .setStyle(2)
+              );
+            }
+            
+            paginationButtons.push(
+              new ButtonBuilder()
+                .setCustomId(`search_page_${page}_${userId}`)
+                .setLabel(`📄 Trang ${page}/${cached.totalPages}`)
+                .setStyle(2)
+                .setDisabled(true)
+            );
+            
+            if (page < cached.totalPages) {
+              paginationButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`search_next_${page}_${userId}_${cached.searchQuery}`)
+                  .setLabel('Trang sau ➡️')
+                  .setStyle(2)
+              );
+            }
+
+            const buttonRows = [];
+            for (let i = 0; i < buttons.length; i += 5) {
+              buttonRows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+            }
+            if (paginationButtons.length > 0) {
+              buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+            }
+            
+            await interaction.editReply({
+              embeds: [cached.embed],
+              components: buttonRows
+            });
+          } else {
+            console.log(`⚠️ [DEPRECATED BACK FAIL] No cache found for cacheId ${cacheId}`);
+          }
+        } catch (err) {
+          console.error('❌ Error in deprecated back handler:', err);
+        }
+        return;
       }
       
       // Back from servers to movie list (newmovies)
@@ -4399,11 +4491,11 @@ client.on('messageCreate', async (message) => {
               .setThumbnail(detail.thumb_url)
               .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
               .addFields(
-                { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
-                { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
-                { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
-                { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
-                { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+                { name: '📅 Năm phát hành', value: String(detail.year || 'N/A'), inline: true },
+                { name: '🎭 Chất lượng', value: String(detail.quality || 'N/A'), inline: true },
+                { name: '🗣️ Ngôn ngữ', value: String(detail.language || 'N/A'), inline: true },
+                { name: '📺 Số tập', value: String(detail.total_episodes || 'N/A'), inline: true },
+                { name: '▶️ Tập hiện tại', value: String(detail.current_episode || 'N/A'), inline: true }
               )
               .setTimestamp()
               .setFooter({ text: 'Movie Detail' });
@@ -4841,11 +4933,11 @@ client.on('messageCreate', async (message) => {
               .setThumbnail(detail.thumb_url)
               .setDescription(detail.description?.substring(0, 300) || 'Không có mô tả')
               .addFields(
-                { name: '📅 Năm phát hành', value: detail.year || 'N/A', inline: true },
-                { name: '🎭 Chất lượng', value: detail.quality || 'N/A', inline: true },
-                { name: '🗣️ Ngôn ngữ', value: detail.language || 'N/A', inline: true },
-                { name: '📺 Số tập', value: detail.total_episodes?.toString() || 'N/A', inline: true },
-                { name: '▶️ Tập hiện tại', value: detail.current_episode || 'N/A', inline: true }
+                { name: '📅 Năm phát hành', value: String(detail.year || 'N/A'), inline: true },
+                { name: '🎭 Chất lượng', value: String(detail.quality || 'N/A'), inline: true },
+                { name: '🗣️ Ngôn ngữ', value: String(detail.language || 'N/A'), inline: true },
+                { name: '📺 Số tập', value: String(detail.total_episodes || 'N/A'), inline: true },
+                { name: '▶️ Tập hiện tại', value: String(detail.current_episode || 'N/A'), inline: true }
               )
               .setTimestamp()
               .setFooter({ text: 'Movie Detail' });
