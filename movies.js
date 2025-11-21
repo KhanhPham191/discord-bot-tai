@@ -1,36 +1,59 @@
 const axios = require('axios');
 
-// Movie search function - fetch year from detail endpoint
-async function searchMovies(keyword) {
+// Movie search function - fetch year from detail endpoint with pagination support
+async function searchMovies(keyword, maxResults = 100) {
   try {
-    const response = await axios.get('https://phim.nguonc.com/api/films/search', {
-      params: { keyword: keyword }
-    });
+    let allMovies = [];
+    let page = 1;
+    const itemsPerPage = 20; // API usually returns ~20 items per page
+    const maxPages = Math.ceil(maxResults / itemsPerPage);
     
-    const items = response.data.items || [];
-    
-    // Fetch release year from detail endpoint for each movie
-    const moviesWithYear = await Promise.all(items.map(async (item) => {
+    while (allMovies.length < maxResults && page <= maxPages) {
       try {
-        const detail = await getMovieDetail(item.slug);
-        if (detail && detail.year && detail.year !== 'N/A') {
+        const response = await axios.get('https://phim.nguonc.com/api/films/search', {
+          params: { 
+            keyword: keyword,
+            page: page
+          }
+        });
+        
+        const items = response.data.items || [];
+        
+        if (items.length === 0) {
+          break; // No more results
+        }
+        
+        // Fetch release year from detail endpoint for each movie
+        const moviesWithYear = await Promise.all(items.map(async (item) => {
+          try {
+            const detail = await getMovieDetail(item.slug);
+            if (detail && detail.year && detail.year !== 'N/A') {
+              return {
+                ...item,
+                year: detail.year
+              };
+            }
+          } catch (e) {
+            console.log(`⚠️ Could not fetch detail for ${item.slug}`);
+          }
+          
+          // Fallback to created year
           return {
             ...item,
-            year: detail.year
+            year: item.created ? item.created.split('-')[0] : 'N/A'
           };
-        }
-      } catch (e) {
-        console.log(`⚠️ Could not fetch detail for ${item.slug}`);
+        }));
+        
+        allMovies = allMovies.concat(moviesWithYear);
+        page++;
+      } catch (pageError) {
+        console.log(`⚠️ Error fetching page ${page}:`, pageError.message);
+        break; // Stop on error
       }
-      
-      // Fallback to created year
-      return {
-        ...item,
-        year: item.created ? item.created.split('-')[0] : 'N/A'
-      };
-    }));
+    }
     
-    return moviesWithYear;
+    // Return maximum maxResults items
+    return allMovies.slice(0, maxResults);
   } catch (error) {
     console.error('❌ Lỗi API tìm kiếm phim:', error.response?.data?.message || error.message);
     return [];
