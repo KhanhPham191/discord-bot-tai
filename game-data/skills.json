@@ -1,1202 +1,137 @@
 [
   {
     "id": 1,
-    "name": "Skill 1",
-    "type": "Defense",
+    "name": "Tiger Fang",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 1"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Fierce strike mimicking tiger claw. Deals high physical damage."
   },
   {
     "id": 2,
-    "name": "Skill 2",
-    "type": "Magic",
+    "name": "Serpent Step",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 16,
-    "description": "Ability 2"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Graceful footwork like serpent movement. Increases evasion."
   },
   {
     "id": 3,
-    "name": "Skill 3",
-    "type": "Support",
+    "name": "Phantom Strike",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 19,
-    "description": "Ability 3"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Disappear and reappear with a devastating strike."
   },
   {
     "id": 4,
-    "name": "Skill 4",
-    "type": "Attack",
+    "name": "Divine Intervention",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 9,
-    "description": "Ability 4"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Call upon divine power for emergency protection."
   },
   {
     "id": 5,
-    "name": "Skill 5",
-    "type": "Defense",
+    "name": "Shadow Clone",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 10,
-    "description": "Ability 5"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Create shadow duplicates to confuse enemies."
   },
   {
     "id": 6,
-    "name": "Skill 6",
-    "type": "Magic",
+    "name": "Swift Current",
+    "type": "Inner Way",
     "damageType": "Physical",
-    "cooldown": 6,
-    "description": "Ability 6"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Flow like water with enhanced movement speed."
   },
   {
     "id": 7,
-    "name": "Skill 7",
-    "type": "Support",
+    "name": "Iron Body",
+    "type": "Inner Way",
     "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 7"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Harden skin to steel for defense boost."
   },
   {
     "id": 8,
-    "name": "Skill 8",
-    "type": "Attack",
+    "name": "Minds Eye",
+    "type": "Inner Way",
     "damageType": "Physical",
-    "cooldown": 6,
-    "description": "Ability 8"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Open third eye to perceive enemy intentions."
   },
   {
     "id": 9,
-    "name": "Skill 9",
-    "type": "Defense",
+    "name": "Heavens Wrath",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 8,
-    "description": "Ability 9"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Summon heavenly lightning to strike foes."
   },
   {
     "id": 10,
-    "name": "Skill 10",
-    "type": "Magic",
+    "name": "Earth Barrier",
+    "type": "Inner Way",
     "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 10"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Create earth walls for protection."
   },
   {
     "id": 11,
-    "name": "Skill 11",
-    "type": "Support",
+    "name": "Wind Cutter",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 9,
-    "description": "Ability 11"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Slice enemies with invisible wind blades."
   },
   {
     "id": 12,
-    "name": "Skill 12",
-    "type": "Attack",
+    "name": "Flame Burst",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 13,
-    "description": "Ability 12"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Explode with searing fire damage."
   },
   {
     "id": 13,
-    "name": "Skill 13",
-    "type": "Defense",
+    "name": "Frost Prison",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 13"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Freeze enemies in ice for crowd control."
   },
   {
     "id": 14,
-    "name": "Skill 14",
-    "type": "Magic",
+    "name": "Lightning Strike",
+    "type": "Mystic Art",
     "damageType": "Physical",
-    "cooldown": 3,
-    "description": "Ability 14"
+    "cooldown": 5,
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Direct lightning strike with shocking power."
   },
   {
     "id": 15,
-    "name": "Skill 15",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 16,
-    "description": "Ability 15"
-  },
-  {
-    "id": 16,
-    "name": "Skill 16",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 16"
-  },
-  {
-    "id": 17,
-    "name": "Skill 17",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 10,
-    "description": "Ability 17"
-  },
-  {
-    "id": 18,
-    "name": "Skill 18",
-    "type": "Magic",
+    "name": "Void Slash",
+    "type": "Mystic Art",
     "damageType": "Physical",
     "cooldown": 5,
-    "description": "Ability 18"
-  },
-  {
-    "id": 19,
-    "name": "Skill 19",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 19"
-  },
-  {
-    "id": 20,
-    "name": "Skill 20",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 9,
-    "description": "Ability 20"
-  },
-  {
-    "id": 21,
-    "name": "Skill 21",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 19,
-    "description": "Ability 21"
-  },
-  {
-    "id": 22,
-    "name": "Skill 22",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 22"
-  },
-  {
-    "id": 23,
-    "name": "Skill 23",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 15,
-    "description": "Ability 23"
-  },
-  {
-    "id": 24,
-    "name": "Skill 24",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 18,
-    "description": "Ability 24"
-  },
-  {
-    "id": 25,
-    "name": "Skill 25",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 25"
-  },
-  {
-    "id": 26,
-    "name": "Skill 26",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 3,
-    "description": "Ability 26"
-  },
-  {
-    "id": 27,
-    "name": "Skill 27",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 27"
-  },
-  {
-    "id": 28,
-    "name": "Skill 28",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 4,
-    "description": "Ability 28"
-  },
-  {
-    "id": 29,
-    "name": "Skill 29",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 8,
-    "description": "Ability 29"
-  },
-  {
-    "id": 30,
-    "name": "Skill 30",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 30"
-  },
-  {
-    "id": 31,
-    "name": "Skill 31",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 18,
-    "description": "Ability 31"
-  },
-  {
-    "id": 32,
-    "name": "Skill 32",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 3,
-    "description": "Ability 32"
-  },
-  {
-    "id": 33,
-    "name": "Skill 33",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 33"
-  },
-  {
-    "id": 34,
-    "name": "Skill 34",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 20,
-    "description": "Ability 34"
-  },
-  {
-    "id": 35,
-    "name": "Skill 35",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 18,
-    "description": "Ability 35"
-  },
-  {
-    "id": 36,
-    "name": "Skill 36",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 20,
-    "description": "Ability 36"
-  },
-  {
-    "id": 37,
-    "name": "Skill 37",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 8,
-    "description": "Ability 37"
-  },
-  {
-    "id": 38,
-    "name": "Skill 38",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 38"
-  },
-  {
-    "id": 39,
-    "name": "Skill 39",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 39"
-  },
-  {
-    "id": 40,
-    "name": "Skill 40",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 2,
-    "description": "Ability 40"
-  },
-  {
-    "id": 41,
-    "name": "Skill 41",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 8,
-    "description": "Ability 41"
-  },
-  {
-    "id": 42,
-    "name": "Skill 42",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 42"
-  },
-  {
-    "id": 43,
-    "name": "Skill 43",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 43"
-  },
-  {
-    "id": 44,
-    "name": "Skill 44",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 44"
-  },
-  {
-    "id": 45,
-    "name": "Skill 45",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 14,
-    "description": "Ability 45"
-  },
-  {
-    "id": 46,
-    "name": "Skill 46",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 3,
-    "description": "Ability 46"
-  },
-  {
-    "id": 47,
-    "name": "Skill 47",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 47"
-  },
-  {
-    "id": 48,
-    "name": "Skill 48",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 20,
-    "description": "Ability 48"
-  },
-  {
-    "id": 49,
-    "name": "Skill 49",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 8,
-    "description": "Ability 49"
-  },
-  {
-    "id": 50,
-    "name": "Skill 50",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 50"
-  },
-  {
-    "id": 51,
-    "name": "Skill 51",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 8,
-    "description": "Ability 51"
-  },
-  {
-    "id": 52,
-    "name": "Skill 52",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 3,
-    "description": "Ability 52"
-  },
-  {
-    "id": 53,
-    "name": "Skill 53",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 53"
-  },
-  {
-    "id": 54,
-    "name": "Skill 54",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 16,
-    "description": "Ability 54"
-  },
-  {
-    "id": 55,
-    "name": "Skill 55",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 4,
-    "description": "Ability 55"
-  },
-  {
-    "id": 56,
-    "name": "Skill 56",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 56"
-  },
-  {
-    "id": 57,
-    "name": "Skill 57",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 6,
-    "description": "Ability 57"
-  },
-  {
-    "id": 58,
-    "name": "Skill 58",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 58"
-  },
-  {
-    "id": 59,
-    "name": "Skill 59",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 59"
-  },
-  {
-    "id": 60,
-    "name": "Skill 60",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 6,
-    "description": "Ability 60"
-  },
-  {
-    "id": 61,
-    "name": "Skill 61",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 12,
-    "description": "Ability 61"
-  },
-  {
-    "id": 62,
-    "name": "Skill 62",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 19,
-    "description": "Ability 62"
-  },
-  {
-    "id": 63,
-    "name": "Skill 63",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 63"
-  },
-  {
-    "id": 64,
-    "name": "Skill 64",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 10,
-    "description": "Ability 64"
-  },
-  {
-    "id": 65,
-    "name": "Skill 65",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 65"
-  },
-  {
-    "id": 66,
-    "name": "Skill 66",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 66"
-  },
-  {
-    "id": 67,
-    "name": "Skill 67",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 67"
-  },
-  {
-    "id": 68,
-    "name": "Skill 68",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 16,
-    "description": "Ability 68"
-  },
-  {
-    "id": 69,
-    "name": "Skill 69",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 9,
-    "description": "Ability 69"
-  },
-  {
-    "id": 70,
-    "name": "Skill 70",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 14,
-    "description": "Ability 70"
-  },
-  {
-    "id": 71,
-    "name": "Skill 71",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 71"
-  },
-  {
-    "id": 72,
-    "name": "Skill 72",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 9,
-    "description": "Ability 72"
-  },
-  {
-    "id": 73,
-    "name": "Skill 73",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 10,
-    "description": "Ability 73"
-  },
-  {
-    "id": 74,
-    "name": "Skill 74",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 4,
-    "description": "Ability 74"
-  },
-  {
-    "id": 75,
-    "name": "Skill 75",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 75"
-  },
-  {
-    "id": 76,
-    "name": "Skill 76",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 76"
-  },
-  {
-    "id": 77,
-    "name": "Skill 77",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 16,
-    "description": "Ability 77"
-  },
-  {
-    "id": 78,
-    "name": "Skill 78",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 12,
-    "description": "Ability 78"
-  },
-  {
-    "id": 79,
-    "name": "Skill 79",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 2,
-    "description": "Ability 79"
-  },
-  {
-    "id": 80,
-    "name": "Skill 80",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 13,
-    "description": "Ability 80"
-  },
-  {
-    "id": 81,
-    "name": "Skill 81",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 15,
-    "description": "Ability 81"
-  },
-  {
-    "id": 82,
-    "name": "Skill 82",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 16,
-    "description": "Ability 82"
-  },
-  {
-    "id": 83,
-    "name": "Skill 83",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 83"
-  },
-  {
-    "id": 84,
-    "name": "Skill 84",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 15,
-    "description": "Ability 84"
-  },
-  {
-    "id": 85,
-    "name": "Skill 85",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 14,
-    "description": "Ability 85"
-  },
-  {
-    "id": 86,
-    "name": "Skill 86",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 15,
-    "description": "Ability 86"
-  },
-  {
-    "id": 87,
-    "name": "Skill 87",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 15,
-    "description": "Ability 87"
-  },
-  {
-    "id": 88,
-    "name": "Skill 88",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 88"
-  },
-  {
-    "id": 89,
-    "name": "Skill 89",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 4,
-    "description": "Ability 89"
-  },
-  {
-    "id": 90,
-    "name": "Skill 90",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 19,
-    "description": "Ability 90"
-  },
-  {
-    "id": 91,
-    "name": "Skill 91",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 91"
-  },
-  {
-    "id": 92,
-    "name": "Skill 92",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 12,
-    "description": "Ability 92"
-  },
-  {
-    "id": 93,
-    "name": "Skill 93",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 12,
-    "description": "Ability 93"
-  },
-  {
-    "id": 94,
-    "name": "Skill 94",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 12,
-    "description": "Ability 94"
-  },
-  {
-    "id": 95,
-    "name": "Skill 95",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 95"
-  },
-  {
-    "id": 96,
-    "name": "Skill 96",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 18,
-    "description": "Ability 96"
-  },
-  {
-    "id": 97,
-    "name": "Skill 97",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 97"
-  },
-  {
-    "id": 98,
-    "name": "Skill 98",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 18,
-    "description": "Ability 98"
-  },
-  {
-    "id": 99,
-    "name": "Skill 99",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 99"
-  },
-  {
-    "id": 100,
-    "name": "Skill 100",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 14,
-    "description": "Ability 100"
-  },
-  {
-    "id": 101,
-    "name": "Skill 101",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 101"
-  },
-  {
-    "id": 102,
-    "name": "Skill 102",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 12,
-    "description": "Ability 102"
-  },
-  {
-    "id": 103,
-    "name": "Skill 103",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 6,
-    "description": "Ability 103"
-  },
-  {
-    "id": 104,
-    "name": "Skill 104",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 15,
-    "description": "Ability 104"
-  },
-  {
-    "id": 105,
-    "name": "Skill 105",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 2,
-    "description": "Ability 105"
-  },
-  {
-    "id": 106,
-    "name": "Skill 106",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 18,
-    "description": "Ability 106"
-  },
-  {
-    "id": 107,
-    "name": "Skill 107",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 15,
-    "description": "Ability 107"
-  },
-  {
-    "id": 108,
-    "name": "Skill 108",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 108"
-  },
-  {
-    "id": 109,
-    "name": "Skill 109",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 109"
-  },
-  {
-    "id": 110,
-    "name": "Skill 110",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 8,
-    "description": "Ability 110"
-  },
-  {
-    "id": 111,
-    "name": "Skill 111",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 2,
-    "description": "Ability 111"
-  },
-  {
-    "id": 112,
-    "name": "Skill 112",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 112"
-  },
-  {
-    "id": 113,
-    "name": "Skill 113",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 20,
-    "description": "Ability 113"
-  },
-  {
-    "id": 114,
-    "name": "Skill 114",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 15,
-    "description": "Ability 114"
-  },
-  {
-    "id": 115,
-    "name": "Skill 115",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 14,
-    "description": "Ability 115"
-  },
-  {
-    "id": 116,
-    "name": "Skill 116",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 2,
-    "description": "Ability 116"
-  },
-  {
-    "id": 117,
-    "name": "Skill 117",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 9,
-    "description": "Ability 117"
-  },
-  {
-    "id": 118,
-    "name": "Skill 118",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 4,
-    "description": "Ability 118"
-  },
-  {
-    "id": 119,
-    "name": "Skill 119",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 6,
-    "description": "Ability 119"
-  },
-  {
-    "id": 120,
-    "name": "Skill 120",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 120"
-  },
-  {
-    "id": 121,
-    "name": "Skill 121",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 19,
-    "description": "Ability 121"
-  },
-  {
-    "id": 122,
-    "name": "Skill 122",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 9,
-    "description": "Ability 122"
-  },
-  {
-    "id": 123,
-    "name": "Skill 123",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 16,
-    "description": "Ability 123"
-  },
-  {
-    "id": 124,
-    "name": "Skill 124",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 19,
-    "description": "Ability 124"
-  },
-  {
-    "id": 125,
-    "name": "Skill 125",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 12,
-    "description": "Ability 125"
-  },
-  {
-    "id": 126,
-    "name": "Skill 126",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 19,
-    "description": "Ability 126"
-  },
-  {
-    "id": 127,
-    "name": "Skill 127",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 8,
-    "description": "Ability 127"
-  },
-  {
-    "id": 128,
-    "name": "Skill 128",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 128"
-  },
-  {
-    "id": 129,
-    "name": "Skill 129",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 129"
-  },
-  {
-    "id": 130,
-    "name": "Skill 130",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 130"
-  },
-  {
-    "id": 131,
-    "name": "Skill 131",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 14,
-    "description": "Ability 131"
-  },
-  {
-    "id": 132,
-    "name": "Skill 132",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 2,
-    "description": "Ability 132"
-  },
-  {
-    "id": 133,
-    "name": "Skill 133",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 133"
-  },
-  {
-    "id": 134,
-    "name": "Skill 134",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 134"
-  },
-  {
-    "id": 135,
-    "name": "Skill 135",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 18,
-    "description": "Ability 135"
-  },
-  {
-    "id": 136,
-    "name": "Skill 136",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 5,
-    "description": "Ability 136"
-  },
-  {
-    "id": 137,
-    "name": "Skill 137",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 2,
-    "description": "Ability 137"
-  },
-  {
-    "id": 138,
-    "name": "Skill 138",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 6,
-    "description": "Ability 138"
-  },
-  {
-    "id": 139,
-    "name": "Skill 139",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 139"
-  },
-  {
-    "id": 140,
-    "name": "Skill 140",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 18,
-    "description": "Ability 140"
-  },
-  {
-    "id": 141,
-    "name": "Skill 141",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 14,
-    "description": "Ability 141"
-  },
-  {
-    "id": 142,
-    "name": "Skill 142",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 21,
-    "description": "Ability 142"
-  },
-  {
-    "id": 143,
-    "name": "Skill 143",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 11,
-    "description": "Ability 143"
-  },
-  {
-    "id": 144,
-    "name": "Skill 144",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 19,
-    "description": "Ability 144"
-  },
-  {
-    "id": 145,
-    "name": "Skill 145",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 13,
-    "description": "Ability 145"
-  },
-  {
-    "id": 146,
-    "name": "Skill 146",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 16,
-    "description": "Ability 146"
-  },
-  {
-    "id": 147,
-    "name": "Skill 147",
-    "type": "Support",
-    "damageType": "Physical",
-    "cooldown": 17,
-    "description": "Ability 147"
-  },
-  {
-    "id": 148,
-    "name": "Skill 148",
-    "type": "Attack",
-    "damageType": "Physical",
-    "cooldown": 20,
-    "description": "Ability 148"
-  },
-  {
-    "id": 149,
-    "name": "Skill 149",
-    "type": "Defense",
-    "damageType": "Physical",
-    "cooldown": 7,
-    "description": "Ability 149"
-  },
-  {
-    "id": 150,
-    "name": "Skill 150",
-    "type": "Magic",
-    "damageType": "Physical",
-    "cooldown": 4,
-    "description": "Ability 150"
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564723",
+    "description": "Slash through void for ultimate damage."
   }
 ]

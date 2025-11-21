@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "name": "Swift Current",
+    "benefit": "Movement+15%",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564726",
+    "description": "Inner Ways, or Internal Arts, function as passive skills that grant bonuses in Where Winds Meet. See all the Internal Arts and their effects, along with an explanation of what they are here."
+  },
+  {
+    "id": 2,
+    "name": "Iron Body",
+    "benefit": "Defense+10%",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564726",
+    "description": "Inner Ways, or Internal Arts, function as passive skills that grant bonuses in Where Winds Meet. See all the Internal Arts and their effects, along with an explanation of what they are here."
+  },
+  {
+    "id": 3,
+    "name": "Minds Focus",
+    "benefit": "Concentration+20%",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564726",
+    "description": "Inner Ways, or Internal Arts, function as passive skills that grant bonuses in Where Winds Meet. See all the Internal Arts and their effects, along with an explanation of what they are here."
+  },
+  {
+    "id": 4,
+    "name": "Heavens Breath",
+    "benefit": "Stamina+15%",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564726",
+    "description": "Inner Ways, or Internal Arts, function as passive skills that grant bonuses in Where Winds Meet. See all the Internal Arts and their effects, along with an explanation of what they are here."
+  },
+  {
+    "id": 5,
+    "name": "Earth Root",
+    "benefit": "Stability+25%",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/564726",
+    "description": "Inner Ways, or Internal Arts, function as passive skills that grant bonuses in Where Winds Meet. See all the Internal Arts and their effects, along with an explanation of what they are here."
+  }
+]

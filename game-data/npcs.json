@@ -1,702 +1,296 @@
 [
   {
     "id": 1,
-    "name": "NPC 1",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 1"
+    "name": "Li Laizuo",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "A seasoned merchant who sells rare items and equipment."
   },
   {
     "id": 2,
-    "name": "NPC 2",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 2"
+    "name": "Zhao Dali",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Skilled blacksmith specializing in weapon crafting."
   },
   {
     "id": 3,
-    "name": "NPC 3",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 3"
+    "name": "Lie Buxi",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Master of martial arts who trains disciples."
   },
   {
     "id": 4,
-    "name": "NPC 4",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 4"
+    "name": "Chai Bakun",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Innkeeper who provides lodging and information."
   },
   {
     "id": 5,
-    "name": "NPC 5",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 5"
+    "name": "Qi Sheng",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Mysterious sage with knowledge of ancient secrets."
   },
   {
     "id": 6,
-    "name": "NPC 6",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 6"
+    "name": "Yao Yaoyao",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Herbalist gathering rare plants for medicine."
   },
   {
     "id": 7,
-    "name": "NPC 7",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 7"
+    "name": "Fu Lushou",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Fortune teller who reads fate through divination."
   },
   {
     "id": 8,
-    "name": "NPC 8",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 8"
+    "name": "Jin Xiaobao",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Young apprentice learning the ways of cultivation."
   },
   {
     "id": 9,
-    "name": "NPC 9",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 9"
+    "name": "Jin Chunniang",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Skilled cook preparing delicious meals."
   },
   {
     "id": 10,
-    "name": "NPC 10",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 10"
+    "name": "Wang Duolu",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Guard captain protecting the settlement."
   },
   {
     "id": 11,
-    "name": "NPC 11",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 11"
+    "name": "Li Daniu",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Farmer cultivating crops and raising livestock."
   },
   {
     "id": 12,
-    "name": "NPC 12",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 12"
+    "name": "Li Shaokui",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Explorer discovering new territories and dungeons."
   },
   {
     "id": 13,
-    "name": "NPC 13",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 13"
+    "name": "Wobbly Tang",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Drunkard with surprising wisdom when sober."
   },
   {
     "id": 14,
-    "name": "NPC 14",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 14"
+    "name": "Tang Lubao",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Scholar studying ancient texts and history."
   },
   {
     "id": 15,
-    "name": "NPC 15",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 15"
+    "name": "Wang Duobao",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Wealthy merchant dealing in exotic goods."
   },
   {
     "id": 16,
-    "name": "NPC 16",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 16"
+    "name": "Chai Jiudui",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Chef specializing in exotic cuisines."
   },
   {
     "id": 17,
-    "name": "NPC 17",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 17"
+    "name": "Zhu Bawan",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Fisherman catching rare aquatic creatures."
   },
   {
     "id": 18,
-    "name": "NPC 18",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 18"
+    "name": "Miaojue",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Buddhist monk offering spiritual guidance."
   },
   {
     "id": 19,
-    "name": "NPC 19",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 19"
+    "name": "Daozheng",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Taoist priest teaching meditation techniques."
   },
   {
     "id": 20,
-    "name": "NPC 20",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 20"
+    "name": "Zhou Yizhou",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Talented musician playing traditional instruments."
   },
   {
     "id": 21,
-    "name": "NPC 21",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 21"
+    "name": "Rafter Rat",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Nimble rat creature dwelling in the rafters."
   },
   {
     "id": 22,
-    "name": "NPC 22",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 22"
+    "name": "Embroidered Rat",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Decorated rat with unusual intelligence."
   },
   {
     "id": 23,
-    "name": "NPC 23",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 23"
+    "name": "Pan Faxin",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Former warrior settling into merchant life."
   },
   {
     "id": 24,
-    "name": "NPC 24",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 24"
+    "name": "Barn Rat",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Wild rat living in grain storage."
   },
   {
     "id": 25,
-    "name": "NPC 25",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 25"
+    "name": "Burrowing Rat",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Underground rat controlling subterranean tunnels."
   },
   {
     "id": 26,
-    "name": "NPC 26",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 26"
+    "name": "Small Chisel",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Tiny rat artisan crafting miniature items."
   },
   {
     "id": 27,
-    "name": "NPC 27",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 27"
+    "name": "Pip Rat",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Swift rat messenger delivering packages."
   },
   {
     "id": 28,
-    "name": "NPC 28",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 28"
+    "name": "Feng Rusong",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Forest ranger protecting wildlife."
   },
   {
     "id": 29,
-    "name": "NPC 29",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 29"
+    "name": "Pan Xinniang",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Healer tending to the sick and wounded."
   },
   {
     "id": 30,
-    "name": "NPC 30",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 30"
+    "name": "Zhou Miaoxin",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Dance master teaching movement and grace."
   },
   {
     "id": 31,
-    "name": "NPC 31",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 31"
+    "name": "Jingyi",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Temple keeper maintaining sacred grounds."
   },
   {
     "id": 32,
-    "name": "NPC 32",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 32"
+    "name": "Wu Jingming",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Astronomer studying stars and constellations."
   },
   {
     "id": 33,
-    "name": "NPC 33",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 33"
+    "name": "Chai Sansheng",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Local governor managing village affairs."
   },
   {
     "id": 34,
-    "name": "NPC 34",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 34"
+    "name": "Bodhi",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Enlightened master on spiritual path."
   },
   {
     "id": 35,
-    "name": "NPC 35",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 35"
+    "name": "Shi the Boatman",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Ferry operator crossing rivers safely."
   },
   {
     "id": 36,
-    "name": "NPC 36",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 36"
+    "name": "Zhao Weiye",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Treasure hunter seeking valuable artifacts."
   },
   {
     "id": 37,
-    "name": "NPC 37",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 37"
+    "name": "Lu Sheng",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Musician composing beautiful melodies."
   },
   {
     "id": 38,
-    "name": "NPC 38",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 38"
+    "name": "Xiang the Greedy",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Notorious bandit seeking wealth and power."
   },
   {
     "id": 39,
-    "name": "NPC 39",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 39"
+    "name": "Yueniang",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Graceful dancer performing traditional arts."
   },
   {
     "id": 40,
-    "name": "NPC 40",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 40"
+    "name": "Auntie Tian",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Elderly woman with life wisdom and kindness."
   },
   {
     "id": 41,
-    "name": "NPC 41",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 41"
+    "name": "Zhang Dazhuang",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Strong man performing incredible feats."
   },
   {
     "id": 42,
-    "name": "NPC 42",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 42"
-  },
-  {
-    "id": 43,
-    "name": "NPC 43",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 43"
-  },
-  {
-    "id": 44,
-    "name": "NPC 44",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 44"
-  },
-  {
-    "id": 45,
-    "name": "NPC 45",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 45"
-  },
-  {
-    "id": 46,
-    "name": "NPC 46",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 46"
-  },
-  {
-    "id": 47,
-    "name": "NPC 47",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 47"
-  },
-  {
-    "id": 48,
-    "name": "NPC 48",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 48"
-  },
-  {
-    "id": 49,
-    "name": "NPC 49",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 49"
-  },
-  {
-    "id": 50,
-    "name": "NPC 50",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 50"
-  },
-  {
-    "id": 51,
-    "name": "NPC 51",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 51"
-  },
-  {
-    "id": 52,
-    "name": "NPC 52",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 52"
-  },
-  {
-    "id": 53,
-    "name": "NPC 53",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 53"
-  },
-  {
-    "id": 54,
-    "name": "NPC 54",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 54"
-  },
-  {
-    "id": 55,
-    "name": "NPC 55",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 55"
-  },
-  {
-    "id": 56,
-    "name": "NPC 56",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 56"
-  },
-  {
-    "id": 57,
-    "name": "NPC 57",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 57"
-  },
-  {
-    "id": 58,
-    "name": "NPC 58",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 58"
-  },
-  {
-    "id": 59,
-    "name": "NPC 59",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 59"
-  },
-  {
-    "id": 60,
-    "name": "NPC 60",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 60"
-  },
-  {
-    "id": 61,
-    "name": "NPC 61",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 61"
-  },
-  {
-    "id": 62,
-    "name": "NPC 62",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 62"
-  },
-  {
-    "id": 63,
-    "name": "NPC 63",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 63"
-  },
-  {
-    "id": 64,
-    "name": "NPC 64",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 64"
-  },
-  {
-    "id": 65,
-    "name": "NPC 65",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 65"
-  },
-  {
-    "id": 66,
-    "name": "NPC 66",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 66"
-  },
-  {
-    "id": 67,
-    "name": "NPC 67",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 67"
-  },
-  {
-    "id": 68,
-    "name": "NPC 68",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 68"
-  },
-  {
-    "id": 69,
-    "name": "NPC 69",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 69"
-  },
-  {
-    "id": 70,
-    "name": "NPC 70",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 70"
-  },
-  {
-    "id": 71,
-    "name": "NPC 71",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 71"
-  },
-  {
-    "id": 72,
-    "name": "NPC 72",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 72"
-  },
-  {
-    "id": 73,
-    "name": "NPC 73",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 73"
-  },
-  {
-    "id": 74,
-    "name": "NPC 74",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 74"
-  },
-  {
-    "id": 75,
-    "name": "NPC 75",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 75"
-  },
-  {
-    "id": 76,
-    "name": "NPC 76",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 76"
-  },
-  {
-    "id": 77,
-    "name": "NPC 77",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 77"
-  },
-  {
-    "id": 78,
-    "name": "NPC 78",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 78"
-  },
-  {
-    "id": 79,
-    "name": "NPC 79",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 79"
-  },
-  {
-    "id": 80,
-    "name": "NPC 80",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 80"
-  },
-  {
-    "id": 81,
-    "name": "NPC 81",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 81"
-  },
-  {
-    "id": 82,
-    "name": "NPC 82",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 82"
-  },
-  {
-    "id": 83,
-    "name": "NPC 83",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 83"
-  },
-  {
-    "id": 84,
-    "name": "NPC 84",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 84"
-  },
-  {
-    "id": 85,
-    "name": "NPC 85",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 85"
-  },
-  {
-    "id": 86,
-    "name": "NPC 86",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 86"
-  },
-  {
-    "id": 87,
-    "name": "NPC 87",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 87"
-  },
-  {
-    "id": 88,
-    "name": "NPC 88",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 88"
-  },
-  {
-    "id": 89,
-    "name": "NPC 89",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 89"
-  },
-  {
-    "id": 90,
-    "name": "NPC 90",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 90"
-  },
-  {
-    "id": 91,
-    "name": "NPC 91",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 91"
-  },
-  {
-    "id": 92,
-    "name": "NPC 92",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 92"
-  },
-  {
-    "id": 93,
-    "name": "NPC 93",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 93"
-  },
-  {
-    "id": 94,
-    "name": "NPC 94",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 94"
-  },
-  {
-    "id": 95,
-    "name": "NPC 95",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 95"
-  },
-  {
-    "id": 96,
-    "name": "NPC 96",
-    "role": "Merchant",
-    "location": "Mountain Peak",
-    "description": "Character 96"
-  },
-  {
-    "id": 97,
-    "name": "NPC 97",
-    "role": "Guide",
-    "location": "Temple",
-    "description": "Character 97"
-  },
-  {
-    "id": 98,
-    "name": "NPC 98",
-    "role": "Smith",
-    "location": "Volcano",
-    "description": "Character 98"
-  },
-  {
-    "id": 99,
-    "name": "NPC 99",
-    "role": "Healer",
-    "location": "Cave",
-    "description": "Character 99"
-  },
-  {
-    "id": 100,
-    "name": "NPC 100",
-    "role": "Trainer",
-    "location": "Dark Forest",
-    "description": "Character 100"
+    "name": "Uncle Mi",
+    "role": "NPC",
+    "url": "https://game8.co/games/Where-Winds-Meet/archives/565812",
+    "description": "Elder storyteller preserving oral traditions."
   }
 ]
