@@ -1410,10 +1410,10 @@ client.on('interactionCreate', async (interaction) => {
                 );
               }
 
-              // Add back button with just cacheId (keep it short to avoid 100 char limit)
+              // Add back button with cacheId and searchQuery to prevent cache mixing
               serverButtons.push(
                 new ButtonBuilder()
-                  .setCustomId(`back_search_${returnCacheId}`)
+                  .setCustomId(`back_search_${returnCacheId}_${searchQuery.substring(0, 30)}`)
                   .setLabel('⬅️ Quay lại')
                   .setStyle(4) // Danger style (red)
               );
@@ -2235,9 +2235,11 @@ client.on('interactionCreate', async (interaction) => {
       // Back button handler for search
       if (customId.startsWith('back_search_')) {
         const afterPrefix = customId.replace('back_search_', '');
-        const returnCacheId = parseInt(afterPrefix);
+        const parts = afterPrefix.split('_');
+        const returnCacheId = parseInt(parts[0]);
+        const returnSearchQuery = parts.slice(1).join('_'); // Reconstruct searchQuery
         
-        console.log(`⬅️ [BACK SEARCH] User: ${userId}, CacheID: ${returnCacheId}`);
+        console.log(`⬅️ [BACK SEARCH] User: ${userId}, CacheID: ${returnCacheId}, Query: ${returnSearchQuery}`);
         
         try {
           await interaction.deferUpdate();
@@ -2249,10 +2251,16 @@ client.on('interactionCreate', async (interaction) => {
           // Fast O(1) lookup using cacheIdIndex instead of looping
           const cached = cacheIdIndex.get(returnCacheId);
           
-          console.log(`🔍 [FAST CACHE LOOKUP] CacheID: ${returnCacheId}, Found: ${!!cached}`);
+          console.log(`🔍 [FAST CACHE LOOKUP] CacheID: ${returnCacheId}, Query: ${returnSearchQuery}, Found: ${!!cached}`);
           
           if (!cached) {
             console.log(`⚠️ [SEARCH CACHE MISS] Cache not found for cacheId ${returnCacheId}`);
+            return;
+          }
+          
+          // Verify searchQuery matches to prevent cache mixing
+          if (cached.searchQuery !== returnSearchQuery) {
+            console.warn(`⚠️ [CACHE MISMATCH] Query mismatch: expected "${returnSearchQuery}", got "${cached.searchQuery}"`);
             return;
           }
           
@@ -3128,7 +3136,7 @@ client.on('interactionCreate', async (interaction) => {
             );
           }
 
-          const buttonRows = [];
+          let buttonRows = [];
 
           // Add detail buttons first
           for (let row = 0; row < Math.ceil(buttons.length / 2); row++) {
