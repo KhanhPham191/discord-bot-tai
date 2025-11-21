@@ -63,25 +63,10 @@ async function searchMovies(keyword, maxResults = 100) {
           break; // No more results
         }
         
-        // Fetch release year from detail endpoint for each movie
-        const moviesWithYear = await Promise.all(items.map(async (item) => {
-          try {
-            const detail = await getMovieDetail(item.slug);
-            if (detail && detail.year && detail.year !== 'N/A') {
-              return {
-                ...item,
-                year: detail.year
-              };
-            }
-          } catch (e) {
-            console.log(`⚠️ Could not fetch detail for ${item.slug}`);
-          }
-          
-          // Fallback to created year
-          return {
-            ...item,
-            year: item.created ? item.created.split('-')[0] : 'N/A'
-          };
+        // Don't fetch detail for each movie - too slow! Extract year from created date instead
+        const moviesWithYear = items.map((item) => ({
+          ...item,
+          year: item.created ? item.created.split('-')[0] : 'N/A'
         }));
         
         allMovies = allMovies.concat(moviesWithYear);
