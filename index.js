@@ -338,6 +338,18 @@ async function registerSlashCommands() {
       .addBooleanOption(option =>
         option.setName('enabled')
           .setDescription('Bật/tắt tính năng thông báo phim update')
+          .setRequired(false)),
+    
+    new SlashCommandBuilder()
+      .setName('setup-reminder')
+      .setDescription('Cấu hình kênh nhận thông báo trận đấu')
+      .addChannelOption(option =>
+        option.setName('channel')
+          .setDescription('Channel để gửi thông báo trận đấu')
+          .setRequired(true))
+      .addBooleanOption(option =>
+        option.setName('enabled')
+          .setDescription('Bật/tắt tính năng thông báo trận đấu')
           .setRequired(false))
   ];
 
@@ -1660,6 +1672,74 @@ client.on('interactionCreate', async (interaction) => {
             { name: '📊 Tổng channels', value: `${config.movieUpdate.channels.length}`, inline: false }
           )
           .setFooter({ text: 'Bot sẽ gửi thông báo phim mới vào tất cả channels đã thiết lập mỗi 30 phút' })
+          .setTimestamp();
+
+        await interaction.reply({ embeds: [statusEmbed] });
+        return;
+      }
+
+      if (command === 'setup-reminder') {
+        console.log(`\n🔧 Processing setup-reminder command...`);
+        const channel = interaction.options.getChannel('channel');
+        const enabled = interaction.options.getBoolean('enabled') ?? true;
+
+        console.log(`📺 Channel: ${channel?.name} (${channel?.id}), Enabled: ${enabled}`);
+
+        // Initialize footballReminder config if doesn't exist
+        if (!config.footballReminder) {
+          console.log(`📝 Initializing footballReminder config...`);
+          config.footballReminder = {
+            channels: [],
+            enabled: true
+          };
+        }
+
+        // Ensure channels array exists
+        if (!config.footballReminder.channels) {
+          console.log(`📝 Initializing channels array...`);
+          config.footballReminder.channels = [];
+        }
+
+        console.log(`📊 Current channels before: ${config.footballReminder.channels.length}`);
+
+        // Check if channel already exists
+        const channelExists = config.footballReminder.channels.some(c => c.id === channel.id);
+        
+        if (enabled) {
+          // Add channel if not exists
+          if (!channelExists) {
+            config.footballReminder.channels.push({
+              id: channel.id,
+              name: channel.name,
+              guildId: interaction.guildId
+            });
+            console.log(`✅ Added football reminder channel: ${channel.name} (${channel.id})`);
+            console.log(`📊 Current channels after: ${config.footballReminder.channels.length}`);
+          } else {
+            console.log(`⚠️ Channel already in reminder list: ${channel.name} (${channel.id})`);
+          }
+        } else {
+          // Remove channel from list
+          config.footballReminder.channels = config.footballReminder.channels.filter(c => c.id !== channel.id);
+          console.log(`✅ Removed football reminder channel: ${channel.name} (${channel.id})`);
+          console.log(`📊 Current channels after: ${config.footballReminder.channels.length}`);
+        }
+
+        // ALWAYS enable footballReminder if we have channels
+        config.footballReminder.enabled = config.footballReminder.channels.length > 0;
+        console.log(`💾 Saving config with ${config.footballReminder.channels.length} channels...`);
+        saveConfig();
+        console.log(`✨ Save complete!\n`);
+
+        const statusEmbed = new EmbedBuilder()
+          .setColor(enabled ? '#3b82f6' : '#ef4444')
+          .setTitle('⚙️ Thiết lập kênh thông báo trận đấu')
+          .addFields(
+            { name: '📺 Kênh được chọn', value: `${channel} (${channel.id})`, inline: false },
+            { name: '🔄 Thao tác', value: enabled ? '✅ Thêm vào danh sách' : '❌ Xóa khỏi danh sách', inline: false },
+            { name: '📊 Tổng channels', value: `${config.footballReminder.channels.length}`, inline: false }
+          )
+          .setFooter({ text: 'Bot sẽ gửi thông báo trận đấu vào tất cả channels đã thiết lập' })
           .setTimestamp();
 
         await interaction.reply({ embeds: [statusEmbed] });
