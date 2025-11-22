@@ -593,15 +593,7 @@ client.on('interactionCreate', async (interaction) => {
             '🎬 Movie Search:',
             '`/search <tên phim>` - tìm phim (gõ `help` để xem chi tiết)',
             '`/newmovies [trang]` - phim mới cập nhật (trang 1 nếu không chỉ định)',
-            '`/set-movie-update-channel <channel> [enabled]` - thiết lập kênh nhận thông báo phim mới',
-            '',
-            '🎮 Where Winds Meet Game:',
-            '`/weapon <tên>` - tìm vũ khí',
-            '`/npc <tên>` - tìm nhân vật',
-            '`/boss <tên>` - tìm boss',
-            '`/skill <tên>` - tìm kỹ năng',
-            '`/item <tên>` - tìm vật phẩm',
-            '`/gamestats` - xem thống kê database game'
+            '`/set-movie-update-channel <channel> [enabled]` - thiết lập kênh nhận thông báo phim mới'
           ].join('\n')
         );
         return;
