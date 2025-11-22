@@ -576,11 +576,6 @@ client.once('ready', async () => {
                 .setFooter({ text: 'Football Bot Reminder' })
                 .setTimestamp();
               
-              // Send to user DM
-              user.send({ embeds: [reminderEmbed] }).catch(err => {
-                console.log(`⚠️ Could not send reminder to ${user.tag}:`, err.message);
-              });
-              
               // Send to configured channel
               if (config.footballReminder?.enabled && config.footballReminder?.channels?.length > 0) {
                 for (const channelConfig of config.footballReminder.channels) {
@@ -594,6 +589,11 @@ client.once('ready', async () => {
                     console.log(`⚠️ Could not send to channel ${channelConfig.id}:`, err.message);
                   }
                 }
+              } else {
+                // Send to user DM only if no channel is configured
+                user.send({ embeds: [reminderEmbed] }).catch(err => {
+                  console.log(`⚠️ Could not send reminder to ${user.tag}:`, err.message);
+                });
               }
             });
           }
