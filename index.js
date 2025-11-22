@@ -535,7 +535,7 @@ client.once('ready', async () => {
             const team = config.livescoreTeams.find(t => t.id === teamId);
             const teamName = team?.name || `Team ${teamId}`;
             
-            upcomingMatches.forEach(match => {
+            upcomingMatches.forEach(async (match) => {
               const opponent = match.homeTeam.id === teamId ? match.awayTeam.name : match.homeTeam.name;
               const isHome = match.homeTeam.id === teamId ? '🏠' : '✈️';
               const timeUntilMatch = Math.floor((new Date(match.utcDate) - now) / 60 / 1000); // minutes
@@ -554,9 +554,25 @@ client.once('ready', async () => {
                 .setFooter({ text: 'Football Bot Reminder' })
                 .setTimestamp();
               
+              // Send to user DM
               user.send({ embeds: [reminderEmbed] }).catch(err => {
                 console.log(`⚠️ Could not send reminder to ${user.tag}:`, err.message);
               });
+              
+              // Send to configured channel
+              if (config.footballReminder?.enabled && config.footballReminder?.channels?.length > 0) {
+                for (const channelConfig of config.footballReminder.channels) {
+                  try {
+                    const channel = await client.channels.fetch(channelConfig.id);
+                    if (channel && channel.isTextBased()) {
+                      await channel.send({ embeds: [reminderEmbed] });
+                      console.log(`📢 Sent reminder to channel ${channelConfig.name}`);
+                    }
+                  } catch (err) {
+                    console.log(`⚠️ Could not send to channel ${channelConfig.id}:`, err.message);
+                  }
+                }
+              }
             });
           }
         }

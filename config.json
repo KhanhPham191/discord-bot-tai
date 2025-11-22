@@ -233,5 +233,15 @@
       }
     ],
     "enabled": true
+  },
+  "footballReminder": {
+    "channels": [
+      {
+        "id": "694577581298810946",
+        "name": "chuyện-bên-lề",
+        "guildId": "694577581298810940"
+      }
+    ],
+    "enabled": true
   }
 }
