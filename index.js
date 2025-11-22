@@ -2014,6 +2014,28 @@ client.on('interactionCreate', async (interaction) => {
           .setTimestamp();
 
         await interaction.reply({ embeds: [statusEmbed] });
+        
+        // Also send to the configured channel to confirm setup
+        if (enabled && channel && channel.isTextBased()) {
+          try {
+            const confirmEmbed = new EmbedBuilder()
+              .setColor('#10b981')
+              .setTitle('✅ Kênh đã được thiết lập!')
+              .setDescription(`Kênh này sẽ nhận thông báo về:\n• Các trận đấu sắp tới (24h trước)\n• Đội hình (30 phút trước)\n• Cập nhật điểm số sống\n• Thẻ phạt, phạt góc`)
+              .addFields(
+                { name: '🏆 Đội được theo dõi', value: 'Sẽ gửi thông báo cho các đội đã thiết lập', inline: false },
+                { name: '📊 Tổng kênh được thiết lập', value: `${config.footballReminder.channels.length}`, inline: false }
+              )
+              .setFooter({ text: 'Football Bot' })
+              .setTimestamp();
+            
+            await channel.send({ embeds: [confirmEmbed] }).catch(err => {
+              console.log(`⚠️ Could not send confirmation to channel:`, err.message);
+            });
+          } catch (err) {
+            console.log(`⚠️ Error sending confirmation:`, err.message);
+          }
+        }
         return;
       }
     } catch (error) {
