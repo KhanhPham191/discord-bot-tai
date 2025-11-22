@@ -73,34 +73,32 @@ async function getStandings(competitionId) {
 // Get fixtures for a team
 async function getFixtures(teamId, next = 10) {
   try {
-    // Get from team endpoint first
-    let response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
-      headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
-      params: { 
-        status: 'SCHEDULED,LIVE',
-        limit: 50  // Get enough matches
-      }
-    });
-    
-    let matches = response.data.matches || [];
-    
-    if (matches.length === 0) {
-      console.log(`ℹ️ No matches found for team ${teamId}, trying competition endpoint...`);
-      
-      // Get team info to find their competition
-      try {
-        const teamRes = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}`, {
-          headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
-        });
-        
-        const activeCompetition = teamRes.data.runningCompetitions?.[0];
-        if (!activeCompetition) {
-          console.log(`ℹ️ No active competition for team ${teamId}`);
-          return [];
+    // First try team endpoint (requires higher subscription tier)
+    try {
+      const response = await axios.get(`${FOOTBALL_API_URL}/teams/${teamId}/matches`, {
+        headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
+        params: { 
+          status: 'SCHEDULED,LIVE',
+          limit: 50
         }
-        
-        // Get competition matches
-        const compRes = await axios.get(`${FOOTBALL_API_URL}/competitions/${activeCompetition.code}/matches`, {
+      });
+      
+      let matches = response.data.matches || [];
+      if (matches.length > 0) {
+        console.log(`✅ Got ${matches.length} matches from team endpoint for team ${teamId}`);
+        return matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate)).slice(0, next);
+      }
+    } catch (teamError) {
+      console.log(`ℹ️ Team endpoint restricted (free tier). Switching to competitions endpoint...`);
+    }
+    
+    // Fallback: fetch from competitions for free tier
+    const competitions = ['PL', 'EL1', 'SA', 'BL1', 'FL1', 'CL', 'ELC'];
+    const allMatches = [];
+    
+    for (const compCode of competitions) {
+      try {
+        const compRes = await axios.get(`${FOOTBALL_API_URL}/competitions/${compCode}/matches`, {
           headers: { 'X-Auth-Token': FOOTBALL_API_KEY },
           params: { 
             status: 'SCHEDULED,LIVE',
@@ -108,26 +106,26 @@ async function getFixtures(teamId, next = 10) {
           }
         });
         
-        // Filter for this team only
-        matches = (compRes.data.matches || []).filter(m => 
+        // Filter matches for this team
+        const teamMatches = (compRes.data.matches || []).filter(m => 
           m.homeTeam.id === teamId || m.awayTeam.id === teamId
         );
-      } catch (teamError) {
-        console.log(`⚠️ Competition endpoint failed:`, teamError.message);
+        
+        allMatches.push(...teamMatches);
+      } catch (e) {
+        // Skip if competition not available
       }
     }
+    
+    const matches = allMatches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+    console.log(`✅ Found ${matches.length} matches from competitions for team ${teamId}`);
     
     if (matches.length === 0) {
       console.log(`ℹ️ No upcoming matches for team ${teamId}`);
       return [];
     }
     
-    // Sort by date (ascending - earliest first)
-    const sorted = matches.sort((a, b) => 
-      new Date(a.utcDate) - new Date(b.utcDate)
-    );
-    
-    return sorted.slice(0, next);
+    return matches.slice(0, next);
   } catch (e) {
     console.error(`❌ Error fetching fixtures (team ${teamId}):`, e.response?.data?.message || e.message);
     return [];
