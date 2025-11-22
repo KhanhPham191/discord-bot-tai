@@ -116,31 +116,126 @@ function saveNotifiedMovies() {
 }
 
 // Create tracked teams dashboard UI
-// Get tracked teams for a specific user
+// Get tracked teams for a specific user - returns array of team IDs
 function getUserTrackedTeams(userId) {
   if (!config.userTrackedTeams) config.userTrackedTeams = {};
-  return config.userTrackedTeams[userId] || [];
+  if (!config.userTrackedTeams[userId]) return [];
+  
+  const userData = config.userTrackedTeams[userId];
+  if (Array.isArray(userData)) {
+    return userData;
+  } else {
+    return Object.keys(userData).map(id => parseInt(id));
+  }
+}
+
+// Get tracked teams with preferences - returns {teamId: {preference: 'channel'/'dm'}}
+function getUserTrackedTeamsWithPreferences(userId) {
+  if (!config.userTrackedTeams) config.userTrackedTeams = {};
+  if (!config.userTrackedTeams[userId]) return {};
+  
+  const userData = config.userTrackedTeams[userId];
+  if (Array.isArray(userData)) {
+    const newFormat = {};
+    userData.forEach(teamId => {
+      newFormat[teamId] = { preference: 'channel' };
+    });
+    config.userTrackedTeams[userId] = newFormat;
+    saveConfig();
+    return newFormat;
+  } else {
+    return userData;
+  }
+}
+
+// Get preference for a specific team - returns 'channel' or 'dm'
+function getUserTeamPreference(userId, teamId) {
+  const preferences = getUserTrackedTeamsWithPreferences(userId);
+  return preferences[teamId]?.preference || 'channel';
 }
 
 // Add team to user's tracked list
-function addUserTrackedTeam(userId, teamId) {
+function addUserTrackedTeam(userId, teamId, preference = 'channel') {
   if (!config.userTrackedTeams) config.userTrackedTeams = {};
   if (!config.userTrackedTeams[userId]) {
-    config.userTrackedTeams[userId] = [];
+    config.userTrackedTeams[userId] = {};
   }
-  if (!config.userTrackedTeams[userId].includes(teamId)) {
-    config.userTrackedTeams[userId].push(teamId);
-    saveConfig(); // Save to file realtime
+  
+  if (Array.isArray(config.userTrackedTeams[userId])) {
+    const arr = config.userTrackedTeams[userId];
+    const newFormat = {};
+    arr.forEach(id => {
+      newFormat[id] = { preference: 'channel' };
+    });
+    config.userTrackedTeams[userId] = newFormat;
+  }
+  
+  config.userTrackedTeams[userId][teamId] = { preference };
+  saveConfig(); // Save to file realtime
+}
+
+// Update team preference
+function setUserTeamPreference(userId, teamId, preference) {
+  if (!config.userTrackedTeams) config.userTrackedTeams = {};
+  if (!config.userTrackedTeams[userId]) {
+    config.userTrackedTeams[userId] = {};
+  }
+  
+  if (Array.isArray(config.userTrackedTeams[userId])) {
+    const arr = config.userTrackedTeams[userId];
+    const newFormat = {};
+    arr.forEach(id => {
+      newFormat[id] = { preference: 'channel' };
+    });
+    config.userTrackedTeams[userId] = newFormat;
+  }
+  
+  if (config.userTrackedTeams[userId][teamId]) {
+    config.userTrackedTeams[userId][teamId].preference = preference;
+    saveConfig();
   }
 }
 
 // Remove team from user's tracked list
 function removeUserTrackedTeam(userId, teamId) {
   if (!config.userTrackedTeams) config.userTrackedTeams = {};
-  if (config.userTrackedTeams[userId]) {
+  if (!config.userTrackedTeams[userId]) return;
+  
+  if (Array.isArray(config.userTrackedTeams[userId])) {
     config.userTrackedTeams[userId] = config.userTrackedTeams[userId].filter(id => id !== teamId);
-    saveConfig(); // Save to file realtime
+  } else {
+    delete config.userTrackedTeams[userId][teamId];
   }
+  saveConfig(); // Save to file realtime
+}
+
+// Send notification to user based on their preference (channel or DM)
+// If channel - sends to footballReminder channels + public channel
+// If DM - sends directly to user's DM
+async function sendUserNotification(userId, embed, fallbackChannel) {
+  const preference = getUserTeamPreference(userId, 0); // Check general preference
+  
+  try {
+    // Get user
+    const user = await client.users.fetch(userId).catch(() => null);
+    
+    if (preference === 'dm' && user) {
+      // Send DM
+      await user.send({ embeds: [embed] });
+      console.log(`📨 Sent DM to ${user.tag}`);
+      return true;
+    } else {
+      // Send to channel (fallback)
+      if (fallbackChannel && fallbackChannel.isTextBased()) {
+        await fallbackChannel.send({ embeds: [embed] });
+        console.log(`📢 Sent to channel ${fallbackChannel.name}`);
+        return true;
+      }
+    }
+  } catch (err) {
+    console.log(`⚠️ Could not send notification to ${userId}:`, err.message);
+  }
+  return false;
 }
 
 async function createTrackedTeamsDashboard(userId) {
@@ -285,6 +380,22 @@ async function registerSlashCommands() {
     new SlashCommandBuilder()
       .setName('track')
       .setDescription('Chọn team để theo dõi (UI dropdown)'),
+    
+    new SlashCommandBuilder()
+      .setName('track-team')
+      .setDescription('Theo dõi team + chọn nhận thông báo ở kênh hay DM')
+      .addIntegerOption(option =>
+        option.setName('team_id')
+          .setDescription('ID của team muốn theo dõi')
+          .setRequired(true))
+      .addStringOption(option =>
+        option.setName('notification')
+          .setDescription('Nhận thông báo ở kênh hay DM')
+          .setRequired(false)
+          .addChoices(
+            { name: '📢 Kênh (Channel)', value: 'channel' },
+            { name: '💬 Tin nhắn riêng (DM)', value: 'dm' }
+          )),
     
     new SlashCommandBuilder()
       .setName('untrack')
@@ -504,12 +615,20 @@ client.once('ready', async () => {
     console.log(`📊 Found ${trackedUsers.length} users with tracked teams`);
     
     for (const [userId, teamIds] of Object.entries(config.userTrackedTeams)) {
-      if (!Array.isArray(teamIds) || teamIds.length === 0) {
+      // Handle both old array format and new object format
+      let teamsToCheck = [];
+      if (Array.isArray(teamIds)) {
+        teamsToCheck = teamIds;
+      } else {
+        teamsToCheck = Object.keys(teamIds).map(id => parseInt(id));
+      }
+      
+      if (teamsToCheck.length === 0) {
         console.log(`⏭️ User ${userId} has no tracked teams`);
         continue;
       }
       
-      console.log(`👤 User ${userId} tracking teams: ${teamIds.join(', ')}`);
+      console.log(`👤 User ${userId} tracking teams: ${teamsToCheck.join(', ')}`);
       
       try {
         const user = await client.users.fetch(userId);
@@ -519,7 +638,7 @@ client.once('ready', async () => {
         }
         
         // Check each team's fixtures
-        for (const teamId of teamIds) {
+        for (const teamId of teamsToCheck) {
           console.log(`🔍 Checking team ${teamId} for upcoming matches...`);
           const fixtures = await getFixturesWithCL(teamId, 5);
           
@@ -545,9 +664,10 @@ client.once('ready', async () => {
           console.log(`🎯 Found ${upcomingMatches.length} matches within 24 hours for team ${teamId}`);
           
           if (upcomingMatches.length > 0) {
-            // Send reminder DM
+            // Send reminder based on user preference
             const team = config.livescoreTeams.find(t => t.id === teamId);
             const teamName = team?.name || `Team ${teamId}`;
+            const userPreference = getUserTeamPreference(userId, teamId);
             
             upcomingMatches.forEach(async (match) => {
               const opponent = match.homeTeam.id === teamId ? match.awayTeam.name : match.homeTeam.name;
@@ -563,7 +683,7 @@ client.once('ready', async () => {
               
               const matchTimeVN = new Date(new Date(match.utcDate).getTime() + 7*60*60*1000).toLocaleString('vi-VN');
               
-              console.log(`✅ [${new Date().toLocaleString('vi-VN')}] Sending reminder to ${user.tag}: ${teamName} vs ${opponent} (${matchTimeVN}) in ${timeDisplay}`);
+              console.log(`✅ [${new Date().toLocaleString('vi-VN')}] Sending reminder to ${user.tag}: ${teamName} vs ${opponent} (${matchTimeVN}) in ${timeDisplay} (${userPreference})`);
               
               const reminderEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
@@ -576,24 +696,32 @@ client.once('ready', async () => {
                 .setFooter({ text: 'Football Bot Reminder' })
                 .setTimestamp();
               
-              // Send to configured channel
-              if (config.footballReminder?.enabled && config.footballReminder?.channels?.length > 0) {
-                for (const channelConfig of config.footballReminder.channels) {
-                  try {
-                    const channel = await client.channels.fetch(channelConfig.id);
-                    if (channel && channel.isTextBased()) {
-                      await channel.send({ embeds: [reminderEmbed] });
-                      console.log(`📢 Sent reminder to channel ${channelConfig.name}`);
-                    }
-                  } catch (err) {
-                    console.log(`⚠️ Could not send to channel ${channelConfig.id}:`, err.message);
-                  }
-                }
-              } else {
-                // Send to user DM only if no channel is configured
+              // Send based on user preference
+              if (userPreference === 'dm') {
+                // Send to DM
                 user.send({ embeds: [reminderEmbed] }).catch(err => {
                   console.log(`⚠️ Could not send reminder to ${user.tag}:`, err.message);
                 });
+              } else {
+                // Send to configured channels
+                if (config.footballReminder?.enabled && config.footballReminder?.channels?.length > 0) {
+                  for (const channelConfig of config.footballReminder.channels) {
+                    try {
+                      const channel = await client.channels.fetch(channelConfig.id);
+                      if (channel && channel.isTextBased()) {
+                        await channel.send({ embeds: [reminderEmbed] });
+                        console.log(`📢 Sent reminder to channel ${channelConfig.name}`);
+                      }
+                    } catch (err) {
+                      console.log(`⚠️ Could not send to channel ${channelConfig.id}:`, err.message);
+                    }
+                  }
+                } else {
+                  // Fallback to DM if no channel configured
+                  user.send({ embeds: [reminderEmbed] }).catch(err => {
+                    console.log(`⚠️ Could not send reminder to ${user.tag}:`, err.message);
+                  });
+                }
               }
             });
           }
@@ -1003,18 +1131,44 @@ client.on('interactionCreate', async (interaction) => {
         const userTrackedTeams = getUserTrackedTeams(userId);
         
         if (userTrackedTeams.length === 0) {
-          await interaction.reply('📋 Bạn chưa theo dõi team nào. Dùng `/track` để thêm team.');
+          await interaction.reply('📋 Bạn chưa theo dõi team nào. Dùng `/track` hoặc `/track-team` để thêm team.');
           return;
         }
 
-        const trackedTeamNames = userTrackedTeams
+        const trackedTeamDetails = userTrackedTeams
           .map(id => {
             const team = config.livescoreTeams.find(t => t.id === id);
-            return team ? team.name : `ID: ${id}`;
+            const teamName = team ? team.name : `ID: ${id}`;
+            const preference = getUserTeamPreference(userId, id);
+            const prefixEmoji = preference === 'dm' ? '💬' : '📢';
+            return `${prefixEmoji} ${teamName}`;
           })
           .join('\n');
         
-        await interaction.reply(`📋 **Danh sách team bạn theo dõi:**\n${trackedTeamNames}\n\nDùng \`/untrack <team_id>\` để xóa.`);
+        await interaction.reply(`📋 **Danh sách team bạn theo dõi:**\n${trackedTeamDetails}\n\n📢 = Kênh | 💬 = DM\n\nDùng \`/untrack <team_id>\` để xóa.`);
+        return;
+      }
+
+      if (command === 'track-team') {
+        const teamId = interaction.options.getInteger('team_id');
+        const notificationType = interaction.options.getString('notification') || 'channel';
+        
+        const team = config.livescoreTeams.find(t => t.id === teamId);
+        if (!team) {
+          await interaction.reply(`❌ Không tìm thấy team với ID **${teamId}**!`);
+          return;
+        }
+        
+        // Add team with preference
+        addUserTrackedTeam(userId, teamId, notificationType);
+        
+        const prefixEmoji = notificationType === 'dm' ? '💬' : '📢';
+        const prefixText = notificationType === 'dm' ? 'Tin nhắn riêng (DM)' : 'Kênh';
+        
+        await interaction.reply({
+          content: `✅ **Đang theo dõi ${team.name}**\n${prefixEmoji} Nhận thông báo qua: **${prefixText}**`,
+          flags: 64 // Ephemeral
+        });
         return;
       }
 
@@ -2055,22 +2209,25 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
       
-      // Add team to user's tracked list
-      addUserTrackedTeam(userId, teamId);
-      saveConfig();
+      // Show preference buttons
+      const channelBtn = new ButtonBuilder()
+        .setCustomId(`track_pref_channel_${teamId}`)
+        .setLabel('📢 Kênh')
+        .setStyle(ButtonStyle.Primary);
       
-      // Send public notification
-      try {
-        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đã theo dõi **${team.name}**`);
-        setTimeout(() => {
-          publicMsg.delete().catch(() => {});
-        }, 5000);
-      } catch (e) {
-        console.error('Error sending public track message:', e.message);
-      }
+      const dmBtn = new ButtonBuilder()
+        .setCustomId(`track_pref_dm_${teamId}`)
+        .setLabel('💬 Tin nhắn riêng')
+        .setStyle(ButtonStyle.Secondary);
       
-      // Reply to interaction (ephemeral)
-      await interaction.reply({ content: `✅ Đang theo dõi **${team.name}**!`, flags: 64 }).catch(() => {});
+      const row = new ActionRowBuilder()
+        .addComponents(channelBtn, dmBtn);
+      
+      await interaction.reply({
+        content: `🎯 **Chọn cách nhận thông báo cho ${team.name}:**\n📢 Kênh - nhận thông báo ở đây\n💬 DM - nhận tin nhắn riêng`,
+        components: [row],
+        flags: 64
+      });
       return;
     }
     
@@ -2106,6 +2263,65 @@ client.on('interactionCreate', async (interaction) => {
       
       // Reply to interaction (ephemeral)
       await interaction.reply({ content: `✅ Đã hủy theo dõi **${team.name}**!`, flags: 64 }).catch(() => {});
+      return;
+    }
+    
+    // Handle track preference buttons
+    if (interaction.customId.startsWith('track_pref_channel_')) {
+      const teamId = parseInt(interaction.customId.replace('track_pref_channel_', ''));
+      const userId = interaction.user.id;
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      
+      if (!team) {
+        await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+        return;
+      }
+      
+      addUserTrackedTeam(userId, teamId, 'channel');
+      
+      // Send public notification
+      try {
+        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đã theo dõi **${team.name}** (📢 Kênh)`);
+        setTimeout(() => {
+          publicMsg.delete().catch(() => {});
+        }, 5000);
+      } catch (e) {
+        console.error('Error sending public track message:', e.message);
+      }
+      
+      await interaction.reply({
+        content: `✅ Đang theo dõi **${team.name}**\n📢 Nhận thông báo ở **kênh này**`,
+        flags: 64
+      });
+      return;
+    }
+    
+    if (interaction.customId.startsWith('track_pref_dm_')) {
+      const teamId = parseInt(interaction.customId.replace('track_pref_dm_', ''));
+      const userId = interaction.user.id;
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      
+      if (!team) {
+        await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+        return;
+      }
+      
+      addUserTrackedTeam(userId, teamId, 'dm');
+      
+      // Send public notification
+      try {
+        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đã theo dõi **${team.name}** (💬 DM)`);
+        setTimeout(() => {
+          publicMsg.delete().catch(() => {});
+        }, 5000);
+      } catch (e) {
+        console.error('Error sending public track message:', e.message);
+      }
+      
+      await interaction.reply({
+        content: `✅ Đang theo dõi **${team.name}**\n💬 Nhận thông báo qua **tin nhắn riêng**`,
+        flags: 64
+      });
       return;
     }
     
@@ -4012,14 +4228,17 @@ client.on('messageCreate', async (message) => {
         return;
       }
 
-      const trackedTeamNames = userTrackedTeams
+      const trackedTeamDetails = userTrackedTeams
         .map(id => {
           const team = config.livescoreTeams.find(t => t.id === id);
-          return team ? team.name : `ID: ${id}`;
+          const teamName = team ? team.name : `ID: ${id}`;
+          const preference = getUserTeamPreference(userId, id);
+          const prefixEmoji = preference === 'dm' ? '💬' : '📢';
+          return `${prefixEmoji} ${teamName}`;
         })
         .join('\n');
       
-      message.reply(`📋 **Danh sách team bạn theo dõi:**\n${trackedTeamNames}\n\nDùng \`!untrack <team_id>\` để xóa.`);
+      message.reply(`📋 **Danh sách team bạn theo dõi:**\n${trackedTeamDetails}\n\n📢 = Kênh | 💬 = DM\n\nDùng \`!untrack <team_id>\` để xóa.`);
       return;
     }
 
