@@ -681,6 +681,99 @@ client.once('ready', async () => {
 
                 console.log(`📤 Sent live update to ${channelConfig.name}: ${match.homeTeam.name} ${currentScore} ${match.awayTeam.name}`);
               }
+
+              // Check corners
+              const currentCorners = match.statistics?.corners || 0;
+              if (currentCorners !== cached.lastCorners && currentCorners > 0) {
+                const cornerEmbed = new EmbedBuilder()
+                  .setColor('#fbbf24')
+                  .setTitle(`🚩 Phạt góc: ${currentCorners}`)
+                  .setDescription(`${match.homeTeam.name} vs ${match.awayTeam.name}`)
+                  .addFields(
+                    { name: '⏱️ Phút', value: `${match.minute || '?'}` },
+                    { name: '📊', value: `Home: ${match.statistics?.homeCorners || 0} | Away: ${match.statistics?.awayCorners || 0}` }
+                  )
+                  .setTimestamp();
+
+                await channel.send({ embeds: [cornerEmbed] }).catch(() => {});
+                
+                liveMatchCache.set(matchId, {
+                  ...cached,
+                  lastCorners: currentCorners
+                });
+
+                console.log(`📤 Sent corner update: ${currentCorners} corners`);
+              }
+
+              // Check cards (yellow/red)
+              const currentCards = (match.statistics?.yellowCards || 0) + (match.statistics?.redCards || 0);
+              if (currentCards !== cached.lastCards && currentCards > 0) {
+                const cardEmbed = new EmbedBuilder()
+                  .setColor('#dc2626')
+                  .setTitle(`🟨 Thẻ phạt`)
+                  .setDescription(`${match.homeTeam.name} vs ${match.awayTeam.name}`)
+                  .addFields(
+                    { name: '⏱️ Phút', value: `${match.minute || '?'}` },
+                    { name: '🟨 Thẻ vàng', value: `${match.statistics?.yellowCards || 0}` },
+                    { name: '🟥 Thẻ đỏ', value: `${match.statistics?.redCards || 0}` }
+                  )
+                  .setTimestamp();
+
+                await channel.send({ embeds: [cardEmbed] }).catch(() => {});
+                
+                liveMatchCache.set(matchId, {
+                  ...cached,
+                  lastCards: currentCards
+                });
+
+                console.log(`📤 Sent card update: ${currentCards} cards`);
+              }
+
+              // Check if lineup available (when match status changes to LIVE or IN_PLAY)
+              if ((match.status === 'LIVE' || match.status === 'IN_PLAY') && !cached.lineupSent) {
+                try {
+                  const lineupResponse = await axios.get(`${process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4'}/matches/${matchId}`, {
+                    headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY }
+                  });
+
+                  const lineupData = lineupResponse.data;
+                  if (lineupData.lineup && lineupData.lineup.length > 0) {
+                    const homeTeam = lineupData.lineup.find(t => t.team.id === match.homeTeam.id);
+                    const awayTeam = lineupData.lineup.find(t => t.team.id === match.awayTeam.id);
+
+                    if (homeTeam && awayTeam) {
+                      const lineupEmbed = new EmbedBuilder()
+                        .setColor('#3b82f6')
+                        .setTitle(`📋 Đội hình - ${match.homeTeam.name} vs ${match.awayTeam.name}`)
+                        .addFields(
+                          { 
+                            name: `🏠 ${match.homeTeam.name}`, 
+                            value: homeTeam.lineup?.map(p => `${p.position}: ${p.player.name}`).join('\n') || 'N/A',
+                            inline: true
+                          },
+                          { 
+                            name: `✈️ ${match.awayTeam.name}`, 
+                            value: awayTeam.lineup?.map(p => `${p.position}: ${p.player.name}`).join('\n') || 'N/A',
+                            inline: true
+                          }
+                        )
+                        .setFooter({ text: 'Lineup' })
+                        .setTimestamp();
+
+                      await channel.send({ embeds: [lineupEmbed] }).catch(() => {});
+
+                      liveMatchCache.set(matchId, {
+                        ...cached,
+                        lineupSent: true
+                      });
+
+                      console.log(`📤 Sent lineup for match ${matchId}`);
+                    }
+                  }
+                } catch (err) {
+                  console.log(`⚠️ Could not fetch lineup:`, err.message);
+                }
+              }
             }
           } catch (err) {
             console.log(`⚠️ Could not send to channel:`, err.message);
