@@ -515,17 +515,16 @@ client.once('ready', async () => {
           
           console.log(`📋 Found ${fixtures.length} fixtures for team ${teamId}`);
           
-          // Find matches in next 1.5 hours
+          // Find matches in next 2 hours
           const now = new Date();
-          const in1Hour = new Date(now.getTime() + 60 * 60 * 1000);
-          const in90Min = new Date(now.getTime() + 90 * 60 * 1000);
+          const in2Hours = new Date(now.getTime() + 120 * 60 * 1000);
           
           const upcomingMatches = fixtures.filter(f => {
             const matchTime = new Date(f.utcDate);
-            return matchTime > now && matchTime <= in90Min;
+            return matchTime > now && matchTime <= in2Hours;
           });
           
-          console.log(`🎯 Found ${upcomingMatches.length} matches within 90 minutes for team ${teamId}`);
+          console.log(`🎯 Found ${upcomingMatches.length} matches within 2 hours for team ${teamId}`);
           
           if (upcomingMatches.length > 0) {
             // Send reminder DM
