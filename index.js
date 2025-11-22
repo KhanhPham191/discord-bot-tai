@@ -551,16 +551,24 @@ client.once('ready', async () => {
               const opponent = match.homeTeam.id === teamId ? match.awayTeam.name : match.homeTeam.name;
               const isHome = match.homeTeam.id === teamId ? '🏠' : '✈️';
               const timeUntilMatch = Math.floor((new Date(match.utcDate) - now) / 60 / 1000); // minutes
+              
+              // Convert minutes to hours and minutes format
+              const hours = Math.floor(timeUntilMatch / 60);
+              const mins = timeUntilMatch % 60;
+              const timeDisplay = hours > 0 
+                ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`)
+                : `${mins}m`;
+              
               const matchTimeVN = new Date(new Date(match.utcDate).getTime() + 7*60*60*1000).toLocaleString('vi-VN');
               
-              console.log(`✅ [${new Date().toLocaleString('vi-VN')}] Sending reminder to ${user.tag}: ${teamName} vs ${opponent} (${matchTimeVN}) in ${timeUntilMatch} min`);
+              console.log(`✅ [${new Date().toLocaleString('vi-VN')}] Sending reminder to ${user.tag}: ${teamName} vs ${opponent} (${matchTimeVN}) in ${timeDisplay}`);
               
               const reminderEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
                 .setTitle(`⚠️ Trận đấu sắp bắt đầu!`)
                 .setDescription(`${isHome} **${teamName}** vs **${opponent}**`)
                 .addFields(
-                  { name: '🕐 Bắt đầu sau', value: `${timeUntilMatch} phút`, inline: true },
+                  { name: '🕐 Bắt đầu sau', value: timeDisplay, inline: true },
                   { name: '🏆 Giải đấu', value: match.competition?.name || 'N/A', inline: true }
                 )
                 .setFooter({ text: 'Football Bot Reminder' })
