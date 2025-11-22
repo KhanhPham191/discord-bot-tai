@@ -594,6 +594,103 @@ client.once('ready', async () => {
     }
     console.log('✅ Check completed\n');
   }, 15 * 60 * 1000); // Check every 15 minutes
+
+  // Setup live match monitor - send live updates to channel
+  const liveMatchCache = new Map(); // matchId -> { lastScore, lastEvents, lastLineup }
+  
+  setInterval(async () => {
+    if (!config.footballReminder?.enabled || !config.footballReminder?.channels?.length) {
+      return;
+    }
+
+    try {
+      const checkTime = new Date().toLocaleString('vi-VN');
+      console.log(`\n⚽ [${checkTime}] Checking live matches...`);
+
+      // Get all tracked teams
+      if (!config.userTrackedTeams) return;
+
+      const allTrackedTeamIds = new Set();
+      Object.values(config.userTrackedTeams).forEach(teamIds => {
+        if (Array.isArray(teamIds)) {
+          teamIds.forEach(id => allTrackedTeamIds.add(id));
+        }
+      });
+
+      if (allTrackedTeamIds.size === 0) {
+        console.log('⚠️ No tracked teams');
+        return;
+      }
+
+      console.log(`📊 Monitoring ${allTrackedTeamIds.size} tracked teams`);
+
+      // Get live matches from multiple competitions
+      const competitions = ['PL', 'EL1', 'SA', 'BL1', 'FL1', 'CL', 'ELC'];
+      const liveMatches = [];
+
+      for (const compCode of competitions) {
+        try {
+          const response = await axios.get(`${process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4'}/competitions/${compCode}/matches`, {
+            headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY },
+            params: { status: 'LIVE' }
+          });
+
+          const matchesWithTrackedTeams = (response.data.matches || []).filter(m =>
+            allTrackedTeamIds.has(m.homeTeam.id) || allTrackedTeamIds.has(m.awayTeam.id)
+          );
+
+          liveMatches.push(...matchesWithTrackedTeams);
+        } catch (e) {
+          // Skip if error
+        }
+      }
+
+      console.log(`🎯 Found ${liveMatches.length} live matches with tracked teams`);
+
+      if (liveMatches.length > 0) {
+        // Send updates to configured channels
+        for (const channelConfig of config.footballReminder.channels) {
+          try {
+            const channel = await client.channels.fetch(channelConfig.id);
+            if (!channel || !channel.isTextBased()) continue;
+
+            for (const match of liveMatches) {
+              const matchId = match.id;
+              const cached = liveMatchCache.get(matchId) || {};
+              
+              // Check if score changed
+              const currentScore = `${match.score.fullTime?.home || match.score.halfTime?.home || 0}-${match.score.fullTime?.away || match.score.halfTime?.away || 0}`;
+              
+              if (currentScore !== cached.lastScore) {
+                const updateEmbed = new EmbedBuilder()
+                  .setColor('#ef4444')
+                  .setTitle(`⚽ ${match.homeTeam.name} ${currentScore} ${match.awayTeam.name}`)
+                  .addFields(
+                    { name: '🏆', value: match.competition?.name || 'N/A', inline: true },
+                    { name: '⏱️ Phút', value: `${match.minute || '?'}`, inline: true }
+                  )
+                  .setFooter({ text: 'Live Update' })
+                  .setTimestamp();
+
+                await channel.send({ embeds: [updateEmbed] }).catch(() => {});
+                
+                liveMatchCache.set(matchId, {
+                  ...cached,
+                  lastScore: currentScore
+                });
+
+                console.log(`📤 Sent live update to ${channelConfig.name}: ${match.homeTeam.name} ${currentScore} ${match.awayTeam.name}`);
+              }
+            }
+          } catch (err) {
+            console.log(`⚠️ Could not send to channel:`, err.message);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Error in live match monitor:`, err.message);
+    }
+  }, 2 * 60 * 1000); // Check every 2 minutes
 });
 
 // Handle interactions (slash commands, select menu, buttons)
