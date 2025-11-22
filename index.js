@@ -130,6 +130,7 @@ function addUserTrackedTeam(userId, teamId) {
   }
   if (!config.userTrackedTeams[userId].includes(teamId)) {
     config.userTrackedTeams[userId].push(teamId);
+    saveConfig(); // Save to file realtime
   }
 }
 
@@ -138,6 +139,7 @@ function removeUserTrackedTeam(userId, teamId) {
   if (!config.userTrackedTeams) config.userTrackedTeams = {};
   if (config.userTrackedTeams[userId]) {
     config.userTrackedTeams[userId] = config.userTrackedTeams[userId].filter(id => id !== teamId);
+    saveConfig(); // Save to file realtime
   }
 }
 
