@@ -480,18 +480,40 @@ client.once('ready', async () => {
   setInterval(async () => {
     console.log('🕐 Checking for upcoming matches to remind...');
     
-    if (!config.userTrackedTeams) return;
+    if (!config.userTrackedTeams) {
+      console.log('⚠️ No userTrackedTeams configured');
+      return;
+    }
+    
+    const trackedUsers = Object.keys(config.userTrackedTeams);
+    console.log(`📊 Found ${trackedUsers.length} users with tracked teams`);
     
     for (const [userId, teamIds] of Object.entries(config.userTrackedTeams)) {
-      if (!Array.isArray(teamIds) || teamIds.length === 0) continue;
+      if (!Array.isArray(teamIds) || teamIds.length === 0) {
+        console.log(`⏭️ User ${userId} has no tracked teams`);
+        continue;
+      }
+      
+      console.log(`👤 User ${userId} tracking teams: ${teamIds.join(', ')}`);
       
       try {
         const user = await client.users.fetch(userId);
-        if (!user) continue;
+        if (!user) {
+          console.log(`⚠️ Could not fetch user ${userId}`);
+          continue;
+        }
         
         // Check each team's fixtures
         for (const teamId of teamIds) {
+          console.log(`🔍 Checking team ${teamId} for upcoming matches...`);
           const fixtures = await getFixturesWithCL(teamId, 5);
+          
+          if (!fixtures || fixtures.length === 0) {
+            console.log(`⚠️ No fixtures found for team ${teamId}`);
+            continue;
+          }
+          
+          console.log(`📋 Found ${fixtures.length} fixtures for team ${teamId}`);
           
           // Find matches in next 1.5 hours
           const now = new Date();
@@ -503,6 +525,8 @@ client.once('ready', async () => {
             return matchTime > now && matchTime <= in90Min;
           });
           
+          console.log(`🎯 Found ${upcomingMatches.length} matches within 90 minutes for team ${teamId}`);
+          
           if (upcomingMatches.length > 0) {
             // Send reminder DM
             const team = config.livescoreTeams.find(t => t.id === teamId);
@@ -512,6 +536,8 @@ client.once('ready', async () => {
               const opponent = match.homeTeam.id === teamId ? match.awayTeam.name : match.homeTeam.name;
               const isHome = match.homeTeam.id === teamId ? '🏠' : '✈️';
               const timeUntilMatch = Math.floor((new Date(match.utcDate) - now) / 60 / 1000); // minutes
+              
+              console.log(`📤 Sending reminder to ${user.tag}: ${teamName} vs ${opponent} in ${timeUntilMatch} min`);
               
               const reminderEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
