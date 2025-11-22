@@ -2003,14 +2003,10 @@ client.on('interactionCreate', async (interaction) => {
         console.log(`✨ Save complete!\n`);
 
         const statusEmbed = new EmbedBuilder()
-          .setColor(enabled ? '#3b82f6' : '#ef4444')
-          .setTitle('⚙️ Thiết lập kênh thông báo trận đấu')
-          .addFields(
-            { name: '📺 Kênh được chọn', value: `${channel} (${channel.id})`, inline: false },
-            { name: '🔄 Thao tác', value: enabled ? '✅ Thêm vào danh sách' : '❌ Xóa khỏi danh sách', inline: false },
-            { name: '📊 Tổng channels', value: `${config.footballReminder.channels.length}`, inline: false }
-          )
-          .setFooter({ text: 'Bot sẽ gửi thông báo trận đấu vào tất cả channels đã thiết lập' })
+          .setColor(enabled ? '#10b981' : '#ef4444')
+          .setTitle(enabled ? '✅ Đã thêm thành công!' : '❌ Đã xóa khỏi danh sách')
+          .setDescription(enabled ? `Kênh ${channel} sẽ nhận thông báo trận đấu` : `Kênh ${channel} sẽ không nhận thông báo nữa`)
+          .setFooter({ text: 'Football Bot' })
           .setTimestamp();
 
         await interaction.reply({ embeds: [statusEmbed] });
@@ -2022,10 +2018,6 @@ client.on('interactionCreate', async (interaction) => {
               .setColor('#10b981')
               .setTitle('✅ Kênh đã được thiết lập!')
               .setDescription(`Kênh này sẽ nhận thông báo về:\n• Các trận đấu sắp tới (24h trước)\n• Đội hình (30 phút trước)\n• Cập nhật điểm số sống\n• Thẻ phạt, phạt góc`)
-              .addFields(
-                { name: '🏆 Đội được theo dõi', value: 'Sẽ gửi thông báo cho các đội đã thiết lập', inline: false },
-                { name: '📊 Tổng kênh được thiết lập', value: `${config.footballReminder.channels.length}`, inline: false }
-              )
               .setFooter({ text: 'Football Bot' })
               .setTimestamp();
             
