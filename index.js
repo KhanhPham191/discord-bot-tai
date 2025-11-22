@@ -596,7 +596,126 @@ client.once('ready', async () => {
   }, 15 * 60 * 1000); // Check every 15 minutes
 
   // Setup live match monitor - send live updates to channel
-  const liveMatchCache = new Map(); // matchId -> { lastScore, lastEvents, lastLineup }
+  const liveMatchCache = new Map(); // matchId -> { lastScore, lastEvents, lastLineup, lineupSent, lineupNotifSent }
+  
+  // Setup lineup notification (30 min before match)
+  setInterval(async () => {
+    if (!config.footballReminder?.enabled || !config.footballReminder?.channels?.length) {
+      return;
+    }
+
+    try {
+      const checkTime = new Date().toLocaleString('vi-VN');
+      console.log(`\n📋 [${checkTime}] Checking for lineups (30 min before kickoff)...`);
+
+      if (!config.userTrackedTeams) return;
+
+      const allTrackedTeamIds = new Set();
+      Object.values(config.userTrackedTeams).forEach(teamIds => {
+        if (Array.isArray(teamIds)) {
+          teamIds.forEach(id => allTrackedTeamIds.add(id));
+        }
+      });
+
+      if (allTrackedTeamIds.size === 0) return;
+
+      // Get upcoming matches from multiple competitions
+      const competitions = ['PL', 'EL1', 'SA', 'BL1', 'FL1', 'CL', 'ELC'];
+      const upcomingMatches = [];
+      const now = new Date();
+
+      for (const compCode of competitions) {
+        try {
+          const response = await axios.get(`${process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4'}/competitions/${compCode}/matches`, {
+            headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY },
+            params: { status: 'SCHEDULED' }
+          });
+
+          const matchesWithTrackedTeams = (response.data.matches || []).filter(m => {
+            const matchTime = new Date(m.utcDate);
+            const minutesUntilMatch = (matchTime - now) / (1000 * 60);
+            // Check if match is between 25-35 minutes away (30 min window)
+            return (minutesUntilMatch >= 25 && minutesUntilMatch <= 35) &&
+                   (allTrackedTeamIds.has(m.homeTeam.id) || allTrackedTeamIds.has(m.awayTeam.id));
+          });
+
+          upcomingMatches.push(...matchesWithTrackedTeams);
+        } catch (e) {
+          // Skip if error
+        }
+      }
+
+      console.log(`🎯 Found ${upcomingMatches.length} matches 30 min before kickoff`);
+
+      if (upcomingMatches.length > 0) {
+        // Fetch lineups and send to channels
+        for (const channelConfig of config.footballReminder.channels) {
+          try {
+            const channel = await client.channels.fetch(channelConfig.id);
+            if (!channel || !channel.isTextBased()) continue;
+
+            for (const match of upcomingMatches) {
+              const matchId = match.id;
+              const cached = liveMatchCache.get(matchId) || {};
+
+              // Skip if already sent
+              if (cached.lineupNotifSent) continue;
+
+              try {
+                const lineupResponse = await axios.get(`${process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4'}/matches/${matchId}`, {
+                  headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY }
+                });
+
+                const lineupData = lineupResponse.data;
+                if (lineupData.lineup && lineupData.lineup.length > 0) {
+                  const homeTeam = lineupData.lineup.find(t => t.team.id === match.homeTeam.id);
+                  const awayTeam = lineupData.lineup.find(t => t.team.id === match.awayTeam.id);
+
+                  if (homeTeam && awayTeam && homeTeam.lineup && awayTeam.lineup) {
+                    const matchTimeVN = new Date(new Date(match.utcDate).getTime() + 7*60*60*1000).toLocaleString('vi-VN');
+                    
+                    const lineupEmbed = new EmbedBuilder()
+                      .setColor('#3b82f6')
+                      .setTitle(`📋 Đội hình - ${match.homeTeam.name} vs ${match.awayTeam.name}`)
+                      .setDescription(`Trận đấu bắt đầu lúc: ${matchTimeVN}`)
+                      .addFields(
+                        { 
+                          name: `🏠 ${match.homeTeam.name}`, 
+                          value: homeTeam.lineup.map(p => `${p.position}: ${p.player.name}`).join('\n'),
+                          inline: true
+                        },
+                        { 
+                          name: `✈️ ${match.awayTeam.name}`, 
+                          value: awayTeam.lineup.map(p => `${p.position}: ${p.player.name}`).join('\n'),
+                          inline: true
+                        }
+                      )
+                      .setFooter({ text: 'Lineup 30 phút trước' })
+                      .setTimestamp();
+
+                    await channel.send({ embeds: [lineupEmbed] }).catch(() => {});
+
+                    liveMatchCache.set(matchId, {
+                      ...cached,
+                      lineupNotifSent: true
+                    });
+
+                    console.log(`📤 Sent lineup to ${channelConfig.name}: ${match.homeTeam.name} vs ${match.awayTeam.name}`);
+                  }
+                }
+              } catch (err) {
+                console.log(`⚠️ Could not fetch lineup for match ${matchId}:`, err.message);
+              }
+            }
+          } catch (err) {
+            console.log(`⚠️ Could not send to channel:`, err.message);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Error in lineup notification:`, err.message);
+    }
+  }, 5 * 60 * 1000); // Check every 5 minutes
   
   setInterval(async () => {
     if (!config.footballReminder?.enabled || !config.footballReminder?.channels?.length) {
@@ -727,52 +846,6 @@ client.once('ready', async () => {
                 });
 
                 console.log(`📤 Sent card update: ${currentCards} cards`);
-              }
-
-              // Check if lineup available (when match status changes to LIVE or IN_PLAY)
-              if ((match.status === 'LIVE' || match.status === 'IN_PLAY') && !cached.lineupSent) {
-                try {
-                  const lineupResponse = await axios.get(`${process.env.FOOTBALL_API_URL || 'https://api.football-data.org/v4'}/matches/${matchId}`, {
-                    headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY }
-                  });
-
-                  const lineupData = lineupResponse.data;
-                  if (lineupData.lineup && lineupData.lineup.length > 0) {
-                    const homeTeam = lineupData.lineup.find(t => t.team.id === match.homeTeam.id);
-                    const awayTeam = lineupData.lineup.find(t => t.team.id === match.awayTeam.id);
-
-                    if (homeTeam && awayTeam) {
-                      const lineupEmbed = new EmbedBuilder()
-                        .setColor('#3b82f6')
-                        .setTitle(`📋 Đội hình - ${match.homeTeam.name} vs ${match.awayTeam.name}`)
-                        .addFields(
-                          { 
-                            name: `🏠 ${match.homeTeam.name}`, 
-                            value: homeTeam.lineup?.map(p => `${p.position}: ${p.player.name}`).join('\n') || 'N/A',
-                            inline: true
-                          },
-                          { 
-                            name: `✈️ ${match.awayTeam.name}`, 
-                            value: awayTeam.lineup?.map(p => `${p.position}: ${p.player.name}`).join('\n') || 'N/A',
-                            inline: true
-                          }
-                        )
-                        .setFooter({ text: 'Lineup' })
-                        .setTimestamp();
-
-                      await channel.send({ embeds: [lineupEmbed] }).catch(() => {});
-
-                      liveMatchCache.set(matchId, {
-                        ...cached,
-                        lineupSent: true
-                      });
-
-                      console.log(`📤 Sent lineup for match ${matchId}`);
-                    }
-                  }
-                } catch (err) {
-                  console.log(`⚠️ Could not fetch lineup:`, err.message);
-                }
               }
             }
           } catch (err) {
