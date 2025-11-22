@@ -478,7 +478,8 @@ client.once('ready', async () => {
   
   // Setup auto-reminder for upcoming matches (1 hour before)
   setInterval(async () => {
-    console.log('🕐 Checking for upcoming matches to remind...');
+    const checkTime = new Date().toLocaleString('vi-VN');
+    console.log(`\n⏰ [${checkTime}] Checking for upcoming matches to remind...`);
     
     if (!config.userTrackedTeams) {
       console.log('⚠️ No userTrackedTeams configured');
@@ -519,6 +520,9 @@ client.once('ready', async () => {
           const now = new Date();
           const in1Day = new Date(now.getTime() + 24 * 60 * 60 * 1000);
           
+          console.log(`🕐 Current time (UTC): ${now.toISOString()}`);
+          console.log(`📅 Checking until: ${in1Day.toISOString()}`);
+          
           const upcomingMatches = fixtures.filter(f => {
             const matchTime = new Date(f.utcDate);
             return matchTime > now && matchTime <= in1Day;
@@ -535,8 +539,9 @@ client.once('ready', async () => {
               const opponent = match.homeTeam.id === teamId ? match.awayTeam.name : match.homeTeam.name;
               const isHome = match.homeTeam.id === teamId ? '🏠' : '✈️';
               const timeUntilMatch = Math.floor((new Date(match.utcDate) - now) / 60 / 1000); // minutes
+              const matchTimeVN = new Date(new Date(match.utcDate).getTime() + 7*60*60*1000).toLocaleString('vi-VN');
               
-              console.log(`📤 Sending reminder to ${user.tag}: ${teamName} vs ${opponent} in ${timeUntilMatch} min`);
+              console.log(`✅ [${new Date().toLocaleString('vi-VN')}] Sending reminder to ${user.tag}: ${teamName} vs ${opponent} (${matchTimeVN}) in ${timeUntilMatch} min`);
               
               const reminderEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
@@ -559,6 +564,7 @@ client.once('ready', async () => {
         console.error(`Error checking matches for user ${userId}:`, err.message);
       }
     }
+    console.log('✅ Check completed\n');
   }, 15 * 60 * 1000); // Check every 15 minutes
 });
 
