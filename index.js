@@ -2261,83 +2261,100 @@ client.on('interactionCreate', async (interaction) => {
     
     // Handle track preference - show channel select menu
     if (interaction.customId.startsWith('track_pref_channel_select_')) {
-      const teamId = parseInt(interaction.customId.replace('track_pref_channel_select_', ''));
-      const team = config.livescoreTeams.find(t => t.id === teamId);
-      
-      if (!team) {
-        await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+      try {
+        const teamId = parseInt(interaction.customId.replace('track_pref_channel_select_', ''));
+        const team = config.livescoreTeams.find(t => t.id === teamId);
+        
+        console.log(`🔍 Track channel select - Team ${teamId}, Team data:`, team);
+        
+        if (!team) {
+          await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+          return;
+        }
+        
+        // Get all text channels from guild
+        const guild = interaction.guild;
+        if (!guild) {
+          console.error('❌ No guild found');
+          await interaction.reply({ content: '❌ Không thể lấy danh sách kênh!', flags: 64 });
+          return;
+        }
+        
+        const channels = guild.channels.cache.filter(ch => ch.isTextBased());
+        console.log(`📋 Found ${channels.size} text channels in guild`);
+        
+        if (channels.size === 0) {
+          await interaction.reply({ content: '❌ Không có kênh văn bản nào trong server!', flags: 64 });
+          return;
+        }
+        
+        const options = channels.map(ch => ({
+          label: `#${ch.name}`,
+          value: ch.id,
+          description: `Gửi thông báo ở kênh này`
+        })).slice(0, 25);
+        
+        const channelSelect = new StringSelectMenuBuilder()
+          .setCustomId(`track_channel_choice_${teamId}`)
+          .setPlaceholder('Chọn kênh để nhận thông báo...')
+          .addOptions(options);
+        
+        const row = new ActionRowBuilder().addComponents(channelSelect);
+        
+        await interaction.reply({
+          content: `📢 **Chọn kênh để nhận thông báo cho ${team.name}:**`,
+          components: [row],
+          flags: 64
+        });
+        console.log(`✅ Sent channel select menu for team ${teamId}`);
+        return;
+      } catch (err) {
+        console.error('❌ Error in track_pref_channel_select:', err);
+        await interaction.reply({ content: `❌ Lỗi: ${err.message}`, flags: 64 });
         return;
       }
-      
-      // Get all text channels from guild
-      const guild = interaction.guild;
-      if (!guild) {
-        await interaction.reply({ content: '❌ Không thể lấy danh sách kênh!', flags: 64 });
-        return;
-      }
-      
-      const channels = guild.channels.cache.filter(ch => ch.isTextBased());
-      
-      if (channels.size === 0) {
-        await interaction.reply({ content: '❌ Không có kênh văn bản nào trong server!', flags: 64 });
-        return;
-      }
-      
-      const channelSelect = new StringSelectMenuBuilder()
-        .setCustomId(`track_channel_choice_${teamId}`)
-        .setPlaceholder('Chọn kênh để nhận thông báo...')
-        .addOptions(
-          channels.map(ch => ({
-            label: `#${ch.name}`,
-            value: ch.id,
-            description: `Gửi thông báo ở kênh này`
-          })).slice(0, 25) // Discord max 25 options per select menu
-        );
-      
-      const row = new ActionRowBuilder().addComponents(channelSelect);
-      
-      await interaction.reply({
-        content: `📢 **Chọn kênh để nhận thông báo cho ${team.name}:**`,
-        components: [row],
-        flags: 64
-      });
-      return;
     }
     
     // Handle track preference - channel selected
     if (interaction.customId.startsWith('track_channel_choice_')) {
-      const teamId = parseInt(interaction.customId.replace('track_channel_choice_', ''));
-      const userId = interaction.user.id;
-      const channelId = interaction.values[0];
-      const team = config.livescoreTeams.find(t => t.id === teamId);
-      
-      if (!team) {
-        await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+      try {
+        const teamId = parseInt(interaction.customId.replace('track_channel_choice_', ''));
+        const userId = interaction.user.id;
+        const channelId = interaction.values[0];
+        const team = config.livescoreTeams.find(t => t.id === teamId);
+        
+        console.log(`🎯 Track channel choice - Team ${teamId}, Channel ${channelId}, User ${userId}`);
+        
+        if (!team) {
+          await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+          return;
+        }
+        
+        // Add team with channel preference
+        addUserTrackedTeam(userId, teamId, 'channel');
+        console.log(`✅ Added team ${teamId} for user ${userId} with channel preference`);
+        
+        // Send public notification
+        try {
+          const channel = await interaction.guild.channels.fetch(channelId);
+          const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đã theo dõi **${team.name}** (📢 ${channel.name})`);
+          setTimeout(() => {
+            publicMsg.delete().catch(() => {});
+          }, 5000);
+        } catch (e) {
+          console.error('Error sending public track message:', e.message);
+        }
+        
+        await interaction.reply({
+          content: `✅ Đang theo dõi **${team.name}**\n📢 Nhận thông báo ở **kênh được cấu hình**`,
+          flags: 64
+        });
+        return;
+      } catch (err) {
+        console.error('❌ Error in track_channel_choice:', err);
+        await interaction.reply({ content: `❌ Lỗi: ${err.message}`, flags: 64 });
         return;
       }
-      
-      // Add team with channel preference
-      addUserTrackedTeam(userId, teamId, 'channel');
-      
-      // Store which channel user prefers (optional - for future use)
-      // For now, we use the configured footballReminder channels
-      
-      // Send public notification
-      try {
-        const channel = await interaction.guild.channels.fetch(channelId);
-        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đã theo dõi **${team.name}** (📢 ${channel.name})`);
-        setTimeout(() => {
-          publicMsg.delete().catch(() => {});
-        }, 5000);
-      } catch (e) {
-        console.error('Error sending public track message:', e.message);
-      }
-      
-      await interaction.reply({
-        content: `✅ Đang theo dõi **${team.name}**\n📢 Nhận thông báo ở **kênh được cấu hình**`,
-        flags: 64
-      });
-      return;
     }
     
     if (interaction.customId.startsWith('track_pref_dm_')) {
