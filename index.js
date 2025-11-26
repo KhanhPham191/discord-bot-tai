@@ -2202,9 +2202,9 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
       
-      // Show preference buttons
+      // Show preference buttons - Channel or DM
       const channelBtn = new ButtonBuilder()
-        .setCustomId(`track_pref_channel_${teamId}`)
+        .setCustomId(`track_pref_channel_select_${teamId}`)
         .setLabel('📢 Kênh')
         .setStyle(ButtonStyle.Primary);
       
@@ -2217,7 +2217,7 @@ client.on('interactionCreate', async (interaction) => {
         .addComponents(channelBtn, dmBtn);
       
       await interaction.reply({
-        content: `🎯 **Chọn cách nhận thông báo cho ${team.name}:**\n📢 Kênh - nhận thông báo ở đây\n💬 DM - nhận tin nhắn riêng`,
+        content: `🎯 **Chọn cách nhận thông báo cho ${team.name}:**`,
         components: [row],
         flags: 64
       });
@@ -2259,10 +2259,9 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
     
-    // Handle track preference buttons
-    if (interaction.customId.startsWith('track_pref_channel_')) {
-      const teamId = parseInt(interaction.customId.replace('track_pref_channel_', ''));
-      const userId = interaction.user.id;
+    // Handle track preference - show channel select menu
+    if (interaction.customId.startsWith('track_pref_channel_select_')) {
+      const teamId = parseInt(interaction.customId.replace('track_pref_channel_select_', ''));
       const team = config.livescoreTeams.find(t => t.id === teamId);
       
       if (!team) {
@@ -2270,11 +2269,63 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
       
+      // Get all text channels from guild
+      const guild = interaction.guild;
+      if (!guild) {
+        await interaction.reply({ content: '❌ Không thể lấy danh sách kênh!', flags: 64 });
+        return;
+      }
+      
+      const channels = guild.channels.cache.filter(ch => ch.isTextBased());
+      
+      if (channels.size === 0) {
+        await interaction.reply({ content: '❌ Không có kênh văn bản nào trong server!', flags: 64 });
+        return;
+      }
+      
+      const channelSelect = new StringSelectMenuBuilder()
+        .setCustomId(`track_channel_choice_${teamId}`)
+        .setPlaceholder('Chọn kênh để nhận thông báo...')
+        .addOptions(
+          channels.map(ch => ({
+            label: `#${ch.name}`,
+            value: ch.id,
+            description: `Gửi thông báo ở kênh này`
+          })).slice(0, 25) // Discord max 25 options per select menu
+        );
+      
+      const row = new ActionRowBuilder().addComponents(channelSelect);
+      
+      await interaction.reply({
+        content: `📢 **Chọn kênh để nhận thông báo cho ${team.name}:**`,
+        components: [row],
+        flags: 64
+      });
+      return;
+    }
+    
+    // Handle track preference - channel selected
+    if (interaction.customId.startsWith('track_channel_choice_')) {
+      const teamId = parseInt(interaction.customId.replace('track_channel_choice_', ''));
+      const userId = interaction.user.id;
+      const channelId = interaction.values[0];
+      const team = config.livescoreTeams.find(t => t.id === teamId);
+      
+      if (!team) {
+        await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+        return;
+      }
+      
+      // Add team with channel preference
       addUserTrackedTeam(userId, teamId, 'channel');
+      
+      // Store which channel user prefers (optional - for future use)
+      // For now, we use the configured footballReminder channels
       
       // Send public notification
       try {
-        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đã theo dõi **${team.name}** (📢 Kênh)`);
+        const channel = await interaction.guild.channels.fetch(channelId);
+        const publicMsg = await interaction.channel.send(`✅ **${interaction.user.username}** đã theo dõi **${team.name}** (📢 ${channel.name})`);
         setTimeout(() => {
           publicMsg.delete().catch(() => {});
         }, 5000);
@@ -2283,7 +2334,7 @@ client.on('interactionCreate', async (interaction) => {
       }
       
       await interaction.reply({
-        content: `✅ Đang theo dõi **${team.name}**\n📢 Nhận thông báo ở **kênh này**`,
+        content: `✅ Đang theo dõi **${team.name}**\n📢 Nhận thông báo ở **kênh được cấu hình**`,
         flags: 64
       });
       return;
