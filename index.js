@@ -386,19 +386,7 @@ async function registerSlashCommands() {
     
     new SlashCommandBuilder()
       .setName('track-team')
-      .setDescription('Theo dõi team + chọn nhận thông báo ở kênh hay DM')
-      .addIntegerOption(option =>
-        option.setName('team_id')
-          .setDescription('ID của team muốn theo dõi')
-          .setRequired(true))
-      .addStringOption(option =>
-        option.setName('notification')
-          .setDescription('Nhận thông báo ở kênh hay DM')
-          .setRequired(false)
-          .addChoices(
-            { name: '📢 Kênh (Channel)', value: 'channel' },
-            { name: '💬 Tin nhắn riêng (DM)', value: 'dm' }
-          )),
+      .setDescription('Theo dõi team - chọn từ danh sách'),
     
     new SlashCommandBuilder()
       .setName('untrack')
@@ -1153,23 +1141,25 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       if (command === 'track-team') {
-        const teamId = interaction.options.getInteger('team_id');
-        const notificationType = interaction.options.getString('notification') || 'channel';
+        // Show select menu with all teams
+        const teams = config.livescoreTeams;
         
-        const team = config.livescoreTeams.find(t => t.id === teamId);
-        if (!team) {
-          await interaction.reply(`❌ Không tìm thấy team với ID **${teamId}**!`);
-          return;
-        }
+        const selectMenu = new StringSelectMenuBuilder()
+          .setCustomId('track_team_select')
+          .setPlaceholder('Chọn đội bóng để theo dõi...')
+          .addOptions(
+            teams.map(team => ({
+              label: team.name,
+              value: team.id.toString(),
+              description: `ID: ${team.id}`
+            }))
+          );
         
-        // Add team with preference
-        addUserTrackedTeam(userId, teamId, notificationType);
-        
-        const prefixEmoji = notificationType === 'dm' ? '💬' : '📢';
-        const prefixText = notificationType === 'dm' ? 'Tin nhắn riêng (DM)' : 'Kênh';
+        const row = new ActionRowBuilder().addComponents(selectMenu);
         
         await interaction.reply({
-          content: `✅ **Đang theo dõi ${team.name}**\n${prefixEmoji} Nhận thông báo qua: **${prefixText}**`,
+          content: '⚽ **Chọn đội bóng bạn muốn theo dõi:**',
+          components: [row],
           flags: 64 // Ephemeral
         });
         return;
