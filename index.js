@@ -151,7 +151,7 @@ function getUserTrackedTeamsWithPreferences(userId) {
 // Get preference for a specific team - returns 'channel' or 'dm'
 function getUserTeamPreference(userId, teamId) {
   const preferences = getUserTrackedTeamsWithPreferences(userId);
-  return preferences[teamId]?.preference || 'channel';
+  return preferences[teamId?.toString()]?.preference || 'channel';
 }
 
 // Add team to user's tracked list
@@ -170,7 +170,8 @@ function addUserTrackedTeam(userId, teamId, preference = 'channel') {
     config.userTrackedTeams[userId] = newFormat;
   }
   
-  config.userTrackedTeams[userId][teamId] = { preference };
+  const teamKey = teamId.toString();
+  config.userTrackedTeams[userId][teamKey] = { preference };
   saveConfig(); // Save to file realtime
 }
 
@@ -190,8 +191,9 @@ function setUserTeamPreference(userId, teamId, preference) {
     config.userTrackedTeams[userId] = newFormat;
   }
   
-  if (config.userTrackedTeams[userId][teamId]) {
-    config.userTrackedTeams[userId][teamId].preference = preference;
+  const teamKey = teamId.toString();
+  if (config.userTrackedTeams[userId][teamKey]) {
+    config.userTrackedTeams[userId][teamKey].preference = preference;
     saveConfig();
   }
 }
@@ -204,7 +206,8 @@ function removeUserTrackedTeam(userId, teamId) {
   if (Array.isArray(config.userTrackedTeams[userId])) {
     config.userTrackedTeams[userId] = config.userTrackedTeams[userId].filter(id => id !== teamId);
   } else {
-    delete config.userTrackedTeams[userId][teamId];
+    const teamKey = teamId.toString();
+    delete config.userTrackedTeams[userId][teamKey];
   }
   saveConfig(); // Save to file realtime
 }
