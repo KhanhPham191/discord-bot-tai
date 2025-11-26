@@ -2262,13 +2262,15 @@ client.on('interactionCreate', async (interaction) => {
     // Handle track preference - show channel select menu
     if (interaction.customId.startsWith('track_pref_channel_select_')) {
       try {
+        await interaction.deferReply({ flags: 64 });
+        
         const teamId = parseInt(interaction.customId.replace('track_pref_channel_select_', ''));
         const team = config.livescoreTeams.find(t => t.id === teamId);
         
         console.log(`🔍 Track channel select - Team ${teamId}, Team data:`, team);
         
         if (!team) {
-          await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+          await interaction.editReply({ content: '❌ Team không tồn tại!' });
           return;
         }
         
@@ -2276,7 +2278,7 @@ client.on('interactionCreate', async (interaction) => {
         const guild = interaction.guild;
         if (!guild) {
           console.error('❌ No guild found');
-          await interaction.reply({ content: '❌ Không thể lấy danh sách kênh!', flags: 64 });
+          await interaction.editReply({ content: '❌ Không thể lấy danh sách kênh!' });
           return;
         }
         
@@ -2284,7 +2286,7 @@ client.on('interactionCreate', async (interaction) => {
         console.log(`📋 Found ${channels.size} text channels in guild`);
         
         if (channels.size === 0) {
-          await interaction.reply({ content: '❌ Không có kênh văn bản nào trong server!', flags: 64 });
+          await interaction.editReply({ content: '❌ Không có kênh văn bản nào trong server!' });
           return;
         }
         
@@ -2301,16 +2303,19 @@ client.on('interactionCreate', async (interaction) => {
         
         const row = new ActionRowBuilder().addComponents(channelSelect);
         
-        await interaction.reply({
+        await interaction.editReply({
           content: `📢 **Chọn kênh để nhận thông báo cho ${team.name}:**`,
-          components: [row],
-          flags: 64
+          components: [row]
         });
         console.log(`✅ Sent channel select menu for team ${teamId}`);
         return;
       } catch (err) {
         console.error('❌ Error in track_pref_channel_select:', err);
-        await interaction.reply({ content: `❌ Lỗi: ${err.message}`, flags: 64 });
+        try {
+          await interaction.editReply({ content: `❌ Lỗi: ${err.message}` });
+        } catch (e) {
+          await interaction.reply({ content: `❌ Lỗi: ${err.message}`, flags: 64 });
+        }
         return;
       }
     }
@@ -2318,6 +2323,8 @@ client.on('interactionCreate', async (interaction) => {
     // Handle track preference - channel selected
     if (interaction.customId.startsWith('track_channel_choice_')) {
       try {
+        await interaction.deferReply({ flags: 64 });
+        
         const teamId = parseInt(interaction.customId.replace('track_channel_choice_', ''));
         const userId = interaction.user.id;
         const channelId = interaction.values[0];
@@ -2326,7 +2333,7 @@ client.on('interactionCreate', async (interaction) => {
         console.log(`🎯 Track channel choice - Team ${teamId}, Channel ${channelId}, User ${userId}`);
         
         if (!team) {
-          await interaction.reply({ content: '❌ Team không tồn tại!', flags: 64 });
+          await interaction.editReply({ content: '❌ Team không tồn tại!' });
           return;
         }
         
@@ -2345,14 +2352,17 @@ client.on('interactionCreate', async (interaction) => {
           console.error('Error sending public track message:', e.message);
         }
         
-        await interaction.reply({
-          content: `✅ Đang theo dõi **${team.name}**\n📢 Nhận thông báo ở **kênh được cấu hình**`,
-          flags: 64
+        await interaction.editReply({
+          content: `✅ Đang theo dõi **${team.name}**\n📢 Nhận thông báo ở **kênh được cấu hình**`
         });
         return;
       } catch (err) {
         console.error('❌ Error in track_channel_choice:', err);
-        await interaction.reply({ content: `❌ Lỗi: ${err.message}`, flags: 64 });
+        try {
+          await interaction.editReply({ content: `❌ Lỗi: ${err.message}` });
+        } catch (e) {
+          await interaction.reply({ content: `❌ Lỗi: ${err.message}`, flags: 64 });
+        }
         return;
       }
     }
