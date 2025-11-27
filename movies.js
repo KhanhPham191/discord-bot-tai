@@ -2,7 +2,11 @@ const axios = require('axios');
 
 // Request cache to avoid duplicate API calls during rate limiting
 const requestCache = new Map();
-const REQUEST_CACHE_TTL = 30 * 1000; // 30 seconds
+const REQUEST_CACHE_TTL = 5 * 60 * 1000; // ✅ OPTIMIZATION: Increased to 5 minutes (was 30s)
+
+// Search result cache - cache full search results to avoid repeat API calls
+const searchCache = new Map();
+const SEARCH_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 // Rate limiter - track last request time to ensure minimum delay between requests
 let lastRequestTime = 0;
@@ -43,6 +47,14 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
 // Movie search function - fetch year from detail endpoint with pagination support
 async function searchMovies(keyword, maxResults = 100) {
   try {
+    // ✅ OPTIMIZATION: Check cache first
+    const cacheKey = `search_${keyword}_${maxResults}`;
+    const cached = searchCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < SEARCH_CACHE_TTL) {
+      console.log(`📦 [SEARCH CACHE HIT] Keyword: ${keyword}, TTL remaining: ${Math.round((SEARCH_CACHE_TTL - (Date.now() - cached.timestamp)) / 1000)}s`);
+      return cached.data;
+    }
+    
     let allMovies = [];
     let page = 1;
     const itemsPerPage = 20; // API usually returns ~20 items per page
@@ -78,7 +90,16 @@ async function searchMovies(keyword, maxResults = 100) {
     }
     
     // Return maximum maxResults items
-    return allMovies.slice(0, maxResults);
+    const result = allMovies.slice(0, maxResults);
+    
+    // ✅ OPTIMIZATION: Cache the search result
+    searchCache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now()
+    });
+    console.log(`💾 [SEARCH CACHE SAVED] Keyword: ${keyword}, Results: ${result.length}`);
+    
+    return result;
   } catch (error) {
     console.error('❌ Lỗi API tìm kiếm phim:', error.response?.data?.message || error.message);
     return [];
@@ -269,6 +290,12 @@ setInterval(() => {
   for (const [key, value] of requestCache.entries()) {
     if (now - value.timestamp > REQUEST_CACHE_TTL) {
       requestCache.delete(key);
+    }
+  }
+  // ✅ OPTIMIZATION: Also clean up search cache
+  for (const [key, value] of searchCache.entries()) {
+    if (now - value.timestamp > SEARCH_CACHE_TTL) {
+      searchCache.delete(key);
     }
   }
 }, 60 * 1000);
