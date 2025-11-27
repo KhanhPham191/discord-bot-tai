@@ -228,6 +228,66 @@ async function getMatchLineup(matchId) {
   }
 }
 
+// Get match events (goals, cards, corners)
+async function getMatchEvents(matchId) {
+  try {
+    const response = await axios.get(`${FOOTBALL_API_URL}/matches/${matchId}`, {
+      headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
+    });
+    
+    const match = response.data;
+    
+    return {
+      id: match.id,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      score: match.score,
+      goals: match.goals || [],
+      cards: match.cards || [],
+      corners: match.corners || []
+    };
+  } catch (e) {
+    console.error(`❌ Lỗi lấy match events (match ${matchId}):`, e.response?.data?.message || e.message);
+    return null;
+  }
+}
+
+// Format match events for Discord embed
+function formatMatchEvents(match) {
+  const events = [];
+  
+  // Goals
+  if (match.goals && match.goals.length > 0) {
+    for (const goal of match.goals) {
+      const team = goal.team.name;
+      const minute = goal.minute + (goal.minuteExtra ? `+${goal.minuteExtra}` : '');
+      const assist = goal.assist ? ` (Assist: ${goal.assist.name})` : '';
+      events.push(`⚽ **${minute}'** - ${goal.scorer.name} (${team})${assist}`);
+    }
+  }
+  
+  // Cards
+  if (match.cards && match.cards.length > 0) {
+    for (const card of match.cards) {
+      const team = card.team.name;
+      const minute = card.minute + (card.minuteExtra ? `+${card.minuteExtra}` : '');
+      const cardType = card.cardType === 'YELLOW_CARD' ? '🟨' : '🟥';
+      events.push(`${cardType} **${minute}'** - ${card.player.name} (${team})`);
+    }
+  }
+  
+  // Corners
+  if (match.corners && match.corners.length > 0) {
+    for (const corner of match.corners) {
+      const team = corner.team.name;
+      const minute = corner.minute + (corner.minuteExtra ? `+${corner.minuteExtra}` : '');
+      events.push(`🏁 **${minute}'** - Corner (${team})`);
+    }
+  }
+  
+  return events;
+}
+
 module.exports = {
   getTeamById,
   getCompetitionMatches,
@@ -237,6 +297,8 @@ module.exports = {
   getFixturesWithCL,
   getLiveMatches,
   getMatchLineup,
+  getMatchEvents,
+  formatMatchEvents,
   FOOTBALL_API_URL,
   FOOTBALL_API_KEY
 };

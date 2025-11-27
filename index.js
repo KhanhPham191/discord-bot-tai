@@ -7,7 +7,7 @@ const axios = require('axios');
 const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpisodes, extractYearFromMovie } = require('./movies');
 
 // Import football functions
-const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup } = require('./football');
+const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup, getMatchEvents, formatMatchEvents } = require('./football');
 
 // Load .env file - required for API keys
 require('dotenv').config();
@@ -904,78 +904,131 @@ client.once('ready', async () => {
 
             for (const match of liveMatches) {
               const matchId = match.id;
-              const cached = liveMatchCache.get(matchId) || {};
-              
-              // Check if score changed
-              const currentScore = `${match.score.fullTime?.home || match.score.halfTime?.home || 0}-${match.score.fullTime?.away || match.score.halfTime?.away || 0}`;
-              
-              if (currentScore !== cached.lastScore) {
-                const updateEmbed = new EmbedBuilder()
-                  .setColor('#ef4444')
-                  .setTitle(`⚽ ${match.homeTeam.name} ${currentScore} ${match.awayTeam.name}`)
+              const cached = liveMatchCache.get(matchId) || {
+                trackedGoals: [],
+                trackedCorners: [],
+                trackedCards: []
+              };
+
+              // Send match started notification (only first time)
+              if (!cached.matchStarted) {
+                const startEmbed = new EmbedBuilder()
+                  .setColor('#3b82f6')
+                  .setTitle(`🔴 TRẬN ĐẤU ĐANG LIVE`)
+                  .setDescription(`${match.homeTeam.name} vs ${match.awayTeam.name}`)
                   .addFields(
                     { name: '🏆', value: match.competition?.name || 'N/A', inline: true },
-                    { name: '⏱️ Phút', value: `${match.minute || '?'}`, inline: true }
+                    { name: '⏱️', value: `${match.minute || '?'}'`, inline: true }
                   )
-                  .setFooter({ text: 'Live Update' })
                   .setTimestamp();
 
-                await channel.send({ embeds: [updateEmbed] }).catch(() => {});
+                await channel.send({ embeds: [startEmbed] }).catch(() => {});
                 
                 liveMatchCache.set(matchId, {
                   ...cached,
-                  lastScore: currentScore
+                  matchStarted: true
                 });
 
-                console.log(`📤 Sent live update to ${channelConfig.name}: ${match.homeTeam.name} ${currentScore} ${match.awayTeam.name}`);
+                console.log(`📤 Match started: ${match.homeTeam.name} vs ${match.awayTeam.name}`);
               }
 
-              // Check corners
-              const currentCorners = match.statistics?.corners || 0;
-              if (currentCorners !== cached.lastCorners && currentCorners > 0) {
-                const cornerEmbed = new EmbedBuilder()
-                  .setColor('#fbbf24')
-                  .setTitle(`🚩 Phạt góc: ${currentCorners}`)
+              // Check for NEW goals
+              const currentGoals = match.goals || [];
+              const newGoals = currentGoals.filter(g => 
+                !cached.trackedGoals.some(cg => cg.minute === g.minute && cg.scorer === g.scorer.name)
+              );
+              
+              for (const goal of newGoals) {
+                const minute = goal.minute + (goal.minuteExtra ? `+${goal.minuteExtra}` : '');
+                const assist = goal.assist ? ` (Assist: ${goal.assist.name})` : '';
+                
+                const goalEmbed = new EmbedBuilder()
+                  .setColor('#10b981')
+                  .setTitle(`⚽ BÀN THẮNG`)
                   .setDescription(`${match.homeTeam.name} vs ${match.awayTeam.name}`)
                   .addFields(
-                    { name: '⏱️ Phút', value: `${match.minute || '?'}` },
-                    { name: '📊', value: `Home: ${match.statistics?.homeCorners || 0} | Away: ${match.statistics?.awayCorners || 0}` }
+                    { name: 'Người ghi bàn', value: `${goal.scorer.name} (${goal.team.name})`, inline: false },
+                    { name: '⏱️ Phút', value: minute, inline: true },
+                    { name: '👣 Tỷ số', value: `${match.score.fullTime?.home || match.score.halfTime?.home || 0}-${match.score.fullTime?.away || match.score.halfTime?.away || 0}`, inline: true }
+                  );
+                
+                if (assist) {
+                  goalEmbed.addFields({ name: '🤝 Kiến tạo', value: assist, inline: false });
+                }
+                
+                goalEmbed.setTimestamp();
+
+                await channel.send({ embeds: [goalEmbed] }).catch(() => {});
+                console.log(`📤 Goal: ${goal.scorer.name} (${minute})'`);
+              }
+
+              // Check for NEW corners
+              const currentCorners = match.corners || [];
+              const newCorners = currentCorners.filter(c => 
+                !cached.trackedCorners.some(cc => cc.minute === c.minute && cc.team === c.team.id)
+              );
+              
+              for (const corner of newCorners) {
+                const minute = corner.minute + (corner.minuteExtra ? `+${corner.minuteExtra}` : '');
+                
+                const cornerEmbed = new EmbedBuilder()
+                  .setColor('#fbbf24')
+                  .setTitle(`🏁 PHẠT GÓC`)
+                  .setDescription(`${match.homeTeam.name} vs ${match.awayTeam.name}`)
+                  .addFields(
+                    { name: 'Đội', value: corner.team.name, inline: true },
+                    { name: '⏱️ Phút', value: minute, inline: true }
                   )
                   .setTimestamp();
 
                 await channel.send({ embeds: [cornerEmbed] }).catch(() => {});
-                
-                liveMatchCache.set(matchId, {
-                  ...cached,
-                  lastCorners: currentCorners
-                });
-
-                console.log(`📤 Sent corner update: ${currentCorners} corners`);
+                console.log(`📤 Corner: ${corner.team.name} (${minute})'`);
               }
 
-              // Check cards (yellow/red)
-              const currentCards = (match.statistics?.yellowCards || 0) + (match.statistics?.redCards || 0);
-              if (currentCards !== cached.lastCards && currentCards > 0) {
+              // Check for NEW cards
+              const currentCards = match.cards || [];
+              const newCards = currentCards.filter(c => 
+                !cached.trackedCards.some(cc => cc.minute === c.minute && cc.player === c.player.name)
+              );
+              
+              for (const card of newCards) {
+                const minute = card.minute + (card.minuteExtra ? `+${card.minuteExtra}` : '');
+                const cardType = card.cardType === 'YELLOW_CARD' ? '🟨' : '🟥';
+                const cardTypeName = card.cardType === 'YELLOW_CARD' ? 'Thẻ vàng' : 'Thẻ đỏ';
+                
                 const cardEmbed = new EmbedBuilder()
-                  .setColor('#dc2626')
-                  .setTitle(`🟨 Thẻ phạt`)
+                  .setColor(card.cardType === 'YELLOW_CARD' ? '#fbbf24' : '#dc2626')
+                  .setTitle(`${cardType} ${cardTypeName}`)
                   .setDescription(`${match.homeTeam.name} vs ${match.awayTeam.name}`)
                   .addFields(
-                    { name: '⏱️ Phút', value: `${match.minute || '?'}` },
-                    { name: '🟨 Thẻ vàng', value: `${match.statistics?.yellowCards || 0}` },
-                    { name: '🟥 Thẻ đỏ', value: `${match.statistics?.redCards || 0}` }
+                    { name: 'Cầu thủ', value: card.player.name, inline: true },
+                    { name: 'Đội', value: card.team.name, inline: true },
+                    { name: '⏱️ Phút', value: minute, inline: true }
                   )
                   .setTimestamp();
 
                 await channel.send({ embeds: [cardEmbed] }).catch(() => {});
-                
-                liveMatchCache.set(matchId, {
-                  ...cached,
-                  lastCards: currentCards
-                });
-
-                console.log(`📤 Sent card update: ${currentCards} cards`);
+                console.log(`📤 Card: ${cardTypeName} - ${card.player.name} (${minute})'`);
               }
+
+              // Update cache with new events
+              const updatedCache = {
+                matchStarted: true,
+                trackedGoals: currentGoals.map(g => ({
+                  minute: g.minute,
+                  scorer: g.scorer.name
+                })),
+                trackedCorners: currentCorners.map(c => ({
+                  minute: c.minute,
+                  team: c.team.id
+                })),
+                trackedCards: currentCards.map(c => ({
+                  minute: c.minute,
+                  player: c.player.name
+                }))
+              };
+
+              liveMatchCache.set(matchId, updatedCache);
             }
           } catch (err) {
             console.log(`⚠️ Could not send to channel:`, err.message);
