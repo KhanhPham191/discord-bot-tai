@@ -58,8 +58,7 @@ async function searchMovies(keyword, maxResults = 20) {
     
     let allMovies = [];
     let page = 1;
-    const itemsPerPage = 20; // API usually returns ~20 items per page
-    const maxPages = Math.ceil(maxResults / itemsPerPage);
+    const maxPages = 3; // Tối đa 3 trang để lấy đủ 20 phim (API có thể trả ~10 phim/trang)
     
     while (allMovies.length < maxResults && page <= maxPages) {
       try {
@@ -72,6 +71,8 @@ async function searchMovies(keyword, maxResults = 20) {
         
         const items = response.data.items || [];
         
+        console.log(`📥 [SEARCH API] Page ${page}: ${items.length} items`);
+        
         if (items.length === 0) {
           break; // No more results
         }
@@ -79,6 +80,11 @@ async function searchMovies(keyword, maxResults = 20) {
         // Keep items as-is, year will be fetched efficiently
         allMovies = allMovies.concat(items);
         page++;
+        
+        // Đủ rồi thì dừng
+        if (allMovies.length >= maxResults) {
+          break;
+        }
       } catch (pageError) {
         console.log(`⚠️ Error fetching page ${page}:`, pageError.message);
         break; // Stop on error
