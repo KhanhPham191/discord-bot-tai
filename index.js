@@ -1659,27 +1659,25 @@ client.on('interactionCreate', async (interaction) => {
 
       if (command === 'search') {
         const searchQuery = interaction.options.getString('name');
-        const page = interaction.options.getInteger('page') || 1;
         
         if (searchQuery.toLowerCase() === 'help') {
           const helpText = `
 📌 **Hướng Dẫn Lệnh Tìm Phim**
 
 **Cú pháp:**
-\`/search <tên phim> [page]\`
+\`/search <tên phim>\`
 
 **Ví dụ:**
 • \`/search avatar\` - Tìm phim "avatar"
-• \`/search mưa đỏ page:2\` - Tìm "mưa đỏ" trang 2
-• \`/search the marvel page:1\` - Tìm "the marvel"
+• \`/search mưa đỏ\` - Tìm "mưa đỏ"
+• \`/search the marvel\` - Tìm "the marvel"
 
 **Tính năng:**
-✅ Hiển thị tối đa 10 kết quả/trang
-✅ Hỗ trợ phân trang (trang trước/sau)
+✅ Hiển thị tối đa 20 kết quả
 ✅ Hiển thị tên Việt + tên Anh + năm phát hành
-✅ Click button để xem chi tiết
+✅ Hiển thị loại phim (Phim bộ / Phim lẻ) + số tập
+✅ Click button số để xem chi tiết
 ✅ Chọn server để xem danh sách tập
-✅ Phân trang tập (10 tập/trang)
 ✅ Nút quay lại để điều hướng
 
 **Lệnh khác:**
@@ -1693,7 +1691,7 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.deferReply();
         
         try {
-          // Giới hạn tối đa 20 kết quả cho mỗi search để nhẹ hơn
+          // Giới hạn tối đa 20 kết quả cho mỗi search
           const results = await searchMovies(searchQuery, 20);
           
           if (!results || results.length === 0) {
@@ -1701,46 +1699,57 @@ client.on('interactionCreate', async (interaction) => {
             return;
           }
 
-          // Calculate pagination
-          const itemsPerPage = 10;
+          // Hiển thị tất cả kết quả (tối đa 20 phim)
+          const movies = results;
           const totalResults = results.length;
-          const totalPages = Math.ceil(totalResults / itemsPerPage);
-          
-          // Validate page number
-          if (page < 1 || page > totalPages) {
-            await interaction.editReply(`❌ Trang không hợp lệ. Có **${totalPages}** trang tìm kiếm`);
-            return;
-          }
-          
-          const startIdx = (page - 1) * itemsPerPage;
-          const endIdx = startIdx + itemsPerPage;
-          const movies = results.slice(startIdx, endIdx);
           
           // ✅ Fetch correct years in parallel (max 5 concurrent)
           const moviesWithYear = await enrichMoviesWithYear(movies);
           
-          // ✅ Lấy thêm số tập cho từng phim (chạy song song để nhanh hơn)
+          // ✅ Lấy thêm số tập + loại phim cho từng phim (chạy song song để nhanh hơn)
           const detailList = await Promise.all(
             moviesWithYear.map(async (movie) => {
-              if (!movie.slug) return { totalEpisodes: 'N/A' };
+              if (!movie.slug) return { totalEpisodes: 'N/A', movieType: 'N/A' };
               try {
                 const detail = await getMovieDetail(movie.slug);
+                // Xác định loại phim từ category hoặc số tập
+                let movieType = 'N/A';
+                if (detail?.category) {
+                  // Tìm trong category có group "Loại" hoặc dựa vào số tập
+                  for (const key in detail.category) {
+                    const cat = detail.category[key];
+                    if (cat?.group?.name === 'Loại' && cat?.list?.length > 0) {
+                      movieType = cat.list[0].name; // "Phim Bộ" hoặc "Phim Lẻ"
+                      break;
+                    }
+                  }
+                }
+                // Fallback: nếu không tìm được, dựa vào số tập
+                if (movieType === 'N/A') {
+                  const eps = detail?.total_episodes;
+                  if (eps && parseInt(eps) > 1) {
+                    movieType = 'Phim Bộ';
+                  } else if (eps && parseInt(eps) === 1) {
+                    movieType = 'Phim Lẻ';
+                  }
+                }
                 return {
                   totalEpisodes: detail?.total_episodes
                     ? detail.total_episodes.toString()
-                    : 'N/A'
+                    : 'N/A',
+                  movieType
                 };
               } catch (e) {
                 console.log(`⚠️ Could not fetch detail for ${movie.slug}`);
-                return { totalEpisodes: 'N/A' };
+                return { totalEpisodes: 'N/A', movieType: 'N/A' };
               }
             })
           );
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
-            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${page}/${totalPages}`)
-            .setDescription(`Tìm thấy **${totalResults}** phim | Hiển thị **${movies.length}** phim`)
+            .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}"`)
+            .setDescription(`Tìm thấy **${totalResults}** phim`)
             .setTimestamp();
           
           let description = '';
@@ -1748,12 +1757,13 @@ client.on('interactionCreate', async (interaction) => {
             const movie = moviesWithYear[idx];
             const detailInfo = detailList[idx] || {};
             const totalEpisodes = detailInfo.totalEpisodes || 'N/A';
+            const movieType = detailInfo.movieType || 'N/A';
             
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
             
-            const movieNum = startIdx + idx + 1;
+            const movieNum = idx + 1;
             let titleDisplay = `**${movieNum}. ${title}**`;
             if (englishTitle && englishTitle !== title) {
               titleDisplay += ` (${englishTitle})`;
@@ -1761,14 +1771,16 @@ client.on('interactionCreate', async (interaction) => {
             
             description += `${titleDisplay}\n`;
             
+            // Build info line với loại phim + năm + số tập
             let infoLine = '';
+            if (movieType !== 'N/A') {
+              infoLine += movieType === 'Phim Bộ' ? '📺 Phim Bộ' : '🎬 Phim Lẻ';
+            }
             if (year !== 'N/A') {
-              infoLine += `📅 ${year}`;
+              infoLine += infoLine ? ` | 📅 ${year}` : `📅 ${year}`;
             }
             if (totalEpisodes !== 'N/A') {
-              infoLine += infoLine
-                ? ` | 🎬 ${totalEpisodes} tập`
-                : `🎬 ${totalEpisodes} tập`;
+              infoLine += infoLine ? ` | ${totalEpisodes} tập` : `${totalEpisodes} tập`;
             }
             
             if (infoLine) {
@@ -1779,50 +1791,18 @@ client.on('interactionCreate', async (interaction) => {
           }
           
           embed.setDescription(description);
-          
-          // Create pagination buttons
-          const paginationButtons = [];
-          if (page > 1) {
-            paginationButtons.push(
-              new ButtonBuilder()
-                .setCustomId(`search_prev_${page}_${userId}_${searchQuery}`)
-                .setLabel('⬅️ Trang trước')
-                .setStyle(2)
-            );
-          }
-          
-          paginationButtons.push(
-            new ButtonBuilder()
-              .setCustomId(`search_page_${page}_${userId}`)
-              .setLabel(`📄 Trang ${page}/${totalPages}`)
-              .setStyle(2)
-              .setDisabled(true)
-          );
-          
-          if (page < totalPages) {
-            paginationButtons.push(
-              new ButtonBuilder()
-                .setCustomId(`search_next_${page}_${userId}_${searchQuery}`)
-                .setLabel('Trang sau ➡️')
-                .setStyle(2)
-            );
-          }
 
           const buttonRows = [];
-
-          if (paginationButtons.length > 0) {
-            buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
-          }
           
           const response = await interaction.editReply({ 
             embeds: [embed],
-            components: buttonRows.length > 0 ? buttonRows : [],
+            components: buttonRows,
             fetchReply: true
           });
           
           // Cache this search result for back button
           const cacheId = ++cacheIdCounter;
-          const cacheKey = `search_${userId}_${page}_${searchQuery}`;
+          const cacheKey = `search_${userId}_1_${searchQuery}`;
           const cacheData = {
             embed,
             components: buttonRows,
@@ -1831,31 +1811,26 @@ client.on('interactionCreate', async (interaction) => {
             searchQuery,
             type: 'search',
             cacheId,
-            page,
-            totalPages,
+            page: 1,
+            totalPages: 1,
             timestamp: Date.now()
           };
           searchCache.set(cacheKey, cacheData);
           cacheIdIndex.set(cacheId, cacheData);
-          console.log(`✅ [SEARCH CACHE] User ${userId} - Page: ${page}/${totalPages}, CacheID: ${cacheId}, Movies: ${moviesWithYear.length}, Query: ${searchQuery}`);
+          console.log(`✅ [SEARCH CACHE] User ${userId} - CacheID: ${cacheId}, Movies: ${moviesWithYear.length}, Query: ${searchQuery}`);
           
-          // Store cache ID in each button so we can retrieve it later
+          // Tạo nút chọn phim (tối đa 20 nút, chia thành 4 hàng x 5 nút)
           const updatedButtonRows = [];
-          for (let i = 1; i <= Math.min(10, moviesWithYear.length); i++) {
+          for (let i = 1; i <= Math.min(20, moviesWithYear.length); i++) {
             if ((i - 1) % 5 === 0) {
               updatedButtonRows.push(new ActionRowBuilder());
             }
             updatedButtonRows[Math.floor((i - 1) / 5)].addComponents(
               new ButtonBuilder()
-                .setCustomId(`search_detail_${i}_${userId}_${page}_${cacheId}`)
+                .setCustomId(`search_detail_${i}_${userId}_1_${cacheId}`)
                 .setLabel(`${i}`)
                 .setStyle(1)
             );
-          }
-          
-          // Add pagination buttons to updated rows
-          if (paginationButtons.length > 0) {
-            updatedButtonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
           }
           
           await interaction.editReply({
