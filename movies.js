@@ -146,6 +146,12 @@ async function enrichMoviesWithYear(movies) {
               }
             }
             
+            // ✅ Lưu cache để tái sử dụng cho lần sau (cả năm + detail)
+            requestCache.set(movie.slug, {
+              data: { year, ...detail },
+              timestamp: Date.now()
+            });
+            
             return year || 'N/A';
           } catch (e) {
             console.log(`⚠️ Could not fetch year for ${movie.slug}: ${e.message}`);

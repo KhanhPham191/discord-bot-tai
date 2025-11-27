@@ -1963,6 +1963,8 @@ client.on('interactionCreate', async (interaction) => {
           }
 
           const movies = newMovies.slice(0, 10);
+          // ✅ Fetch correct years in parallel (max 5 concurrent)
+          const moviesWithYear = await enrichMoviesWithYear(movies);
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
@@ -3159,16 +3161,18 @@ client.on('interactionCreate', async (interaction) => {
             const newMovies = await getNewMovies(pageNum);
             if (newMovies && newMovies.length > 0) {
               const movies = newMovies.slice(0, 10);
+              // ✅ Fetch correct years in parallel (max 5 concurrent)
+              const moviesWithYear = await enrichMoviesWithYear(movies);
               
               const embed = new EmbedBuilder()
                 .setColor('#e50914')
                 .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${pageNum}`)
-                .setDescription(`Hiển thị **${movies.length}** phim`)
+                .setDescription(`Hiển thị **${moviesWithYear.length}** phim`)
                 .setTimestamp();
 
               let description = '';
-              for (let idx = 0; idx < movies.length; idx++) {
-                const movie = movies[idx];
+              for (let idx = 0; idx < moviesWithYear.length; idx++) {
+                const movie = moviesWithYear[idx];
                 const slug = movie.slug || '';
                 const title = movie.name || movie.title || 'Unknown';
                 const englishTitle = movie.original_name || '';
@@ -3293,16 +3297,18 @@ client.on('interactionCreate', async (interaction) => {
           }
 
           const movies = newMovies.slice(0, 10);
+          // ✅ Fetch correct years in parallel (max 5 concurrent)
+          const moviesWithYear = await enrichMoviesWithYear(movies);
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
             .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${nextPage}`)
-            .setDescription(`Hiển thị **${movies.length}** phim`)
+            .setDescription(`Hiển thị **${moviesWithYear.length}** phim`)
             .setTimestamp();
 
           let description = '';
-          for (let idx = 0; idx < movies.length; idx++) {
-            const movie = movies[idx];
+          for (let idx = 0; idx < moviesWithYear.length; idx++) {
+            const movie = moviesWithYear[idx];
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
@@ -3398,16 +3404,18 @@ client.on('interactionCreate', async (interaction) => {
           }
 
           const movies = newMovies.slice(0, 10);
+          // ✅ Fetch correct years in parallel (max 5 concurrent)
+          const moviesWithYear = await enrichMoviesWithYear(movies);
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
             .setTitle(`🎬 Phim Mới Cập Nhật - Trang ${nextPage}`)
-            .setDescription(`Hiển thị **${movies.length}** phim`)
+            .setDescription(`Hiển thị **${moviesWithYear.length}** phim`)
             .setTimestamp();
 
           let description = '';
-          for (let idx = 0; idx < movies.length; idx++) {
-            const movie = movies[idx];
+          for (let idx = 0; idx < moviesWithYear.length; idx++) {
+            const movie = moviesWithYear[idx];
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
@@ -3700,7 +3708,7 @@ client.on('interactionCreate', async (interaction) => {
           const endIdx = startIdx + itemsPerPage;
           const movies = results.slice(startIdx, endIdx);
           
-          // ✅ Fetch correct years in parallel
+          // ✅ Fetch correct years in parallel (no extra detail calls here)
           const moviesWithYear = await enrichMoviesWithYear(movies);
           
           console.log(`📊 [SEARCH NEXT DATA] Page: ${nextPage}/${totalPages}, Movies: ${moviesWithYear.length}, Query: ${searchQuery}`);
@@ -3714,31 +3722,12 @@ client.on('interactionCreate', async (interaction) => {
           let description = '';
           for (let idx = 0; idx < moviesWithYear.length; idx++) {
             const movie = moviesWithYear[idx];
-            const slug = movie.slug || '';
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
             
-            let totalEpisodes = 'N/A';
-            let category = 'N/A';
-            try {
-              if (slug) {
-                const detail = await getMovieDetail(slug);
-                if (detail) {
-                  if (detail.total_episodes) {
-                    totalEpisodes = detail.total_episodes.toString();
-                  }
-                  if (detail.category && detail.category[1]) {
-                    const categoryList = detail.category[1].list;
-                    if (categoryList && categoryList.length > 0) {
-                      category = categoryList[0].name;
-                    }
-                  }
-                }
-              }
-            } catch (e) {
-              console.log(`⚠️ Could not fetch detail for ${slug}`);
-            }
+            // ✅ OPTIMIZATION: Không gọi getMovieDetail cho từng phim trong list
+            // Chỉ hiển thị thông tin cơ bản, chi tiết xem khi bấm nút từng phim
             
             const movieNum = startIdx + idx + 1;
             let titleDisplay = `**${movieNum}. ${title}**`;
@@ -3751,12 +3740,6 @@ client.on('interactionCreate', async (interaction) => {
             let infoLine = '';
             if (year !== 'N/A') {
               infoLine += `📅 ${year}`;
-            }
-            if (category !== 'N/A') {
-              infoLine += infoLine ? ` | 📺 ${category}` : `📺 ${category}`;
-            }
-            if (totalEpisodes !== 'N/A') {
-              infoLine += infoLine ? ` | 🎬 ${totalEpisodes} tập` : `🎬 ${totalEpisodes} tập`;
             }
             
             if (infoLine) {
@@ -4959,6 +4942,8 @@ client.on('messageCreate', async (message) => {
 
         // Limit to 10 results
         const movies = newMovies.slice(0, 10);
+        // ✅ Fetch correct years in parallel (max 5 concurrent)
+        const moviesWithYear = await enrichMoviesWithYear(movies);
         
         const embed = new EmbedBuilder()
           .setColor('#e50914') // Netflix red
@@ -4968,8 +4953,8 @@ client.on('messageCreate', async (message) => {
 
         // Build movie list
         let description = '';
-        for (let idx = 0; idx < movies.length; idx++) {
-          const movie = movies[idx];
+        for (let idx = 0; idx < moviesWithYear.length; idx++) {
+          const movie = moviesWithYear[idx];
           const slug = movie.slug || '';
           const title = movie.name || movie.title || 'Unknown';
           const englishTitle = movie.original_name || '';
