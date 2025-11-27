@@ -45,7 +45,8 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
 }
 
 // Movie search function - fetch year from detail endpoint with pagination support
-async function searchMovies(keyword, maxResults = 100) {
+// Giới hạn mặc định tối đa 20 phim để tránh quá nặng
+async function searchMovies(keyword, maxResults = 20) {
   try {
     // ✅ OPTIMIZATION: Check cache first
     const cacheKey = `search_${keyword}_${maxResults}`;
