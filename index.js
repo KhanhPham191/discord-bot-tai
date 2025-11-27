@@ -2905,7 +2905,8 @@ client.on('interactionCreate', async (interaction) => {
           // Discord limit: max 5 ActionRows per message
           if (buttonRows.length > 5) {
             console.warn(`⚠️ [SEARCH BACK] Too many rows: ${buttonRows.length}, truncating to 5`);
-            buttonRows = buttonRows.slice(0, 5);
+            // Truncate in-place to avoid reassigning variable
+            buttonRows.splice(5);
           }
 
           // Validate all components before sending
@@ -3026,7 +3027,8 @@ client.on('interactionCreate', async (interaction) => {
           // Discord limit: max 5 ActionRows per message
           if (buttonRows.length > 5) {
             console.warn(`⚠️ [BACK SEARCH] Too many rows: ${buttonRows.length}, truncating to 5`);
-            buttonRows = buttonRows.slice(0, 5);
+            // Truncate in-place to avoid reassigning variable
+            buttonRows.splice(5);
           }
 
           // Validate all components before sending
@@ -3630,11 +3632,11 @@ client.on('interactionCreate', async (interaction) => {
             );
           }
 
-          const buttonRows = [];
+          let buttonRows = [];
 
-          // Add detail buttons first
-          for (let row = 0; row < Math.ceil(buttons.length / 2); row++) {
-            const rowButtons = buttons.slice(row * 2, (row + 1) * 2);
+          // Add detail buttons first (tối đa 5 nút mỗi hàng để không vượt quá 5 hàng)
+          for (let i = 0; i < buttons.length; i += 5) {
+            const rowButtons = buttons.slice(i, i + 5);
             if (rowButtons.length > 0) {
               buttonRows.push(new ActionRowBuilder().addComponents(rowButtons));
             }
@@ -3648,7 +3650,8 @@ client.on('interactionCreate', async (interaction) => {
           // Discord limit: max 5 ActionRows per message
           if (buttonRows.length > 5) {
             console.warn(`⚠️ [SEARCH PREV] Too many rows: ${buttonRows.length}, truncating to 5`);
-            buttonRows = buttonRows.slice(0, 5);
+            // Truncate in-place to avoid reassigning variable
+            buttonRows.splice(5);
           }
 
           // Validate all components before sending
@@ -3830,7 +3833,8 @@ client.on('interactionCreate', async (interaction) => {
           // Discord limit: max 5 ActionRows per message
           if (buttonRows.length > 5) {
             console.warn(`⚠️ [COMPONENTS LIMIT] Too many rows: ${buttonRows.length}, truncating to 5`);
-            buttonRows = buttonRows.slice(0, 5);
+            // Truncate in-place to avoid reassigning variable
+            buttonRows.splice(5);
           }
 
           // Validate all components before sending
