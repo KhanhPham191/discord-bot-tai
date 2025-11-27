@@ -75,13 +75,8 @@ async function searchMovies(keyword, maxResults = 100) {
           break; // No more results
         }
         
-        // Don't fetch detail for each movie - too slow! Extract year from created date instead
-        const moviesWithYear = items.map((item) => ({
-          ...item,
-          year: item.created ? item.created.split('-')[0] : 'N/A'
-        }));
-        
-        allMovies = allMovies.concat(moviesWithYear);
+        // Keep items as-is, year will be fetched efficiently
+        allMovies = allMovies.concat(items);
         page++;
       } catch (pageError) {
         console.log(`⚠️ Error fetching page ${page}:`, pageError.message);
@@ -103,6 +98,75 @@ async function searchMovies(keyword, maxResults = 100) {
   } catch (error) {
     console.error('❌ Lỗi API tìm kiếm phim:', error.response?.data?.message || error.message);
     return [];
+  }
+}
+
+// ✅ NEW: Fetch movie years efficiently in parallel (max 5 concurrent to avoid rate limiting)
+async function enrichMoviesWithYear(movies) {
+  try {
+    const MAX_CONCURRENT = 5;
+    const enrichedMovies = [...movies];
+    
+    // Process in batches
+    for (let i = 0; i < movies.length; i += MAX_CONCURRENT) {
+      const batch = movies.slice(i, i + MAX_CONCURRENT);
+      
+      // Fetch year for batch in parallel
+      const yearPromises = batch.map(movie => {
+        // Skip if already has year or no slug
+        if (movie.year || !movie.slug) {
+          return Promise.resolve(movie.year || 'N/A');
+        }
+        
+        return (async () => {
+          try {
+            // Try to get year from cache first
+            const cached = requestCache.get(movie.slug);
+            if (cached && Date.now() - cached.timestamp < REQUEST_CACHE_TTL) {
+              return cached.data.year || 'N/A';
+            }
+            
+            // Fetch detail with retry
+            const response = await retryWithBackoff(
+              () => axios.get(`https://phim.nguonc.com/api/film/${movie.slug}`),
+              2, // Only 2 retries (faster fail)
+              500 // Shorter delay
+            );
+            
+            const detail = response.data.movie || {};
+            let year = detail.year;
+            
+            // Extract year from category if not found
+            if (!year && detail.category) {
+              for (const key in detail.category) {
+                if (detail.category[key].group?.name === 'Năm' && detail.category[key].list?.length > 0) {
+                  year = detail.category[key].list[0].name;
+                  break;
+                }
+              }
+            }
+            
+            return year || 'N/A';
+          } catch (e) {
+            console.log(`⚠️ Could not fetch year for ${movie.slug}: ${e.message}`);
+            return 'N/A';
+          }
+        })();
+      });
+      
+      // Wait for batch to complete
+      const years = await Promise.all(yearPromises);
+      
+      // Update movies with years
+      for (let j = 0; j < batch.length; j++) {
+        enrichedMovies[i + j].year = years[j];
+      }
+    }
+    
+    return enrichedMovies;
+  } catch (error) {
+    console.error('❌ Error enriching movies with year:', error.message);
+    return movies; // Return as-is if enrichment fails
   }
 }
 
@@ -281,7 +345,8 @@ module.exports = {
   getNewMovies,
   getMovieDetail,
   getEpisodes,
-  extractYearFromMovie
+  extractYearFromMovie,
+  enrichMoviesWithYear  // ✅ NEW: Export for parallel year fetching
 };
 
 // Clean up expired cache entries every 60 seconds

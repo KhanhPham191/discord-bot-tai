@@ -4,7 +4,7 @@ const path = require('path');
 const axios = require('axios');
 
 // Import movie functions
-const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpisodes, extractYearFromMovie } = require('./movies');
+const { searchMovies, searchMoviesByYear, getNewMovies, getMovieDetail, getEpisodes, extractYearFromMovie, enrichMoviesWithYear } = require('./movies');
 
 // Import football functions
 const { getTeamById, getCompetitionMatches, getLiveScore, getStandings, getFixtures, getFixturesWithCL, getLiveMatches, getMatchLineup, getMatchEvents, formatMatchEvents } = require('./football');
@@ -1715,6 +1715,9 @@ client.on('interactionCreate', async (interaction) => {
           const endIdx = startIdx + itemsPerPage;
           const movies = results.slice(startIdx, endIdx);
           
+          // ✅ Fetch correct years in parallel (max 5 concurrent)
+          const moviesWithYear = await enrichMoviesWithYear(movies);
+          
           const embed = new EmbedBuilder()
             .setColor('#e50914')
             .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${page}/${totalPages}`)
@@ -1722,8 +1725,8 @@ client.on('interactionCreate', async (interaction) => {
             .setTimestamp();
           
           let description = '';
-          for (let idx = 0; idx < movies.length; idx++) {
-            const movie = movies[idx];
+          for (let idx = 0; idx < moviesWithYear.length; idx++) {
+            const movie = moviesWithYear[idx];
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
@@ -1807,11 +1810,11 @@ client.on('interactionCreate', async (interaction) => {
           };
           searchCache.set(cacheKey, cacheData);
           cacheIdIndex.set(cacheId, cacheData);
-          console.log(`✅ [SEARCH CACHE] User ${userId} - Page: ${page}/${totalPages}, CacheID: ${cacheId}, Movies: ${movies.length}, Query: ${searchQuery}`);
+          console.log(`✅ [SEARCH CACHE] User ${userId} - Page: ${page}/${totalPages}, CacheID: ${cacheId}, Movies: ${moviesWithYear.length}, Query: ${searchQuery}`);
           
           // Store cache ID in each button so we can retrieve it later
           const updatedButtonRows = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
+          for (let i = 1; i <= Math.min(10, moviesWithYear.length); i++) {
             if ((i - 1) % 5 === 0) {
               updatedButtonRows.push(new ActionRowBuilder());
             }
@@ -1845,7 +1848,7 @@ client.on('interactionCreate', async (interaction) => {
             const movieNum = parseInt(parts[2]);
             const pageNum = parseInt(parts[4]);
             const returnCacheId = parseInt(parts[5]);
-            const selectedMovie = movies[movieNum - 1];
+            const selectedMovie = moviesWithYear[movieNum - 1];
             const slug = selectedMovie.slug;
             
             console.log(`📍 [SEARCH DETAIL CLICK] MovieNum: ${movieNum}, Page: ${pageNum}, CacheID: ${returnCacheId}, CustomID: ${customId}`);
@@ -1859,7 +1862,7 @@ client.on('interactionCreate', async (interaction) => {
               const cacheData = {
                 embed: response.embeds[0],
                 components: buttonRows,
-                movies: movies,
+                movies: moviesWithYear,
                 allResults: results,
                 searchQuery,
                 type: 'search',
@@ -3516,17 +3519,20 @@ client.on('interactionCreate', async (interaction) => {
           const endIdx = startIdx + itemsPerPage;
           const movies = results.slice(startIdx, endIdx);
           
-          console.log(`📊 [SEARCH PREV DATA] Page: ${nextPage}/${totalPages}, Movies: ${movies.length}, Query: ${searchQuery}`);
+          // ✅ Fetch correct years in parallel
+          const moviesWithYear = await enrichMoviesWithYear(movies);
+          
+          console.log(`📊 [SEARCH PREV DATA] Page: ${nextPage}/${totalPages}, Movies: ${moviesWithYear.length}, Query: ${searchQuery}`);
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
             .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${nextPage}/${totalPages}`)
-            .setDescription(`Tìm thấy **${totalResults}** phim | Hiển thị **${movies.length}** phim`)
+            .setDescription(`Tìm thấy **${totalResults}** phim | Hiển thị **${moviesWithYear.length}** phim`)
             .setTimestamp();
           
           let description = '';
-          for (let idx = 0; idx < movies.length; idx++) {
-            const movie = movies[idx];
+          for (let idx = 0; idx < moviesWithYear.length; idx++) {
+            const movie = moviesWithYear[idx];
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
             const year = movie.year || 'N/A';
@@ -3563,8 +3569,8 @@ client.on('interactionCreate', async (interaction) => {
           
           // Create buttons WITH cacheId
           const buttons = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
-            const movieTitle = movies[i - 1].name.substring(0, 15);
+          for (let i = 1; i <= Math.min(10, moviesWithYear.length); i++) {
+            const movieTitle = moviesWithYear[i - 1].name.substring(0, 15);
             buttons.push(
               new ButtonBuilder()
                 .setCustomId(`search_detail_${i}_${userId}_${nextPage}_${cacheId}`)
@@ -3694,17 +3700,20 @@ client.on('interactionCreate', async (interaction) => {
           const endIdx = startIdx + itemsPerPage;
           const movies = results.slice(startIdx, endIdx);
           
-          console.log(`📊 [SEARCH NEXT DATA] Page: ${nextPage}/${totalPages}, Movies: ${movies.length}, Query: ${searchQuery}`);
+          // ✅ Fetch correct years in parallel
+          const moviesWithYear = await enrichMoviesWithYear(movies);
+          
+          console.log(`📊 [SEARCH NEXT DATA] Page: ${nextPage}/${totalPages}, Movies: ${moviesWithYear.length}, Query: ${searchQuery}`);
           
           const embed = new EmbedBuilder()
             .setColor('#e50914')
             .setTitle(`🎬 Kết quả tìm kiếm: "${searchQuery}" - Trang ${nextPage}/${totalPages}`)
-            .setDescription(`Tìm thấy **${totalResults}** phim | Hiển thị **${movies.length}** phim`)
+            .setDescription(`Tìm thấy **${totalResults}** phim | Hiển thị **${moviesWithYear.length}** phim`)
             .setTimestamp();
           
           let description = '';
-          for (let idx = 0; idx < movies.length; idx++) {
-            const movie = movies[idx];
+          for (let idx = 0; idx < moviesWithYear.length; idx++) {
+            const movie = moviesWithYear[idx];
             const slug = movie.slug || '';
             const title = movie.name || movie.title || 'Unknown';
             const englishTitle = movie.original_name || '';
@@ -3767,8 +3776,8 @@ client.on('interactionCreate', async (interaction) => {
           
           // Create buttons WITH cacheId
           const buttons = [];
-          for (let i = 1; i <= Math.min(10, movies.length); i++) {
-            const movieTitle = movies[i - 1].name.substring(0, 15);
+          for (let i = 1; i <= Math.min(10, moviesWithYear.length); i++) {
+            const movieTitle = moviesWithYear[i - 1].name.substring(0, 15);
             buttons.push(
               new ButtonBuilder()
                 .setCustomId(`search_detail_${i}_${userId}_${nextPage}_${cacheId}`)
