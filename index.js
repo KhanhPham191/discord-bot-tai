@@ -2887,11 +2887,11 @@ client.on('interactionCreate', async (interaction) => {
             );
           }
 
-          const buttonRows = [];
+          let buttonRows = [];
 
-          // Add detail buttons first
-          for (let row = 0; row < Math.ceil(buttons.length / 2); row++) {
-            const rowButtons = buttons.slice(row * 2, (row + 1) * 2);
+          // Add detail buttons first (tối đa 5 nút mỗi hàng để tránh vượt quá 5 hàng tổng)
+          for (let i = 0; i < buttons.length; i += 5) {
+            const rowButtons = buttons.slice(i, i + 5);
             if (rowButtons.length > 0) {
               buttonRows.push(new ActionRowBuilder().addComponents(rowButtons));
             }
@@ -2900,6 +2900,22 @@ client.on('interactionCreate', async (interaction) => {
           // Add pagination buttons
           if (paginationButtons.length > 0) {
             buttonRows.push(new ActionRowBuilder().addComponents(paginationButtons));
+          }
+
+          // Discord limit: max 5 ActionRows per message
+          if (buttonRows.length > 5) {
+            console.warn(`⚠️ [SEARCH BACK] Too many rows: ${buttonRows.length}, truncating to 5`);
+            buttonRows = buttonRows.slice(0, 5);
+          }
+
+          // Validate all components before sending
+          for (let i = 0; i < buttonRows.length; i++) {
+            const row = buttonRows[i];
+            if (!row || !row.components) {
+              console.error(`❌ [SEARCH BACK] Invalid component at row ${i}`);
+              buttonRows.splice(i, 1);
+              i--;
+            }
           }
 
           // Create new embed with current page info
@@ -2911,7 +2927,7 @@ client.on('interactionCreate', async (interaction) => {
 
           await interaction.editReply({
             embeds: [embed],
-            components: buttonRows
+            components: buttonRows.length > 0 ? buttonRows : []
           });
           
           console.log(`✅ [SEARCH BACK SUCCESS] Restored page ${page}/${cached.totalPages}`);
